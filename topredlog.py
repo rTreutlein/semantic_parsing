@@ -1,4 +1,4 @@
-from openai import openai
+from openai import OpenAI
 import os
 import re
 from rag import store_embedding_in_qdrant, ensure_predicates_collection, search_similar_predicates
