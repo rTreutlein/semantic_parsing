@@ -1,12 +1,13 @@
 from openai import OpenAI
 import os
 import re
+import argparse
 from rag import store_embedding_in_qdrant, ensure_predicates_collection, search_similar_predicates
 
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
-  api_key=getenv("OPENROUTER_API_KEY"),
+  api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
 def extract_predicate_logic(response):
@@ -14,15 +15,6 @@ def extract_predicate_logic(response):
     if match:
         return match.group(1).strip()
     return None
-
-def extract_predicates(pred_logic):
-    match = re.search(r'\(([A-Z][a-zA-Z]*)', pred_logic, re.DOTALL)
-    predicates = []
-    while match:
-        predicates.append(match.group(1))
-        pred_logic = pred_logic[match.end():]
-        match = re.search(r'\(([A-Z][a-zA-Z]*)', pred_logic, re.DOTALL)
-    return predicates
 
 def format_prompt(sentence,similar):
     return f"""
@@ -71,20 +63,6 @@ def convert_to_predicate_logic(line,simiarl):
     txt = completion.choices[0].message.content
     return extract_predicate_logic(txt)
 
-def get_max_elem(expressions):
-    cnts = dict()
-    for exp in expressions:
-        cnts.setdefault(exp,0)
-        cnts[exp] += 1
-    max = 0
-    max_elem = "Default Value"
-    for key, val in cnts.items():
-        if max < val:
-            max = val
-            max_elem = key
-    return max,max_elem
-
-
 def process_file(file_path, skip_lines=0, limit_lines=None):
     res = []
     with open(file_path, 'r') as file:
@@ -98,19 +76,23 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             #call shell command plparserexe and capture its output
             metta = os.popen(f"plparserexe {pred_logic}").read().strip()
 
+            print(metta)
+
             res.append(metta)
             store_embedding_in_qdrant(f"Sentence: {line.strip()}\nPredicate Logic: {pred_logic}")
-            print(f"Sentence: {line.strip()}\nPredicate Logic: {max_elem}\nPreicates: {preds}")
+            print(f"Sentence: {line.strip()}\nPredicate Logic: {metta}")
             with open("data/fol.txt","a") as file:
-                file.write(max_elem + "\n")
+                file.write(metta + "\n")
                 print("last idx: " + str(i))
 
 if __name__ == "__main__":
-    #file_path = "data/test.txt"
-    file_path = "data/sorted.txt"
-    skip_lines = 7  # Example value, adjust as needed
-    limit_lines = 100  # Example value, adjust as needed
+    parser = argparse.ArgumentParser(description="Process a file and convert sentences to predicate logic.")
+    parser.add_argument("file_path", help="Path to the input file")
+    parser.add_argument("--skip", type=int, default=0, help="Number of lines to skip at the beginning of the file")
+    parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
+    args = parser.parse_args()
+
     ensure_predicates_collection()
-    process_file(file_path, skip_lines, limit_lines)
+    process_file(args.file_path, args.skip, args.limit)
 
 
