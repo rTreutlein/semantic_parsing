@@ -95,8 +95,8 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             simiarl = search_similar_predicates(line.strip())
             pred_logic = convert_to_predicate_logic(line.strip(),simiarl)
 
-            #call shell command plparserexe
-            metta = os.system(f"plparserexe {pred_logic}")
+            #call shell command plparserexe and capture its output
+            metta = os.popen(f"plparserexe {pred_logic}").read().strip()
 
             res.append(metta)
             store_embedding_in_qdrant(f"Sentence: {line.strip()}\nPredicate Logic: {pred_logic}")
