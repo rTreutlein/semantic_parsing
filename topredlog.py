@@ -50,16 +50,19 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
 
             print(f"Metta: {metta}")
 
-            #if metta has prefix "Error" then skip the line
-            if (metta.startswith("Error")):
-                break
+            if metta.startswith("Error:"):
+                pred_logic = fix_predicate_logic(line, similar, pred_logic, metta)
+                if pred_logic is None:
+                    break
+                metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
 
-            res.append(metta)
-            store_embedding_in_qdrant(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
-            with open("data/fol.txt","a") as file:
-                file.write(metta + "\n")
-            print("last idx: " + str(i + skip_lines))
-            print("--------------------------------------------------------------------------------")
+            if not metta.startswith("Error:"):
+                res.append(metta)
+                store_embedding_in_qdrant(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
+                with open("data/fol.txt","a") as file:
+                    file.write(metta + "\n")
+                print("last idx: " + str(i + skip_lines))
+                print("--------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to predicate logic.")
@@ -72,3 +75,13 @@ if __name__ == "__main__":
     process_file(args.file_path, args.skip, args.limit)
 
 
+def fix_predicate_logic(line, similar, original_pred_logic, error_message):
+    completion = client.chat.completions.create(
+        model="anthropic/claude-3.5-sonnet",
+        temperature=0.5,
+        messages=[
+            {"role": "user", "content": f"Fix the following predicate logic error:\nOriginal Logic: {original_pred_logic}\nError: {error_message}\nSimilar Sentences: {similar}"},
+        ],
+    )
+    txt = completion.choices[0].message.content
+    return extract_predicate_logic(txt)
