@@ -4,6 +4,7 @@ import re
 import argparse
 from rag import store_embedding_in_qdrant, ensure_predicates_collection, search_similar_predicates
 from prompts import nl2pl
+from filter_pl import check_predicates
 
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
@@ -74,6 +75,11 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             if metta.startswith("Error:"):
                 print("Failed to fix...")
                 break
+
+            is_trivial, _ = check_predicates(metta)
+            if is_trivial:
+                print("Skipping trivial metta statement.")
+                continue
 
             res.append(metta)
             store_embedding_in_qdrant(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
