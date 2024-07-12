@@ -2,7 +2,8 @@ from openai import OpenAI
 import os
 import re
 import argparse
-from rag import store_embedding_in_qdrant, ensure_predicates_collection, search_similar_predicates
+from ragclass import RAG
+import os
 from prompts import nl2pl, fix_predicatelogic
 from filter_pl import check_predicates
 
@@ -44,13 +45,15 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     return extract_predicate_logic(txt)
 
 def process_file(file_path, skip_lines=0, limit_lines=float('inf')):
+    collection_name = os.path.splitext(os.path.basename(file_path))[0]
+    rag = RAG(collection_name=collection_name)
     res = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
         for i, line in enumerate(lines[skip_lines:skip_lines+limit_lines]):
             line = line.strip()
             print(f"Processing line: {line}")
-            similar = search_similar_predicates(line, 5)
+            similar = rag.search_similar(line, limit=5)
             pred_logic = convert_to_predicate_logic(line,similar)
 
             print(f"Logic: {pred_logic}")
@@ -81,7 +84,7 @@ def process_file(file_path, skip_lines=0, limit_lines=float('inf')):
                 continue
 
             res.append(metta)
-            store_embedding_in_qdrant(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
+            rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
             with open("data/fol.txt","a") as file:
                 file.write("!(add-atom &kb2 (: d"+ str(i+skip_lines) + " " + metta + "))\n")
             print("last idx: " + str(i + skip_lines))
@@ -94,7 +97,6 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
     args = parser.parse_args()
 
-    ensure_predicates_collection()
     process_file(args.file_path, args.skip, args.limit)
 
 
