@@ -67,21 +67,22 @@ def check_predicates(input_string):
 
     return all_contained, contained_predicates
 
-def process_file(file_path):
-    with open(file_path, 'r') as file:
+def process_file(input_file, output_file):
+    with open(input_file, 'r') as file, open(output_file, 'w') as out_file:
         for line in file:
             line = line.strip()
             if line:
                 all_contained, _ = check_predicates(line)
                 if not all_contained:
-                    print(line)
+                    out_file.write(line + '\n')
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python filter_pl.py <input_file>")
+    if len(sys.argv) != 3:
+        print("Usage: python filter_pl.py <input_file> <output_file>")
         sys.exit(1)
     
     input_file = sys.argv[1]
-    process_file(input_file)
+    output_file = sys.argv[2]
+    process_file(input_file, output_file)
 
 
