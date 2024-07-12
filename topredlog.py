@@ -3,7 +3,7 @@ import os
 import re
 import argparse
 from rag import store_embedding_in_qdrant, ensure_predicates_collection, search_similar_predicates
-from prompts import nl2pl
+from prompts import nl2pl, fix_predicatelogic
 from filter_pl import check_predicates
 
 # gets API Key from environment variable OPENAI_API_KEY
@@ -33,22 +33,21 @@ def convert_to_predicate_logic(line,simiarl):
     return extract_predicate_logic(txt)
 
 def fix_predicate_logic(line, similar, original_pred_logic, error_message):
-    print(prompt)
     completion = client.chat.completions.create(
         model="anthropic/claude-3.5-sonnet",
         temperature=0.5,
         messages=[
-            {"role": "user", "content": prompt},
+            {"role": "user", "content": fix_predicatelogic(line, original_pred_logic, error_message, similar)},
         ],
     )
     txt = completion.choices[0].message.content
     return extract_predicate_logic(txt)
 
-def process_file(file_path, skip_lines=0, limit_lines=None):
+def process_file(file_path, skip_lines=0, limit_lines=float('inf')):
     res = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
-        for i, line in enumerate(lines[skip_lines:limit_lines]):
+        for i, line in enumerate(lines[skip_lines:skip_lines+limit_lines]):
             line = line.strip()
             print(f"Processing line: {line}")
             similar = search_similar_predicates(line, 5)
@@ -66,7 +65,7 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             if metta.startswith("Error:"):
                 print("Trying to fix...")
                 pred_logic = fix_predicate_logic(line, similar, pred_logic, metta)
-                print(f"Fixed Logic: {metta}")
+                print(f"Fixed Logic: {pred_logic}")
                 if pred_logic is None:
                     break
                 metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
@@ -84,10 +83,9 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             res.append(metta)
             store_embedding_in_qdrant(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
             with open("data/fol.txt","a") as file:
-                file.write(metta + "\n")
+                file.write("!(add-atom &kb2 (: d"+ str(i+skip_lines) + " " + metta + "))\n")
             print("last idx: " + str(i + skip_lines))
             print("--------------------------------------------------------------------------------")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to predicate logic.")
