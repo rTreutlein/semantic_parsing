@@ -44,13 +44,14 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     txt = completion.choices[0].message.content
     return extract_predicate_logic(txt)
 
-def process_file(file_path, skip_lines=0, limit_lines=float('inf')):
+def process_file(file_path, skip_lines=0, limit_lines=None):
     collection_name = os.path.splitext(os.path.basename(file_path))[0]
     rag = RAG(collection_name=collection_name)
     res = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
-        for i, line in enumerate(lines[skip_lines:skip_lines+limit_lines]):
+        end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
+        for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
             line = line.strip()
             print(f"Processing line: {line}")
             similar = rag.search_similar(line, limit=5)
