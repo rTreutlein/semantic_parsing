@@ -1,0 +1,30 @@
+import sys
+from extract import extract_sentences
+from filterWithLLM import process_file as filter_sentences
+from rate_complexity import analyze_sentence, calculate_complexity_score
+
+def main(file_path):
+    # Extract sentences
+    sentences = extract_sentences(file_path)
+    
+    # Filter sentences
+    filtered_sentences = filter_sentences(sentences)
+    
+    # Sort by complexity
+    sorted_sentences = sorted(
+        filtered_sentences,
+        key=lambda s: calculate_complexity_score(analyze_sentence(s)),
+        reverse=True
+    )
+    
+    # Print sorted sentences
+    for sentence in sorted_sentences:
+        print(sentence)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <file_path>")
+        sys.exit(1)
+    
+    file_path = sys.argv[1]
+    main(file_path)
