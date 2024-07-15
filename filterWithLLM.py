@@ -42,6 +42,6 @@ def process_file(file_path):
         for sent in res:
             file.write(sent)
 
-if __name__ == "__main__":
-    file_path = "data/input.txt"
-    process_file(file_path)
+#if __name__ == "__main__":
+    #file_path = "data/input.txt"
+    #process_file(file_path)
