@@ -1,12 +1,23 @@
 import sys
+import json
 from extract import extract_sentences_and_paragraphs
 from filterWithLLM import filter_sentences
 from rate_complexity import analyze_sentence, calculate_complexity_score, calculate_corpus_statistics, normalize_measures
+
+def save_sentence_to_paragraph(sentence_to_paragraph, output_file):
+    """Save the sentence_to_paragraph dictionary to a JSON file."""
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(sentence_to_paragraph, f, ensure_ascii=False, indent=2)
+    print(f"Saved sentence_to_paragraph to {output_file}")
 
 def main(file_path):
     # Extract sentences and paragraphs
     sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
     print(f"Extracted {len(sentences)} sentences")
+    
+    # Save sentence_to_paragraph to file
+    output_file = file_path + '_sentence_to_paragraph.json'
+    save_sentence_to_paragraph(sentence_to_paragraph, output_file)
     
     # Filter sentences
     filtered_sentences = filter_sentences(sentences,6670)
