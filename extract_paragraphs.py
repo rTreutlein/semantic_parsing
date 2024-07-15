@@ -7,14 +7,15 @@ def extract_paragraphs(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Find the main content div
-    content = soup.find('div', class_='section')
+    # Find all content divs with class 'section'
+    content_divs = soup.find_all('div', class_='section')
 
     paragraphs = []
     current_paragraph = ""
     have_seen_example = False
 
-    for element in content.children:
+    for content in content_divs:
+        for element in content.children:
         if element.name == 'p':
             if have_seen_example:
                 current_paragraph = current_paragraph.strip() + "\n" + element.get_text() + " "
