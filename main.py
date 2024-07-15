@@ -9,7 +9,7 @@ def main(file_path):
     print(f"Extracted {len(sentences)} sentences")
     
     # Filter sentences
-    filtered_sentences = filter_sentences(sentences)
+    filtered_sentences = filter_sentences(sentences,6670)
     print(f"{len(filtered_sentences)} sentences after filtering")
     
     # Define weights for complexity measures
