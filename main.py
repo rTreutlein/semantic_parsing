@@ -42,9 +42,10 @@ def main(file_path):
     # Calculate corpus statistics
     means, std_devs, sentence_to_measures = calculate_corpus_statistics(filtered_sentences)
     
-    # Sort by complexity
+    # Remove duplicates and sort by complexity
+    unique_filtered_sentences = list(set(filtered_sentences))
     sorted_sentences = sorted(
-        filtered_sentences,
+        unique_filtered_sentences,
         key=lambda s: calculate_complexity_score(
             normalize_measures(sentence_to_measures[s], means, std_devs),
             weights
