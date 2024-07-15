@@ -34,7 +34,14 @@ def extract_paragraphs(url):
     # Remove any empty paragraphs
     paragraphs = [p for p in paragraphs if p]
 
-    return paragraphs
+    # Clean up paragraphs to remove multiple consecutive linebreaks
+    cleaned_paragraphs = []
+    for paragraph in paragraphs:
+        # Replace multiple consecutive linebreaks with a single linebreak
+        cleaned_paragraph = re.sub(r'\n{2,}', '\n', paragraph)
+        cleaned_paragraphs.append(cleaned_paragraph)
+
+    return cleaned_paragraphs
 
 def main():
     url = "https://la-lojban.github.io/uncll/romoi/xhtml_section_chunks/chapter-tour.html#section-bridi"
