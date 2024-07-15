@@ -17,8 +17,8 @@ def extract_paragraphs(url):
     for element in content.children:
         if element.name == 'p':
             if have_seen_example:
-                paragraphs.append(current_paragraph.strip() + "\n" + element.get_text() + " ")
-                current_paragraph = ""
+                current_paragraph = current_paragraph.strip() + "\n" + element.get_text() + " "
+                have_seen_example = False
             else:
                 if current_paragraph:
                     paragraphs.append(current_paragraph.strip())
@@ -40,8 +40,8 @@ def extract_paragraphs(url):
         # Replace multiple consecutive linebreaks with a single linebreak
         cleaned_paragraph = re.sub(r'\n{2,}', '\n', paragraph)
         # Split the paragraph into lines, filter out whitespace-only lines, and rejoin
-        cleaned_lines = [line for line in cleaned_paragraph.split('\n') if line.strip()]
-        cleaned_paragraphs.append('\n'.join(cleaned_lines))
+        cleaned_lines = [line.strip() for line in cleaned_paragraph.split('\n') if line.strip()]
+        cleaned_paragraphs.append(' '.join(cleaned_lines))
 
     return cleaned_paragraphs
 
@@ -50,9 +50,8 @@ def main():
     paragraphs = extract_paragraphs(url)
 
     for i, paragraph in enumerate(paragraphs, 1):
-        print(f"Paragraph {i}:")
         print(paragraph)
-        print("\n" + "-"*50 + "\n")
+        print("\n")
 
 if __name__ == "__main__":
     main()
