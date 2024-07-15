@@ -12,26 +12,20 @@ def extract_paragraphs(url):
 
     paragraphs = []
     current_paragraph = ""
+    have_seen_example = False
 
     for element in content.children:
         if element.name == 'p':
-            if current_paragraph:
-                paragraphs.append(current_paragraph.strip())
+            if have_seen_example:
+                paragraphs.append(current_paragraph.strip() + "\n" + element.get_text() + " ")
                 current_paragraph = ""
-            current_paragraph += element.get_text() + " "
+            else:
+                if current_paragraph:
+                    paragraphs.append(current_paragraph.strip())
+                current_paragraph = element.get_text() + " "
         elif element.name == 'div' and 'example' in element.get('class', []):
-            # This is an example
-            if current_paragraph:
-                paragraphs.append(current_paragraph.strip())
-                current_paragraph = ""
-            paragraphs.append(f"EXAMPLE: {element.get_text().strip()}")
-        elif element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-            # End the current paragraph if there's any
-            if current_paragraph:
-                paragraphs.append(current_paragraph.strip())
-                current_paragraph = ""
-            # Add the header as a separate paragraph
-            paragraphs.append(element.get_text().strip())
+            current_paragraph += element.get_text() + " "
+            have_seen_example = True
 
     # Add the last paragraph if there's any
     if current_paragraph:
