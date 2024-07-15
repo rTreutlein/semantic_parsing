@@ -14,6 +14,7 @@ def extract_paragraphs(url):
     current_paragraph = ""
 
     for element in content.children:
+        print(element)
         if element.name == 'p':
             if current_paragraph:
                 paragraphs.append(current_paragraph.strip())
