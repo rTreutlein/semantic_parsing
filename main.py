@@ -10,6 +10,12 @@ def save_sentence_to_paragraph(sentence_to_paragraph, output_file):
         json.dump(sentence_to_paragraph, f, ensure_ascii=False, indent=2)
     print(f"Saved sentence_to_paragraph to {output_file}")
 
+def save_ordered_sentences(ordered_sentences, output_file):
+    """Save the ordered sentences to a JSON file."""
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(ordered_sentences, f, ensure_ascii=False, indent=2)
+    print(f"Saved ordered sentences to {output_file}")
+
 def main(file_path):
     # Extract sentences and paragraphs
     sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
@@ -46,6 +52,10 @@ def main(file_path):
         reverse=True
     )
     
+    # Save ordered sentences to file
+    ordered_sentences_file = file_path + '_ordered_sentences.json'
+    save_ordered_sentences(sorted_sentences, ordered_sentences_file)
+
     # Print sorted sentences with their paragraphs
     for sentence in sorted_sentences:
         print(f"Sentence: {sentence}")
