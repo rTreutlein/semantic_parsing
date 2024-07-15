@@ -122,14 +122,14 @@ weights = {
 #for sentence, score in sorted_sentences:
 #    print(f"Sentence: {sentence}, Complexity Score: {score}")
 
-import csv
+#import csv
 
 # Define the path to your CSV file
 #csv_file_path = 'output.txt'
 
 # Read the sentences from the CSV file
-corpus = []
-fol = []
+#corpus = []
+#fol = []
 #with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
 #    reader = csv.reader(csvfile,delimiter="|")
 #    for row in reader:
@@ -137,21 +137,21 @@ fol = []
 #        fol.append(row[1])
 
 #with open("data/llmfiltered.txt",'r') as file:
-with open("data/clustered.txt",'r') as file:
-    corpus = file.readlines()
+#with open("data/clustered.txt",'r') as file:
+#corpus = file.readlines()
 
 # Calculate corpus statistics
-means, std_devs,sentence_to_measures = calculate_corpus_statistics(corpus)
+#means, std_devs,sentence_to_measures = calculate_corpus_statistics(corpus)
 
 # Calculate complexity scores for each sentence
-sentence_complexities = [(calculate_complexity_score(normalize_measures(sentence_to_measures[sentence], means, std_devs), weights)) for sentence in corpus]
+#sentence_complexities = [(calculate_complexity_score(normalize_measures(sentence_to_measures[sentence], means, std_devs), weights)) for sentence in corpus]
 
-all = set(zip(corpus,sentence_complexities))
+#all = set(zip(corpus,sentence_complexities))
 
 # Sort sentences by complexity score
-sorted_sentences = sorted(all, key=lambda x: x[1])
+#sorted_sentences = sorted(all, key=lambda x: x[1])
 
-for sent in sorted_sentences:
+#for sent in sorted_sentences:
     #print(f"Sentence: {sent[0]} {sent[1]}\n Complexity Score: {sent[2]}\n complexity_measures: {sentence_to_measures[sent[0]]}\n complexity_measures_norm: {normalize_measures(sentence_to_measures[sent[0]],means,std_devs)}")
     #print(f"Sentence: {sent[0]} \n Complexity Score: {sent[1]}\n complexity_measures: {sentence_to_measures[sent[0]]}\n complexity_measures_norm: {normalize_measures(sentence_to_measures[sent[0]],means,std_devs)}")
-    print(sent[0],end="")
+    #print(sent[0],end="")

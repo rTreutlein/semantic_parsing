@@ -47,10 +47,10 @@ def extract_paragraphs(url):
     return cleaned_paragraphs
 
 def main():
-    url = "https://la-lojban.github.io/uncll/romoi/xhtml_section_chunks/chapter-tour.html#section-bridi"
+    url = "https://la-lojban.github.io/uncll/romoi/xhtml_no_chunks/index.html"
     paragraphs = extract_paragraphs(url)
 
-    for i, paragraph in enumerate(paragraphs, 1):
+    for _, paragraph in enumerate(paragraphs, 1):
         print(paragraph)
         print("\n")
 
