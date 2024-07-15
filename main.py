@@ -1,11 +1,11 @@
 import sys
-from extract import extract_sentences
+from extract import extract_sentences_and_paragraphs
 from filterWithLLM import filter_sentences
 from rate_complexity import analyze_sentence, calculate_complexity_score, calculate_corpus_statistics, normalize_measures
 
 def main(file_path):
-    # Extract sentences
-    sentences = extract_sentences(file_path)
+    # Extract sentences and paragraphs
+    sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
     print(f"Extracted {len(sentences)} sentences")
     
     # Filter sentences
@@ -35,9 +35,11 @@ def main(file_path):
         reverse=True
     )
     
-    # Print sorted sentences
+    # Print sorted sentences with their paragraphs
     for sentence in sorted_sentences:
-        print(sentence)
+        print(f"Sentence: {sentence}")
+        print(f"Paragraph: {sentence_to_paragraph[sentence]}")
+        print("---")
 
 if len(sys.argv) != 2:
     print("Usage: python main.py <file_path>")

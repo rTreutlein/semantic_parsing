@@ -1,31 +1,42 @@
 import spacy
 import os
+import re
 
-# Download the necessary NLTK data files
+# Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-def extract_sentences(file_path):
+def extract_paragraphs(text):
+    # Split text into paragraphs based on double newlines
+    paragraphs = re.split(r'\n\s*\n', text)
+    # Remove any leading/trailing whitespace from paragraphs
+    return [p.strip() for p in paragraphs if p.strip()]
+
+def extract_sentences_from_paragraph(paragraph):
+    doc = nlp(paragraph)
+    sentences = [sent.text.strip() for sent in doc.sents]
+    return [sent for sent in sentences if is_proper_sentence(sent)]
+
+def extract_sentences_and_paragraphs(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         text = file.read()
-        
-    doc = nlp(text)
-
-     # Extract sentences
-    sentences = [sent.text.replace('\n', '').strip() for sent in doc.sents]
-    sentences = [sent for sent in sentences if is_proper_sentence(sent)]
-
-    #output text and sentences length
-    print(f"Text length: {len(text)}")
-    print(f"Sentences length: {len(''.join(sentences))}")
     
-    return sentences
+    paragraphs = extract_paragraphs(text)
+    sentence_to_paragraph = {}
+    all_sentences = []
+
+    for paragraph in paragraphs:
+        sentences = extract_sentences_from_paragraph(paragraph)
+        all_sentences.extend(sentences)
+        for sentence in sentences:
+            sentence_to_paragraph[sentence] = paragraph
+
+    print(f"Text length: {len(text)}")
+    print(f"Sentences length: {len(''.join(all_sentences))}")
+    
+    return all_sentences, sentence_to_paragraph
 
 def is_proper_sentence(text):
     doc = nlp(text)
-    # Check if the text starts with a capital letter
-    #if not text[0].isupper():
-        #return False
-    # Check if the text contains at least one subject and one verb
     has_subject = any(token.dep_ == "nsubj" for token in doc)
     has_verb = any(token.pos_ == "VERB" for token in doc)
     special = any(token.text == "{" for token in doc)
@@ -39,7 +50,7 @@ def main():
     
     for filename in os.listdir(input_directory):
         file_path = os.path.join(input_directory, filename)
-        sentences = extract_sentences(file_path)
+        sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
 
         output_file_path = os.path.join('extracted_sentences', filename)
         with open(output_file_path, 'w', encoding='utf-8') as output_file:
@@ -48,5 +59,7 @@ def main():
         
         print(f"Extracted sentences from: {filename}")
 
-#if __name__ == "__main__":
-    #main()
+    return sentences, sentence_to_paragraph
+
+if __name__ == "__main__":
+    main()
