@@ -16,17 +16,17 @@ def extract_paragraphs(url):
 
     for content in content_divs:
         for element in content.children:
-        if element.name == 'p':
-            if have_seen_example:
-                current_paragraph = current_paragraph.strip() + "\n" + element.get_text() + " "
-                have_seen_example = False
-            else:
-                if current_paragraph:
-                    paragraphs.append(current_paragraph.strip())
-                current_paragraph = element.get_text() + " "
-        elif element.name == 'div' and 'example' in element.get('class', []):
-            current_paragraph += element.get_text() + " "
-            have_seen_example = True
+            if element.name == 'p':
+                if have_seen_example:
+                    current_paragraph = current_paragraph.strip() + "\n" + element.get_text() + " "
+                    have_seen_example = False
+                else:
+                    if current_paragraph:
+                        paragraphs.append(current_paragraph.strip())
+                    current_paragraph = element.get_text() + " "
+            elif element.name == 'div' and 'example' in element.get('class', []):
+                current_paragraph += element.get_text() + " "
+                have_seen_example = True
 
     # Add the last paragraph if there's any
     if current_paragraph:
