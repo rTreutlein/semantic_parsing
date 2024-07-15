@@ -25,23 +25,26 @@ def check_sentence(line):
     txt = completion.choices[0].message.content
     return txt
 
-def process_file(file_path):
-    res = []
-    with open(file_path, 'r') as file:
-        for line in file.readlines():
-            out = check_sentence(line.strip()).strip().replace(".","")
-            if "Yes" in out or "YES" in out:
-                res.append(line)
-                continue
-            if "No" in out or "NO" in out:
-                continue
-            print(f"No valid output for: {line}Got: {out}")
+def filter_sentences(sentences):
+    filtered_sentences = []
+    for sentence in sentences:
+        out = check_sentence(sentence.strip()).strip().replace(".", "")
+        if "Yes" in out or "YES" in out:
+            filtered_sentences.append(sentence)
+        elif "No" in out or "NO" in out:
             continue
-
-    with open("data/llmfiltered.txt","w") as file:
-        for sent in res:
-            file.write(sent)
+        else:
+            print(f"No valid output for: {sentence}Got: {out}")
+    return filtered_sentences
 
 #if __name__ == "__main__":
-    #file_path = "data/input.txt"
-    #process_file(file_path)
+    #sentences = [
+    #    "This is a complete sentence.",
+    #    "Not a complete",
+    #    "Another full sentence here.",
+    #    "Incomplete phrase"
+    #]
+    #filtered = filter_sentences(sentences)
+    #print("Filtered sentences:")
+    #for sentence in filtered:
+    #    print(sentence)
