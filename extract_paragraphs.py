@@ -14,15 +14,17 @@ def extract_paragraphs(url):
     current_paragraph = ""
 
     for element in content.children:
-        print(element)
         if element.name == 'p':
             if current_paragraph:
                 paragraphs.append(current_paragraph.strip())
                 current_paragraph = ""
             current_paragraph += element.get_text() + " "
-        elif element.name in ['pre', 'blockquote']:
-            # This is likely an example
-            current_paragraph += element.get_text() + " "
+        elif element.name == 'div' and 'example' in element.get('class', []):
+            # This is an example
+            if current_paragraph:
+                paragraphs.append(current_paragraph.strip())
+                current_paragraph = ""
+            paragraphs.append(f"EXAMPLE: {element.get_text().strip()}")
         elif element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
             # End the current paragraph if there's any
             if current_paragraph:
