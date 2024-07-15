@@ -6,9 +6,11 @@ from rate_complexity import analyze_sentence, calculate_complexity_score, calcul
 def main(file_path):
     # Extract sentences
     sentences = extract_sentences(file_path)
+    print(f"Extracted {len(sentences)} sentences")
     
     # Filter sentences
     filtered_sentences = filter_sentences(sentences)
+    print(f"{len(filtered_sentences)} sentences after filtering")
     
     # Define weights for complexity measures
     weights = {

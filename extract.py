@@ -13,6 +13,10 @@ def extract_sentences(file_path):
      # Extract sentences
     sentences = [sent.text.replace('\n', '').strip() for sent in doc.sents]
     sentences = [sent for sent in sentences if is_proper_sentence(sent)]
+
+    #output text and sentences length
+    print(f"Text length: {len(text)}")
+    print(f"Sentences length: {len(''.join(sentences))}")
     
     return sentences
 
@@ -44,5 +48,5 @@ def main():
         
         print(f"Extracted sentences from: {filename}")
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+    #main()
