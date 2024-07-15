@@ -1,6 +1,6 @@
 import sys
 from extract import extract_sentences
-from filterWithLLM import process_file as filter_sentences
+from filterWithLLM import filter_sentences
 from rate_complexity import analyze_sentence, calculate_complexity_score
 
 def main(file_path):
@@ -21,10 +21,10 @@ def main(file_path):
     for sentence in sorted_sentences:
         print(sentence)
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python main.py <file_path>")
-        sys.exit(1)
-    
-    file_path = sys.argv[1]
-    main(file_path)
+if len(sys.argv) != 2:
+    print("Usage: python main.py <file_path>")
+    sys.exit(1)
+
+file_path = sys.argv[1]
+print(f"Processing file: {file_path}")
+main(file_path)
