@@ -34,12 +34,14 @@ def extract_paragraphs(url):
     # Remove any empty paragraphs
     paragraphs = [p for p in paragraphs if p]
 
-    # Clean up paragraphs to remove multiple consecutive linebreaks
+    # Clean up paragraphs to remove multiple consecutive linebreaks and whitespace-only lines
     cleaned_paragraphs = []
     for paragraph in paragraphs:
         # Replace multiple consecutive linebreaks with a single linebreak
         cleaned_paragraph = re.sub(r'\n{2,}', '\n', paragraph)
-        cleaned_paragraphs.append(cleaned_paragraph)
+        # Split the paragraph into lines, filter out whitespace-only lines, and rejoin
+        cleaned_lines = [line for line in cleaned_paragraph.split('\n') if line.strip()]
+        cleaned_paragraphs.append('\n'.join(cleaned_lines))
 
     return cleaned_paragraphs
 
