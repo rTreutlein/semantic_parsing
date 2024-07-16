@@ -1,6 +1,8 @@
 import re
 import sys
 
+# Rename this file to filter_predicate_logic.py
+
 def find_closing_paren(s, start):
     count = 0
     for i in range(start, len(s)):

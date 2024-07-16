@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import re
 import os
 
+# Rename this file to download_wikipedia_articles.py
+
 # Function to get the list of all physics-related articles
 def get_all_articles(url,subcats=True):
     response = requests.get(url)

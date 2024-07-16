@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+# Rename this file to extract_lojban_paragraphs.py
+
 def extract_paragraphs(url):
     # Fetch the webpage content
     response = requests.get(url)

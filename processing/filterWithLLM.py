@@ -3,6 +3,8 @@ from os import getenv
 import re
 import json
 
+# Rename this file to filter_sentences_llm.py
+
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",

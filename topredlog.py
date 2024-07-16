@@ -3,9 +3,8 @@ import os
 import re
 import argparse
 from ragclass import RAG
-import os
 from prompts import nl2pl, fix_predicatelogic
-from filter_pl import check_predicates
+from processing.filter_predicate_logic import check_predicates
 
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(

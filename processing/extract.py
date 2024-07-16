@@ -2,6 +2,8 @@ import spacy
 import os
 import re
 
+# Rename this file to extract_sentences.py
+
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
