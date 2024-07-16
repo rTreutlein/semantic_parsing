@@ -43,6 +43,43 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     txt = completion.choices[0].message.content
     return extract_predicate_logic(txt)
 
+def process_sentence(line, similar, idx, rag):
+    print(f"Processing line: {line}")
+    pred_logic = convert_to_predicate_logic(line, similar)
+
+    print(f"Logic: {pred_logic}")
+    if pred_logic is None:
+        return None
+
+    metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
+
+    print(f"Metta: {metta}")
+
+    if metta.startswith("Error:"):
+        print("Trying to fix...")
+        pred_logic = fix_predicate_logic(line, similar, pred_logic, metta)
+        print(f"Fixed Logic: {pred_logic}")
+        if pred_logic is None:
+            return None
+        metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
+        print(f"Fixed Metta: {metta}")
+
+    if metta.startswith("Error:"):
+        print("Failed to fix...")
+        return None
+
+    is_trivial, _ = check_predicates(metta)
+    if is_trivial:
+        print("Skipping trivial metta statement.")
+        return None
+
+    rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
+    with open("data/fol.txt", "a") as file:
+        file.write(f"!(add-atom &kb2 (: d{idx} {metta}))\n")
+    print(f"last idx: {idx}")
+    print("--------------------------------------------------------------------------------")
+    return metta
+
 def process_file(file_path, skip_lines=0, limit_lines=None):
     collection_name = os.path.splitext(os.path.basename(file_path))[0]
     rag = RAG(collection_name=collection_name)
@@ -52,43 +89,11 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
             line = line.strip()
-            print(f"Processing line: {line}")
             similar = rag.search_similar(line, limit=5)
-            pred_logic = convert_to_predicate_logic(line,similar)
-
-            print(f"Logic: {pred_logic}")
-            if pred_logic is None:
+            metta = process_sentence(line, similar, i + skip_lines, rag)
+            if metta is None:
                 break
-
-            #call shell command plparserexe and capture its output
-            metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
-
-            print(f"Metta: {metta}")
-
-            if metta.startswith("Error:"):
-                print("Trying to fix...")
-                pred_logic = fix_predicate_logic(line, similar, pred_logic, metta)
-                print(f"Fixed Logic: {pred_logic}")
-                if pred_logic is None:
-                    break
-                metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
-                print(f"Fixed Metta: {metta}")
-
-            if metta.startswith("Error:"):
-                print("Failed to fix...")
-                break
-
-            is_trivial, _ = check_predicates(metta)
-            if is_trivial:
-                print("Skipping trivial metta statement.")
-                continue
-
             res.append(metta)
-            rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
-            with open("data/fol.txt","a") as file:
-                file.write("!(add-atom &kb2 (: d"+ str(i+skip_lines) + " " + metta + "))\n")
-            print("last idx: " + str(i + skip_lines))
-            print("--------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to predicate logic.")
