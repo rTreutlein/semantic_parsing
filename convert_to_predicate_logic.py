@@ -18,7 +18,6 @@ def extract_predicate_logic(response):
         return match.group(1).strip()
     return None
 
-
 def convert_to_predicate_logic(line,simiarl): 
 
     completion = client.chat.completions.create(
@@ -43,7 +42,9 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     txt = completion.choices[0].message.content
     return extract_predicate_logic(txt)
 
-def process_sentence(line, similar, idx, rag):
+def process_sentence(line, rag):
+    similar = rag.search_similar(line, limit=5)
+
     print(f"Processing line: {line}")
     pred_logic = convert_to_predicate_logic(line, similar)
 
@@ -74,10 +75,8 @@ def process_sentence(line, similar, idx, rag):
         return None
 
     rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
-    with open("data/fol.txt", "a") as file:
+    with open("data2/fol.txt", "a") as file:
         file.write(f"!(add-atom &kb2 (: d{idx} {metta}))\n")
-    print(f"last idx: {idx}")
-    print("--------------------------------------------------------------------------------")
     return metta
 
 def process_file(file_path, skip_lines=0, limit_lines=None):
@@ -88,12 +87,12 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
-            line = line.strip()
-            similar = rag.search_similar(line, limit=5)
-            metta = process_sentence(line, similar, i + skip_lines, rag)
+            metta = process_sentence(line.strip(), rag)
             if metta is None:
                 break
             res.append(metta)
+            print(f"last idx: {i}")
+            print("--------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to predicate logic.")
