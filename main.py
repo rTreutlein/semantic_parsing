@@ -57,12 +57,6 @@ def main(file_path):
     ordered_sentences_file = file_path + '_ordered_sentences.json'
     save_ordered_sentences(sorted_sentences, ordered_sentences_file)
 
-    # Print sorted sentences with their paragraphs
-    for sentence in sorted_sentences:
-        print(f"Sentence: {sentence}")
-        print(f"Paragraph: {sentence_to_paragraph[sentence]}")
-        print("---")
-
 if len(sys.argv) != 2:
     print("Usage: python main.py <file_path>")
     sys.exit(1)
