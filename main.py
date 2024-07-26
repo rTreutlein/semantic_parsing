@@ -5,6 +5,12 @@ from processing.filter_sentences_llm import filter_sentences
 from processing.extract_rules import extract_rules
 from processing.sentence_complexity import calculate_complexity_score, calculate_corpus_statistics, normalize_measures, weights
 
+def save_rules(rules, output_file):
+    """Save the extracted rules to a JSON file."""
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(rules, f, ensure_ascii=False, indent=2)
+    print(f"Saved extracted rules to {output_file}")
+
 def save_sentence_to_paragraph(sentence_to_paragraph, output_file):
     """Save the sentence_to_paragraph dictionary to a JSON file."""
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -48,6 +54,14 @@ def main(file_path):
     # Save ordered sentences to file
     ordered_sentences_file = file_path + '_ordered_sentences.json'
     save_ordered_sentences(sorted_sentences, ordered_sentences_file)
+
+    # Extract rules
+    rules = extract_rules(' '.join(sorted_sentences))
+    print(f"Extracted {len(rules)} rules")
+
+    # Save extracted rules to file
+    rules_file = file_path + '_extracted_rules.json'
+    save_rules(rules, rules_file)
 
 if len(sys.argv) != 2:
     print("Usage: python main.py <file_path>")
