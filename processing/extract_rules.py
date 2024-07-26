@@ -15,7 +15,7 @@ def save_progress(extracted_rules, current_index, filename='rules_progress.json'
     with open(filename, 'w') as f:
         json.dump({'extracted_rules': extracted_rules, 'current_index': current_index}, f)
 
-def load_progress(filename='progress.json'):
+def load_progress(filename='rules_progress.json'):
     try:
         with open(filename, 'r') as f:
             data = json.load(f)
@@ -26,7 +26,7 @@ def load_progress(filename='progress.json'):
 def check_rule(sentence): 
     try:
         completion = client.chat.completions.create(
-            model="meta-llama/llama-3-8b-instruct",
+            model="meta-llama/llama-3.1-8b-instruct",
             temperature=0,
             max_tokens=10,  # Set an appropriate max_tokens value
             messages=[
@@ -43,7 +43,7 @@ def check_rule(sentence):
         print(f"Error in API call for '{sentence}': {str(e)}", file=sys.stderr)
         return sentence, "Error"
 
-def extract_rules(paragraph, start_index=0, save_interval=10):
+def extract_rules(paragraph, start_index=0, save_interval=100):
     sentences = re.split(r'(?<=[.!?])\s+', paragraph.strip())
     sentences = [s.strip() for s in sentences if s.strip()]  # Remove empty sentences
     extracted_rules, current_index = load_progress()
@@ -82,12 +82,20 @@ def extract_rules(paragraph, start_index=0, save_interval=10):
     return extracted_rules
 
 if __name__ == "__main__":
+    import time
+
     paragraph = """
     If it rains, the ground gets wet. All mammals are warm-blooded animals. 
     When water reaches 100 degrees Celsius, it boils. This is just a normal sentence. 
     Eating too much sugar leads to weight gain. Lin is sitting at the table.
     """
+    
+    start_time = time.time()
     rules = extract_rules(paragraph)
+    end_time = time.time()
+    
     print("Extracted rules:")
     for rule in rules:
         print(rule)
+    
+    print(f"\nTime taken: {end_time - start_time:.2f} seconds")
