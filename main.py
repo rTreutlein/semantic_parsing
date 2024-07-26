@@ -2,7 +2,8 @@ import sys
 import json
 from processing.extract_sentences import extract_sentences_and_paragraphs
 from processing.filter_sentences_llm import filter_sentences
-from processing.rate_complexity import analyze_sentence, calculate_complexity_score, calculate_corpus_statistics, normalize_measures
+from processing.extract_rules import extract_rules
+from processing.sentence_complexity import calculate_complexity_score, calculate_corpus_statistics, normalize_measures, weights
 
 def save_sentence_to_paragraph(sentence_to_paragraph, output_file):
     """Save the sentence_to_paragraph dictionary to a JSON file."""
@@ -16,6 +17,7 @@ def save_ordered_sentences(ordered_sentences, output_file):
         json.dump(ordered_sentences, f, ensure_ascii=False, indent=2)
     print(f"Saved ordered sentences to {output_file}")
 
+
 def main(file_path):
     # Extract sentences and paragraphs
     sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
@@ -25,19 +27,10 @@ def main(file_path):
     output_file = file_path + '_sentence_to_paragraph.json'
     save_sentence_to_paragraph(sentence_to_paragraph, output_file)
     
-    # Filter sentences
-    filtered_sentences = filter_sentences(sentences,6670)
-    print(f"{len(filtered_sentences)} sentences after filtering")
-    
-    # Define weights for complexity measures
-    weights = {
-        'num_words': 0.5,
-        'num_clauses': 0.1,
-        'parse_tree_depth': 0.1,
-        'num_logical_connectives': 0.1,
-        'num_quantifiers': 0.1,
-        'num_modifiers': 0.1,
-    }
+    # Filter sentences with language model
+    #filtered_sentences = filter_sentences(sentences,6670)
+    #print(f"{len(filtered_sentences)} sentences after filtering")
+    filtered_sentences = sentences
     
     # Calculate corpus statistics
     means, std_devs, sentence_to_measures = calculate_corpus_statistics(filtered_sentences)
@@ -50,7 +43,6 @@ def main(file_path):
             normalize_measures(sentence_to_measures[s], means, std_devs),
             weights
         ),
-        reverse=True
     )
     
     # Save ordered sentences to file
