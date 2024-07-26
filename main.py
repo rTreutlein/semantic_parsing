@@ -56,7 +56,7 @@ def main(file_path):
     save_ordered_sentences(sorted_sentences, ordered_sentences_file)
 
     # Extract rules
-    rules = extract_rules(' '.join(sorted_sentences))
+    rules = extract_rules(sorted_sentences)
     print(f"Extracted {len(rules)} rules")
 
     # Save extracted rules to file

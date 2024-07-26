@@ -41,9 +41,7 @@ def check_rule(sentence):
     except Exception as e:
         return sentence, "Error"
 
-def extract_rules(paragraph, start_index=0, save_interval=100):
-    sentences = re.split(r'(?<=[.!?])\s+', paragraph.strip())
-    sentences = [s.strip() for s in sentences if s.strip()]  # Remove empty sentences
+def extract_rules(sentences, start_index=0, save_interval=100):
     extracted_rules, current_index = load_progress()
     if start_index > 0:
         current_index = start_index
