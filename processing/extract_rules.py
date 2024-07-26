@@ -37,22 +37,14 @@ def check_rule(sentence):
             ],
         )
         txt = completion.choices[0].message.content
-        print(f"API Response for '{sentence}': {txt}")
         return sentence, txt
     except Exception as e:
-        print(f"Error in API call for '{sentence}': {str(e)}", file=sys.stderr)
         return sentence, "Error"
 
 def extract_rules(paragraph, start_index=0, save_interval=100):
     sentences = re.split(r'(?<=[.!?])\s+', paragraph.strip())
     sentences = [s.strip() for s in sentences if s.strip()]  # Remove empty sentences
     extracted_rules, current_index = load_progress()
-    print(f"Current index: {current_index}")
-    print(f"Extracted rules: {extracted_rules}")
-    print(f"Total sentences: {len(sentences)}")
-
-    print(f"Extracting rules from paragraph: {sentences}")
-    
     if start_index > 0:
         current_index = start_index
 
@@ -66,16 +58,7 @@ def extract_rules(paragraph, start_index=0, save_interval=100):
                 out = out.strip().replace(".", "")
                 if "yes" in out.lower():
                     extracted_rules.append(sentence)
-                    print(f"Rule extracted: {sentence}")
-                elif "no" in out.lower():
-                    print(f"Not a rule: {sentence}")
-                elif "error" in out.lower():
-                    print(f"Error processing: {sentence}")
-                else:
-                    print(f"Unexpected output for: {sentence}. Got: {out}")
-            
             save_progress(extracted_rules, i + save_interval)
-            print(f"Progress saved. Processed {i + save_interval} sentences.")
     
     # Save final progress
     save_progress(extracted_rules, len(sentences))
@@ -94,8 +77,3 @@ if __name__ == "__main__":
     rules = extract_rules(paragraph)
     end_time = time.time()
     
-    print("Extracted rules:")
-    for rule in rules:
-        print(rule)
-    
-    print(f"\nTime taken: {end_time - start_time:.2f} seconds")
