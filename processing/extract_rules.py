@@ -16,8 +16,8 @@ def load_progress(filename='progress.json'):
     try:
         with open(filename, 'r') as f:
             data = json.load(f)
-        return data['extracted_rules'], data['current_index']
-    except FileNotFoundError:
+        return data.get('extracted_rules', []), data.get('current_index', 0)
+    except (FileNotFoundError, json.JSONDecodeError):
         return [], 0
 
 def check_rule(sentence): 
