@@ -10,7 +10,7 @@ client = OpenAI(
   api_key=getenv("OPENROUTER_API_KEY"),
 )
 
-def save_progress(extracted_rules, current_index, filename='progress.json'):
+def save_progress(extracted_rules, current_index, filename='rules_progress.json'):
     with open(filename, 'w') as f:
         json.dump({'extracted_rules': extracted_rules, 'current_index': current_index}, f)
 
