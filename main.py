@@ -29,14 +29,17 @@ def main(file_path):
     sentences, sentence_to_paragraph = extract_sentences_and_paragraphs(file_path)
     print(f"Extracted {len(sentences)} sentences")
     
-    # Save sentence_to_paragraph to file
-    output_file = file_path + '_sentence_to_paragraph.json'
-    save_sentence_to_paragraph(sentence_to_paragraph, output_file)
-    
     # Filter sentences with language model
     #filtered_sentences = filter_sentences(sentences,6670)
     #print(f"{len(filtered_sentences)} sentences after filtering")
     filtered_sentences = sentences
+    
+    # Update sentence_to_paragraph to only include filtered sentences
+    filtered_sentence_to_paragraph = {s: sentence_to_paragraph[s] for s in filtered_sentences if s in sentence_to_paragraph}
+    
+    # Save filtered sentence_to_paragraph to file
+    output_file = file_path + '_sentence_to_paragraph.json'
+    save_sentence_to_paragraph(filtered_sentence_to_paragraph, output_file)
     
     # Calculate corpus statistics
     means, std_devs, sentence_to_measures = calculate_corpus_statistics(filtered_sentences)
