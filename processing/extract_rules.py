@@ -44,6 +44,8 @@ def check_rule(sentence):
 def extract_rules(paragraph, start_index=0, save_interval=10):
     sentences = re.split(r'(?<=[.!?])\s+', paragraph)
     extracted_rules, current_index = load_progress()
+    print(f"Current index: {current_index}")
+    print(f"Extracted rules: {extracted_rules}")
 
     print(f"Extracting rules from paragraph: {sentences}")
     
