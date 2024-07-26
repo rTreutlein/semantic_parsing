@@ -43,9 +43,9 @@ def extract_rules(paragraph, start_index=0, save_interval=10):
     
     for i, sentence in enumerate(sentences[current_index:], start=current_index):
         out = check_rule(sentence.strip()).strip().replace(".", "")
-        if "Yes" in out or "YES" in out:
+        if "yes" in out.lower():
             extracted_rules.append(sentence)
-        elif "No" in out or "NO" in out:
+        elif "no" in out.lower():
             continue
         else:
             print(f"No valid output for: {sentence}Got: {out}")
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     paragraph = """
     If it rains, the ground gets wet. All mammals are warm-blooded animals. 
     When water reaches 100 degrees Celsius, it boils. This is just a normal sentence. 
-    Eating too much sugar leads to weight gain. Another regular statement without any rule.
+    Eating too much sugar leads to weight gain. Lin is sitting at the table.
     """
     rules = extract_rules(paragraph)
     print("Extracted rules:")
