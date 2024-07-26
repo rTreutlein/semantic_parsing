@@ -32,11 +32,14 @@ def check_rule(sentence):
         ],
     )
     txt = completion.choices[0].message.content
+    print(f"Completion: {txt}")
     return txt
 
 def extract_rules(paragraph, start_index=0, save_interval=10):
     sentences = re.split(r'(?<=[.!?])\s+', paragraph)
     extracted_rules, current_index = load_progress()
+
+    print(f"Extracting rules from paragraph: {sentences}")
     
     if start_index > 0:
         current_index = start_index
