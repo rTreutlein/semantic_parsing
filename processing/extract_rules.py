@@ -4,6 +4,7 @@ import re
 import json
 import time
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
@@ -26,7 +27,8 @@ def check_rule(sentence):
     try:
         completion = client.chat.completions.create(
             model="meta-llama/llama-3-8b-instruct",
-            temperature = 0,
+            temperature=0,
+            max_tokens=10,  # Set an appropriate max_tokens value
             messages=[
                 {
                     "role": "user",
@@ -35,41 +37,45 @@ def check_rule(sentence):
             ],
         )
         txt = completion.choices[0].message.content
-        print(f"API Response: {txt}")
-        return txt
+        print(f"API Response for '{sentence}': {txt}")
+        return sentence, txt
     except Exception as e:
-        print(f"Error in API call: {str(e)}", file=sys.stderr)
-        return "Error"
+        print(f"Error in API call for '{sentence}': {str(e)}", file=sys.stderr)
+        return sentence, "Error"
 
 def extract_rules(paragraph, start_index=0, save_interval=10):
-    sentences = re.split(r'(?<=[.!?])\s+', paragraph)
+    sentences = re.split(r'(?<=[.!?])\s+', paragraph.strip())
+    sentences = [s.strip() for s in sentences if s.strip()]  # Remove empty sentences
     extracted_rules, current_index = load_progress()
     print(f"Current index: {current_index}")
     print(f"Extracted rules: {extracted_rules}")
+    print(f"Total sentences: {len(sentences)}")
 
     print(f"Extracting rules from paragraph: {sentences}")
     
     if start_index > 0:
         current_index = start_index
-    
-    for i, sentence in enumerate(sentences[current_index:], start=current_index):
-        print(f"Processing sentence {i + 1}: {sentence}")
-        out = check_rule(sentence.strip()).strip().replace(".", "")
-        if "yes" in out.lower():
-            extracted_rules.append(sentence)
-            print(f"Rule extracted: {sentence}")
-        elif "no" in out.lower():
-            print(f"Not a rule: {sentence}")
-        elif "error" in out.lower():
-            print(f"Error processing: {sentence}")
-        else:
-            print(f"Unexpected output for: {sentence}. Got: {out}")
-        
-        if (i + 1) % save_interval == 0:
-            save_progress(extracted_rules, i + 1)
-            print(f"Progress saved. Processed {i + 1} sentences.")
-        
-        time.sleep(1)  # Add a 1-second delay between API calls
+
+    with ThreadPoolExecutor(max_workers=save_interval) as executor:
+        for i in range(current_index, len(sentences), save_interval):
+            batch = sentences[i:i+save_interval]
+            futures = [executor.submit(check_rule, sentence) for sentence in batch]
+            
+            for future in as_completed(futures):
+                sentence, out = future.result()
+                out = out.strip().replace(".", "")
+                if "yes" in out.lower():
+                    extracted_rules.append(sentence)
+                    print(f"Rule extracted: {sentence}")
+                elif "no" in out.lower():
+                    print(f"Not a rule: {sentence}")
+                elif "error" in out.lower():
+                    print(f"Error processing: {sentence}")
+                else:
+                    print(f"Unexpected output for: {sentence}. Got: {out}")
+            
+            save_progress(extracted_rules, i + save_interval)
+            print(f"Progress saved. Processed {i + save_interval} sentences.")
     
     # Save final progress
     save_progress(extracted_rules, len(sentences))
