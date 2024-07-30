@@ -26,9 +26,10 @@ def load_progress(filename='rules_progress.json'):
 def check_rule(sentence): 
     try:
         completion = client.chat.completions.create(
-            model="meta-llama/llama-3.1-8b-instruct",
+            #model="meta-llama/llama-3.1-8b-instruct",
+            model="openai/gpt-4o-mini",
             temperature=0,
-            max_tokens=10,  # Set an appropriate max_tokens value
+            max_tokens=3,  # Set an appropriate max_tokens value
             messages=[
                 {
                     "role": "user",
@@ -36,6 +37,9 @@ def check_rule(sentence):
                 },
             ],
         )
+        print("-"*100)
+        print(sentence)
+        print(completion.choices[0].message.content)
         txt = completion.choices[0].message.content
         return sentence, txt
     except Exception as e:
