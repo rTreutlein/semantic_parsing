@@ -26,22 +26,26 @@ def load_progress(filename='rules_progress.json'):
 def check_rule(sentence): 
     try:
         completion = client.chat.completions.create(
-            #model="meta-llama/llama-3.1-8b-instruct",
             model="openai/gpt-4o-mini",
             temperature=0,
-            max_tokens=3,  # Set an appropriate max_tokens value
+            max_tokens=200,  # Increased to allow for longer predicate logic expressions
             messages=[
                 {
                     "role": "user",
-                    "content": f"""Is this sentence a rule, implication, or entailment? '{sentence}' Answer only with Yes or No""",
+                    "content": f"""Convert this sentence into predicate logic: '{sentence}'""",
                 },
             ],
         )
         print("-"*100)
         print(sentence)
-        print(completion.choices[0].message.content)
-        txt = completion.choices[0].message.content
-        return sentence, txt
+        predicate_logic = completion.choices[0].message.content
+        print(predicate_logic)
+        
+        # Check for implication symbols
+        implication_symbols = ['\u2192', '->', '\u21D2']  # Unicode right arrow, ASCII right arrow, Unicode rightwards double arrow
+        is_rule = any(symbol in predicate_logic for symbol in implication_symbols)
+        
+        return sentence, "Yes" if is_rule else "No"
     except Exception as e:
         return sentence, "Error"
 
