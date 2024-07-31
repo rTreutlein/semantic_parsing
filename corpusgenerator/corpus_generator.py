@@ -100,27 +100,38 @@ class CorpusGenerator:
         print("\n".join(output))
         return rephrased_rules
 
-    def bootstrap_corpus(self, initial_seed: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
+    def bootstrap_corpus(self, initial_seed: str, iterations: int = 2, parallel_iterations: int = 1) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
+        
+        :param initial_seed: The initial seed sentence to start the process.
+        :param iterations: Total number of iterations to run.
+        :param parallel_iterations: Number of iterations to run in parallel (default is 1, which means sequential processing).
         """
         all_rules = [initial_seed]
         self.knowledge_graph.add_node(initial_seed)
         
-        # First iteration
+        # First iteration (always sequential)
         print(f"\n--- Iteration 1 ---")
         seed_rule = initial_seed
         new_rules_with_relations = self.expand_rule(seed_rule)
         rephrased_rules = self.rephrase_rules(new_rules_with_relations)
         self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
 
-        # Subsequent iterations with parallel processing
-        if iterations > 1:
-            with ThreadPoolExecutor() as executor:
-                future_to_iteration = {executor.submit(self._process_iteration, i): i for i in range(2, iterations + 1)}
-                for future in as_completed(future_to_iteration):
-                    iteration_rules = future.result()
-                    all_rules.extend(iteration_rules)
+        # Subsequent iterations
+        for i in range(2, iterations + 1, parallel_iterations):
+            batch_size = min(parallel_iterations, iterations - i + 1)
+            if batch_size > 1:
+                # Parallel processing for batches
+                with ThreadPoolExecutor() as executor:
+                    future_to_iteration = {executor.submit(self._process_iteration, j): j for j in range(i, i + batch_size)}
+                    for future in as_completed(future_to_iteration):
+                        iteration_rules = future.result()
+                        all_rules.extend(iteration_rules)
+            else:
+                # Sequential processing for single iterations
+                iteration_rules = self._process_iteration(i)
+                all_rules.extend(iteration_rules)
 
         return all_rules, self.knowledge_graph
 
