@@ -2,64 +2,64 @@
 
 ## Overview
 
-This document outlines the process of bootstrapping our corpus using a few seed sentences. The goal is to create a self-consistent and expandable knowledge base using Large Language Models (LLMs).
+This document outlines the process of bootstrapping our corpus using everyday examples and common sense reasoning. The goal is to create a self-consistent and expandable knowledge base using Large Language Models (LLMs), focusing on simple, shorter sentences that capture everyday knowledge.
 
 ## Seed Sentences
 
 We start with a small set of seed sentences that serve as the foundation for our corpus. These sentences should be:
 
-1. Factual and unambiguous
-2. Diverse in topic to allow for expansion
-3. Interconnected to promote consistency
+1. Simple and related to everyday life
+2. Capturing common sense knowledge
+3. Diverse in structure to allow for natural language variation
 
 Example seed sentences:
-- "The Earth orbits the Sun."
-- "Water is composed of hydrogen and oxygen."
-- "Photosynthesis is a process used by plants to convert light energy into chemical energy."
+- "Apples grow on trees."
+- "Water boils at 100 degrees Celsius."
+- "Dogs bark to communicate."
 
 ## Bootstrapping Steps
 
 1. **Seed Sentence Expansion**
-   - For each seed sentence, use the LLM to generate 3-5 related facts or explanations.
-   - Ensure these expansions are consistent with the original seed sentence.
+   - For each seed sentence, use the LLM to generate 2-3 related facts or rephrased versions.
+   - Keep sentences short and simple, focusing on everyday knowledge.
 
 2. **Cross-Referencing**
-   - Use the LLM to identify potential connections between different expanded sets.
-   - Generate bridging sentences that link these concepts together.
+   - Use the LLM to identify potential connections between different sentences.
+   - Generate new sentences that bridge related concepts.
 
 3. **Consistency Check**
    - Run all generated content through the LLM to check for logical consistency.
    - Resolve any contradictions or ambiguities.
 
 4. **Knowledge Graph Creation**
-   - Create a simple knowledge graph representing the relationships between concepts.
-   - Use this graph to identify areas for further expansion.
+   - Create a simple knowledge graph where each node is a sentence from the corpus.
+   - Edges represent relationships or connections between sentences.
 
 5. **Iterative Expansion**
-   - Select nodes from the knowledge graph for further expansion.
+   - Select sentences from the knowledge graph for further expansion or rephrasing.
    - Repeat steps 1-4 for these new focus areas.
 
 6. **Validation**
    - Periodically validate the entire corpus for internal consistency.
-   - Use external sources to fact-check key statements.
+   - Use common sense reasoning to verify the accuracy of statements.
 
 ## LLM Prompting Strategies
 
-- Use clear, specific prompts that encourage factual responses.
+- Use clear, specific prompts that encourage simple, factual responses.
 - Include instructions for maintaining consistency with existing information.
-- Implement a system of "roles" for the LLM (e.g., generator, fact-checker, connector) to diversify the generated content.
+- Encourage variation in sentence structure and phrasing.
 
 ## Quality Control
 
-- Implement a scoring system for generated content based on relevance, consistency, and novelty.
-- Regularly review and curate the corpus to maintain high quality.
-- Consider human expert review for critical or complex areas of knowledge.
+- Prioritize clarity and simplicity in generated content.
+- Regularly review and curate the corpus to maintain high quality and relevance to everyday life.
+- Consider human review for ensuring common sense accuracy.
 
 ## Expansion and Refinement
 
 As the corpus grows:
-- Identify emerging themes or domains for focused expansion.
-- Develop more sophisticated relationships between concepts.
-- Consider creating sub-corpora for specialized topics.
+- Identify common themes or domains in everyday life for focused expansion.
+- Develop more nuanced relationships between sentences.
+- Maintain a balance between different areas of common knowledge.
 
-By following this process, we aim to create a robust, self-consistent, and expandable corpus that can serve as a foundation for various NLP tasks and knowledge-based applications.
+By following this process, we aim to create a robust, self-consistent, and expandable corpus that captures everyday knowledge and common sense reasoning.
