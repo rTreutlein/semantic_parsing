@@ -1,6 +1,7 @@
 import networkx as nx
 import random
 from typing import List, Dict, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -45,9 +46,8 @@ class CorpusGenerator:
         Expand a rule into related rules for each edge type.
         Returns a list of tuples (new_rule, relationship).
         """
-        new_rules = []
-
-        for edge_type, (example_input, example_output) in self.EXAMPLES.items():
+        def expand_for_edge_type(edge_type):
+            example_input, example_output = self.EXAMPLES[edge_type]
             prompt = self.BASE_PROMPT.format(
                 sentence=rule,
                 relationship=edge_type,
@@ -58,7 +58,13 @@ class CorpusGenerator:
             print(f"Prompt: {prompt}")
             response = self.llm_client.generate(prompt)
             print(f"Response: {response}")
-            new_rules.extend([(r.strip(), edge_type) for r in response.split('\n') if r.strip()])
+            return [(r.strip(), edge_type) for r in response.split('\n') if r.strip()]
+
+        new_rules = []
+        with ThreadPoolExecutor() as executor:
+            future_to_edge_type = {executor.submit(expand_for_edge_type, edge_type): edge_type for edge_type in self.EXAMPLES}
+            for future in as_completed(future_to_edge_type):
+                new_rules.extend(future.result())
 
         return new_rules
 
@@ -66,14 +72,20 @@ class CorpusGenerator:
         """
         Rephrase the given rules using a different LLM model.
         """
-        rephrased_rules = rules
-        for rule, relationship in rules:
+        def rephrase_rule(rule_tuple):
+            rule, relationship = rule_tuple
             prompt = self.REPHRASE_PROMPT.format(sentence=rule)
             print(f"\nRephrasing rule: '{rule}'")
             print(f"Prompt: {prompt}")
             response = self.llm_client.generate(prompt, model=self.rephrase_model)
             print(f"Rephrased: {response}")
-            rephrased_rules.append((response, relationship))
+            return (response, relationship)
+
+        rephrased_rules = rules.copy()
+        with ThreadPoolExecutor() as executor:
+            future_to_rule = {executor.submit(rephrase_rule, rule_tuple): rule_tuple for rule_tuple in rules}
+            for future in as_completed(future_to_rule):
+                rephrased_rules.append(future.result())
         return rephrased_rules
 
     def bootstrap_corpus(self, initial_seed: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
