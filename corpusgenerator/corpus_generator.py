@@ -25,12 +25,20 @@ class CorpusGenerator:
         "generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
         "complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
         "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
-        "rephrase": ("Coffee wakes people up.", "Consuming coffee increases alertness in individuals.")
     }
 
-    def __init__(self, llm_client):
+    REPHRASE_PROMPT = """
+    Rephrase the following sentence to express the same meaning using different words:
+
+    Original: {sentence}
+
+    Rephrased:
+    """
+
+    def __init__(self, llm_client, rephrase_model="gpt-3.5-turbo"):
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
+        self.rephrase_model = rephrase_model
 
     def expand_rule(self, rule: str) -> List[Tuple[str, str]]:
         """
@@ -54,6 +62,20 @@ class CorpusGenerator:
 
         return new_rules
 
+    def rephrase_rules(self, rules: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+        """
+        Rephrase the given rules using a different LLM model.
+        """
+        rephrased_rules = []
+        for rule, relationship in rules:
+            prompt = self.REPHRASE_PROMPT.format(sentence=rule)
+            print(f"\nRephrasing rule: '{rule}'")
+            print(f"Prompt: {prompt}")
+            response = self.llm_client.generate(prompt, model=self.rephrase_model)
+            print(f"Rephrased: {response}")
+            rephrased_rules.append((response, relationship))
+        return rephrased_rules
+
     def bootstrap_corpus(self, initial_seed: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
@@ -70,8 +92,11 @@ class CorpusGenerator:
             # Expand the current seed rule
             new_rules_with_relations = self.expand_rule(seed_rule)
             
-            print("\nNew rules generated:")
-            for new_rule, relationship in new_rules_with_relations:
+            # Rephrase the new rules
+            rephrased_rules = self.rephrase_rules(new_rules_with_relations)
+            
+            print("\nNew rules generated and rephrased:")
+            for new_rule, relationship in rephrased_rules:
                 all_rules.append(new_rule)
                 self.knowledge_graph.add_node(new_rule)
                 self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)

@@ -5,10 +5,10 @@ class OpenAIClient:
     def __init__(self, api_key: str):
         openai.api_key = api_key
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, model: str = "gpt-4o-mini") -> str:
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
