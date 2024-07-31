@@ -13,8 +13,7 @@ class CorpusGenerator:
         """
         new_sentences = []
         edge_types = [
-            "elaborates", "generalizes", "specifies", "contrasts", "compares",
-            "causes", "results_from", "exemplifies", "defines"
+            "rephrases", "explains", "implies", "contrasts", "compares"
         ]
 
         # Generate related facts and rephrased versions
