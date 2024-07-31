@@ -2,6 +2,20 @@ import os
 from llm_client import OpenAIClient
 from corpus_generator import CorpusGenerator
 
+def print_tree(graph, node, level=0, visited=None):
+    if visited is None:
+        visited = set()
+    
+    if node in visited:
+        return
+    visited.add(node)
+    
+    print("  " * level + f"- {node}")
+    for neighbor in graph.neighbors(node):
+        edge_data = graph.get_edge_data(node, neighbor)
+        print("  " * (level + 1) + f"[{edge_data['relationship']}]")
+        print_tree(graph, neighbor, level + 2, visited)
+
 def main():
     # Get OpenAI API key from environment variable
     base_url = "https://openrouter.ai/api/v1"
@@ -44,13 +58,9 @@ def main():
     print(f"Number of nodes: {graph.number_of_nodes()}")
     print(f"Number of edges: {graph.number_of_edges()}")
 
-    # Print detailed graph information
-    print("\nDetailed Graph Information:")
-    for node in graph.nodes():
-        print(f"\nNode: '{node}'")
-        for neighbor in graph.neighbors(node):
-            edge_data = graph.get_edge_data(node, neighbor)
-            print(f"  -> '{neighbor}' (Relationship: {edge_data['relationship']})")
+    # Print the knowledge graph as a tree
+    print("\nKnowledge Graph Tree Structure:")
+    print_tree(graph, initial_seed)
 
 if __name__ == "__main__":
     main()
