@@ -1,5 +1,6 @@
 import networkx as nx
 import random
+import os
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -134,3 +135,19 @@ class CorpusGenerator:
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a random seed.")
         return random.choice(list(self.knowledge_graph.nodes))
+
+    def save_knowledge_graph(self, filename: str):
+        """
+        Save the knowledge graph to a file in GraphML format.
+        """
+        nx.write_graphml(self.knowledge_graph, filename)
+
+    def load_knowledge_graph(self, filename: str):
+        """
+        Load the knowledge graph from a file in GraphML format.
+        """
+        if os.path.exists(filename):
+            self.knowledge_graph = nx.read_graphml(filename)
+        else:
+            print(f"File {filename} not found. Starting with an empty graph.")
+            self.knowledge_graph = nx.DiGraph()

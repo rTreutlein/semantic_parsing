@@ -4,23 +4,34 @@ from corpus_generator import CorpusGenerator
 
 def main():
     # Get OpenAI API key from environment variable
-    #api_key = os.getenv("OPENAI_API_KEY")
-    base_url="https://openrouter.ai/api/v1"
-    api_key=os.getenv("OPENROUTER_API_KEY")
+    base_url = "https://openrouter.ai/api/v1"
+    api_key = os.getenv("OPENROUTER_API_KEY")
 
     if not api_key:
-        raise ValueError("Please set the OPENAI_API_KEY environment variable.")
+        raise ValueError("Please set the OPENROUTER_API_KEY environment variable.")
 
     # Initialize OpenAI client
-    llm_client = OpenAIClient(api_key,base_url=base_url)
+    llm_client = OpenAIClient(api_key, base_url=base_url)
 
     # Initialize CorpusGenerator
     generator = CorpusGenerator(llm_client)
+
+    # Check if a saved graph exists
+    graph_file = "knowledge_graph.graphml"
+    if os.path.exists(graph_file):
+        print(f"Loading existing knowledge graph from {graph_file}")
+        generator.load_knowledge_graph(graph_file)
+    else:
+        print("No existing knowledge graph found. Starting with an empty graph.")
 
     # Start the corpus generation process
     initial_seed = "Coffee wakes people up."
     iterations = 2
     sentences, graph = generator.bootstrap_corpus(initial_seed, iterations)
+
+    # Save the updated knowledge graph
+    generator.save_knowledge_graph(graph_file)
+    print(f"Knowledge graph saved to {graph_file}")
 
     # Print the generated sentences
     print("\nGenerated sentences:")
