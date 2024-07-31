@@ -35,15 +35,11 @@ Example seed sentences:
    - Create a simple knowledge graph where each node is a sentence from the corpus.
    - Edges represent relationships or connections between sentences.
    - Use the following edge types:
-     a. Elaborates: Provides more detail or explanation
-     b. Generalizes: Presents a broader concept
-     c. Specifies: Narrows down to a more specific case
+     a. Rephrases: Restates the sentence in a different way
+     b. Explains: Provides further explanation for a part of the sentence
+     c. Implies: Presents a more general scenario implied by the sentence
      d. Contrasts: Shows a difference or opposite
-     e. Compares: Highlights similarities
-     f. Causes: Indicates a causal relationship
-     g. Results_from: Shows an effect or outcome
-     h. Exemplifies: Provides an example
-     i. Defines: Gives a definition or explanation of a term
+     e. Compares: Highlights similarities with another concept
 
 5. **Iterative Expansion**
    - Select sentences from the knowledge graph for further expansion or rephrasing.
