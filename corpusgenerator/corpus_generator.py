@@ -22,7 +22,8 @@ class CorpusGenerator:
         "specializes": ("If a plant receives sunlight, it grows.", "If a tomato plant receives 6 hours of direct sunlight daily, it produces more fruit."),
         "generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
         "complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
-        "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance.")
+        "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
+        "rephrase": ("Coffee wakes people up.", "Consuming coffee increases alertness in individuals.")
     }
 
     def __init__(self, llm_client):

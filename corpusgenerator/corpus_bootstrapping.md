@@ -40,6 +40,7 @@ Example seed sentences:
      c. Implies: Presents a more general scenario implied by the sentence
      d. Contrasts: Shows a difference or opposite
      e. Compares: Highlights similarities with another concept
+     f. Rephrase: Restates the sentence using different words while maintaining the same meaning
 
 5. **Iterative Expansion**
    - Select sentences from the knowledge graph for further expansion or rephrasing.
