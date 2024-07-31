@@ -17,6 +17,32 @@ def print_tree(graph, node, level=0, visited=None):
         print("  " * (level + 1) + f"- [{edge_data['relationship']}] {neighbor}")
         print_tree(graph, neighbor, level + 2, visited)
 
+def print_deepest_path(graph, root):
+    def dfs(node, path, visited):
+        if node in visited:
+            return path, len(path)
+        visited.add(node)
+        
+        max_depth = len(path)
+        deepest_path = path
+        
+        for neighbor in graph.neighbors(node):
+            edge_data = graph.get_edge_data(node, neighbor)
+            new_path, depth = dfs(neighbor, path + [(node, edge_data['relationship'], neighbor)], visited)
+            if depth > max_depth:
+                max_depth = depth
+                deepest_path = new_path
+        
+        return deepest_path, max_depth
+
+    deepest_path, _ = dfs(root, [], set())
+    
+    print("Deepest path:")
+    for i, (source, relationship, target) in enumerate(deepest_path):
+        print(f"{'  ' * i}- {source}")
+        print(f"{'  ' * (i+1)}[{relationship}]")
+    print(f"{'  ' * len(deepest_path)}- {deepest_path[-1][2]}")
+
 def main():
     # Get OpenAI API key from environment variable
     base_url = "https://openrouter.ai/api/v1"
@@ -62,6 +88,10 @@ def main():
     # Print the knowledge graph as a tree
     print("\nKnowledge Graph Tree Structure:")
     print_tree(graph, initial_seed)
+
+    # Print the deepest path in the knowledge graph
+    print("\nDeepest Path in the Knowledge Graph:")
+    print_deepest_path(graph, initial_seed)
 
 if __name__ == "__main__":
     main()
