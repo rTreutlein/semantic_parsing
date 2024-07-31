@@ -34,20 +34,37 @@ Example seed sentences:
 4. **Knowledge Graph Creation**
    - Create a simple knowledge graph where each node is a sentence from the corpus.
    - Edges represent relationships or connections between sentences.
+   - Use the following edge types:
+     a. Elaborates: Provides more detail or explanation
+     b. Generalizes: Presents a broader concept
+     c. Specifies: Narrows down to a more specific case
+     d. Contrasts: Shows a difference or opposite
+     e. Compares: Highlights similarities
+     f. Causes: Indicates a causal relationship
+     g. Results_from: Shows an effect or outcome
+     h. Exemplifies: Provides an example
+     i. Defines: Gives a definition or explanation of a term
 
 5. **Iterative Expansion**
    - Select sentences from the knowledge graph for further expansion or rephrasing.
+   - For each selected sentence, generate 1-2 new sentences for each applicable edge type.
    - Repeat steps 1-4 for these new focus areas.
 
 6. **Validation**
    - Periodically validate the entire corpus for internal consistency.
    - Use common sense reasoning to verify the accuracy of statements.
+   - Check that edge relationships are correctly applied and meaningful.
 
 ## LLM Prompting Strategies
 
 - Use clear, specific prompts that encourage simple, factual responses.
 - Include instructions for maintaining consistency with existing information.
 - Encourage variation in sentence structure and phrasing.
+- For cross-referencing (step 2):
+  a. Use prompts that ask the LLM to identify concepts or keywords in the existing sentences.
+  b. Ask the LLM to find connections between these concepts and other common knowledge areas.
+  c. Request bridging sentences that link the identified concepts to new, related ideas.
+  d. Encourage the LLM to consider different perspectives or contexts for the existing information.
 
 ## Quality Control
 
