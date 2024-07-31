@@ -46,3 +46,45 @@ We select sentences from the knowledge graph for further expansion. For example,
 We periodically validate the entire corpus for internal consistency and use common sense reasoning to verify the accuracy of statements. In this case, we might ask a few people about their coffee habits to confirm the general accuracy of our statements.
 
 This example demonstrates how a single seed sentence about an everyday topic can be expanded into a network of related, common-sense statements, forming the basis of a self-consistent and expandable corpus.
+
+## 7. Additional Edge Type Examples
+
+Using "Coffee wakes people up" as the original sentence, here are examples for each edge type:
+
+1. Elaborates:
+   - Original: "Coffee wakes people up."
+   - Elaboration: "Coffee contains caffeine, a stimulant that increases alertness and reduces fatigue."
+
+2. Specifies:
+   - Original: "Coffee wakes people up."
+   - Specification: "A strong espresso shot can quickly boost energy levels in the morning."
+
+3. Generalizes:
+   - Original: "Coffee wakes people up."
+   - Generalization: "Caffeinated beverages often have stimulating effects on the human body."
+
+4. Contrasts:
+   - Original: "Coffee wakes people up."
+   - Contrast: "Chamomile tea is known for its calming properties and is often consumed before bedtime."
+
+5. Compares:
+   - Original: "Coffee wakes people up."
+   - Comparison: "Like coffee, energy drinks also contain caffeine and are used to increase alertness."
+
+6. Causes:
+   - Original: "Coffee wakes people up."
+   - Cause: "The caffeine in coffee blocks adenosine receptors in the brain, causing increased alertness."
+
+7. Results_from:
+   - Original: "Coffee wakes people up."
+   - Result: "Many people experience improved concentration and productivity as a result of drinking coffee."
+
+8. Exemplifies:
+   - Original: "Coffee wakes people up."
+   - Example: "A college student drinking a large coffee before an early morning exam exemplifies how people use coffee to stay alert."
+
+9. Defines:
+   - Original: "Coffee wakes people up."
+   - Definition: "Coffee is a brewed beverage prepared from roasted coffee beans, known for its stimulating effects due to its caffeine content."
+
+These examples show how each edge type can be used to create a rich network of related information around the original sentence, expanding the corpus with diverse yet connected knowledge.
