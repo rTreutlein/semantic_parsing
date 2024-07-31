@@ -13,7 +13,7 @@ def print_tree(graph, node, level=0, visited=None):
     print("  " * level + f"- {node}")
     for neighbor in graph.neighbors(node):
         edge_data = graph.get_edge_data(node, neighbor)
-        print("  " * (level + 1) + f"[{edge_data['relationship']}]")
+        print("  " * (level + 1) + f"- [{edge_data['relationship']}] {neighbor}")
         print_tree(graph, neighbor, level + 2, visited)
 
 def main():
