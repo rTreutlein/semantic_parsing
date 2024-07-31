@@ -2,6 +2,18 @@ import networkx as nx
 from typing import List, Dict, Tuple
 
 class CorpusGenerator:
+    BASE_PROMPT = """
+    You are an AI assistant tasked with generating simple, factual sentences related to a given input sentence.
+    Your goal is to create new sentences that are clear, concise, and directly related to the input.
+    Each new sentence should express a single, simple idea.
+    Avoid complex language, jargon, or overly specific details.
+
+    Input sentence: {sentence}
+    Task: {task}
+
+    Generate 1-3 simple sentences that {relationship} the input sentence.
+    """
+
     def __init__(self, llm_client):
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
@@ -14,14 +26,15 @@ class CorpusGenerator:
         new_sentences = []
 
         prompts = {
-            "rephrases": f"Rephrase this sentence in a simple way: '{sentence}'",
-            "explains": f"Explain a part of this sentence further: '{sentence}'",
-            "implies": f"What more general scenario does this imply?': '{sentence}'",
-            "contrasts": f"Provide a simple contrast to this: '{sentence}'",
-            "compares": f"Compare this to something similar: '{sentence}'"
+            "rephrases": ("rephrase", "restate or paraphrase"),
+            "explains": ("explain", "provide more detail or clarify"),
+            "implies": ("imply", "suggest a more general scenario or consequence"),
+            "contrasts": ("contrast with", "provide an opposite or contrasting idea to"),
+            "compares": ("compare to", "draw a similarity or comparison with")
         }
 
-        for edge_type, prompt in prompts.items():
+        for edge_type, (task, relationship) in prompts.items():
+            prompt = self.BASE_PROMPT.format(sentence=sentence, task=task, relationship=relationship)
             response = self.llm_client.generate(prompt)
             new_sentences.extend([(s.strip(), edge_type) for s in response.split('\n') if s.strip()])
 
