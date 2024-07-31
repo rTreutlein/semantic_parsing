@@ -6,17 +6,33 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
 
-    def expand_seed_sentence(self, seed_sentence: str) -> List[str]:
+    def expand_sentence(self, sentence: str) -> List[str]:
         """
-        Step 1: Expand a seed sentence into 2-3 related facts or rephrased versions.
+        Expand a sentence into related facts, rephrased versions, and new sentences for each edge type.
+        This method combines the functionality of the previous expand_seed_sentence and expand_graph methods.
         """
-        prompt = f"Generate 2-3 short, simple sentences that are related to or rephrase the following: '{seed_sentence}'"
+        new_sentences = []
+        edge_types = [
+            "elaborates", "generalizes", "specifies", "contrasts", "compares",
+            "causes", "results_from", "exemplifies", "defines"
+        ]
+
+        # Generate related facts and rephrased versions
+        prompt = f"Generate 2-3 short, simple sentences that are related to or rephrase the following: '{sentence}'"
         response = self.llm_client.generate(prompt)
-        return [sentence.strip() for sentence in response.split('\n') if sentence.strip()]
+        new_sentences.extend([s.strip() for s in response.split('\n') if s.strip()])
+
+        # Generate new sentences for each edge type
+        for edge_type in edge_types:
+            prompt = f"Generate 1-2 new sentences that {edge_type} on the following: '{sentence}'"
+            response = self.llm_client.generate(prompt)
+            new_sentences.extend([s.strip() for s in response.split('\n') if s.strip()])
+
+        return new_sentences
 
     def create_knowledge_graph(self, sentences: List[str]) -> nx.DiGraph:
         """
-        Step 4: Create a knowledge graph from the given sentences.
+        Create a knowledge graph from the given sentences.
         """
         for sentence in sentences:
             self.knowledge_graph.add_node(sentence)
@@ -36,23 +52,6 @@ class CorpusGenerator:
 
         return self.knowledge_graph
 
-    def expand_graph(self, focus_sentence: str) -> List[str]:
-        """
-        Step 5: Expand the knowledge graph by generating new sentences for each edge type.
-        """
-        new_sentences = []
-        edge_types = [
-            "elaborates", "generalizes", "specifies", "contrasts", "compares",
-            "causes", "results_from", "exemplifies", "defines"
-        ]
-
-        for edge_type in edge_types:
-            prompt = f"Generate 1-2 new sentences that {edge_type} on the following: '{focus_sentence}'"
-            response = self.llm_client.generate(prompt)
-            new_sentences.extend([sentence.strip() for sentence in response.split('\n') if sentence.strip()])
-
-        return new_sentences
-
     def bootstrap_corpus(self, seed_sentence: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
@@ -60,16 +59,12 @@ class CorpusGenerator:
         all_sentences = [seed_sentence]
         
         for _ in range(iterations):
-            # Step 1: Expand seed sentence
-            expanded_sentences = self.expand_seed_sentence(seed_sentence)
-            all_sentences.extend(expanded_sentences)
-            
-            # Step 4: Create knowledge graph
-            self.create_knowledge_graph(all_sentences)
-            
-            # Step 5: Expand graph
-            new_sentences = self.expand_graph(seed_sentence)
+            # Expand the current seed sentence
+            new_sentences = self.expand_sentence(seed_sentence)
             all_sentences.extend(new_sentences)
+            
+            # Create or update the knowledge graph
+            self.create_knowledge_graph(all_sentences)
             
             # Update seed sentence for next iteration
             seed_sentence = new_sentences[-1]  # Use the last generated sentence as the new seed
