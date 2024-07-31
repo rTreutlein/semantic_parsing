@@ -12,14 +12,11 @@ class CorpusGenerator:
         Returns a list of tuples (new_sentence, relationship).
         """
         new_sentences = []
-        edge_types = [
-            "rephrases", "explains", "implies", "contrasts", "compares"
-        ]
 
         prompts = {
             "rephrases": f"Rephrase this sentence in a simple way: '{sentence}'",
-            "explains": f"Explain a part of this sentence further, starting with 'Because': '{sentence}'",
-            "implies": f"What more general scenario does this imply? Start with 'Generally,': '{sentence}'",
+            "explains": f"Explain a part of this sentence further: '{sentence}'",
+            "implies": f"What more general scenario does this imply?': '{sentence}'",
             "contrasts": f"Provide a simple contrast to this: '{sentence}'",
             "compares": f"Compare this to something similar: '{sentence}'"
         }
