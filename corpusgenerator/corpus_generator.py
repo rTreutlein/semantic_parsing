@@ -1,4 +1,5 @@
 import networkx as nx
+import random
 from typing import List, Dict, Tuple
 
 class CorpusGenerator:
@@ -49,14 +50,17 @@ class CorpusGenerator:
 
         return new_rules
 
-    def bootstrap_corpus(self, seed_rule: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
+    def bootstrap_corpus(self, initial_seed: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
         """
-        all_rules = [seed_rule]
-        self.knowledge_graph.add_node(seed_rule)
+        all_rules = [initial_seed]
+        self.knowledge_graph.add_node(initial_seed)
         
         for _ in range(iterations):
+            # Select a random seed for this iteration
+            seed_rule = self.select_random_seed()
+            
             # Expand the current seed rule
             new_rules_with_relations = self.expand_rule(seed_rule)
             
@@ -64,13 +68,19 @@ class CorpusGenerator:
                 all_rules.append(new_rule)
                 self.knowledge_graph.add_node(new_rule)
                 self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
-            
-            # Update seed rule for next iteration
-            seed_rule = new_rules_with_relations[-1][0]  # Use the last generated rule as the new seed
         
         return all_rules, self.knowledge_graph
+
+    def select_random_seed(self) -> str:
+        """
+        Randomly select a node from the knowledge graph to use as the next seed phrase.
+        """
+        if not self.knowledge_graph.nodes:
+            raise ValueError("The knowledge graph is empty. Cannot select a random seed.")
+        return random.choice(list(self.knowledge_graph.nodes))
 
 # Example usage:
 # llm_client = YourLLMClient()  # Replace with your actual LLM client
 # generator = CorpusGenerator(llm_client)
 # sentences, graph = generator.bootstrap_corpus("Coffee wakes people up.", iterations=2)
+# next_seed = generator.select_random_seed()
