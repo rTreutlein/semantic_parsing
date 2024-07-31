@@ -45,7 +45,10 @@ class CorpusGenerator:
                 example_input=example_input,
                 example_output=example_output
             )
+            print(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
+            print(f"Prompt: {prompt}")
             response = self.llm_client.generate(prompt)
+            print(f"Response: {response}")
             new_rules.extend([(r.strip(), edge_type) for r in response.split('\n') if r.strip()])
 
         return new_rules
@@ -57,17 +60,21 @@ class CorpusGenerator:
         all_rules = [initial_seed]
         self.knowledge_graph.add_node(initial_seed)
         
-        for _ in range(iterations):
+        for i in range(iterations):
+            print(f"\n--- Iteration {i+1} ---")
             # Select a random seed for this iteration
             seed_rule = self.select_random_seed()
+            print(f"Selected seed rule: '{seed_rule}'")
             
             # Expand the current seed rule
             new_rules_with_relations = self.expand_rule(seed_rule)
             
+            print("\nNew rules generated:")
             for new_rule, relationship in new_rules_with_relations:
                 all_rules.append(new_rule)
                 self.knowledge_graph.add_node(new_rule)
                 self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
+                print(f"- '{new_rule}' (Relationship: {relationship})")
         
         return all_rules, self.knowledge_graph
 
