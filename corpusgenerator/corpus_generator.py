@@ -108,15 +108,19 @@ class CorpusGenerator:
         :param iterations: Total number of iterations to run.
         :param parallel_iterations: Number of iterations to run in parallel (default is 1, which means sequential processing).
         """
-        all_rules = [initial_seed]
-        self.knowledge_graph.add_node(initial_seed)
+        all_rules = list(self.knowledge_graph.nodes())
+        if not all_rules:
+            all_rules = [initial_seed]
+            self.knowledge_graph.add_node(initial_seed)
         
-        # First iteration (always sequential)
-        print(f"\n--- Iteration 1 ---")
-        seed_rule = initial_seed
-        new_rules_with_relations = self.expand_rule(seed_rule)
-        rephrased_rules = self.rephrase_rules(new_rules_with_relations)
-        self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
+            # First iteration (always sequential)
+            print(f"\n--- Iteration 1 ---")
+            seed_rule = initial_seed
+            new_rules_with_relations = self.expand_rule(seed_rule)
+            rephrased_rules = self.rephrase_rules(new_rules_with_relations)
+            self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
+        else:
+            print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
 
         # Subsequent iterations
         for i in range(2, iterations + 1, parallel_iterations):
