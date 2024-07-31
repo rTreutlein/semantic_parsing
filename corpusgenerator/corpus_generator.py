@@ -21,11 +21,11 @@ class CorpusGenerator:
     """
 
     EXAMPLES = {
-        "rephrases": ("The cat sat on the mat.", "The feline rested on the rug."),
-        "explains": ("The economy is growing.", "People are earing and spending more money."),
-        "implies": ("The student studied all night.", "The student will have an Exams soon."),
-        "contrasts": ("The summer was hot and dry.", "Winters can be cold and wet."),
-        "compares": ("Coffee is a popular morning drink.", "Tea is also enjoyed by many people in the morning.")
+        "rephrases": ("Always wear a seatbelt while driving.", "Ensure your safety belt is fastened when operating a vehicle."),
+        "explains": ("Recycle whenever possible.", "Separate recyclable materials from general waste to reduce environmental impact."),
+        "implies": ("Exercise regularly for good health.", "Maintaining an active lifestyle can lead to improved physical well-being."),
+        "contrasts": ("Save money for future needs.", "Avoid unnecessary spending on luxury items."),
+        "compares": ("Eat a balanced diet for nutrition.", "Regular physical activity is also crucial for maintaining health.")
     }
 
     def __init__(self, llm_client):
