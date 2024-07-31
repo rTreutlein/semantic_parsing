@@ -17,6 +17,7 @@ class CorpusGenerator:
     Output: {example_output}
 
     Now, generate 1-3 simple rules for the given input rule, focusing on the {relationship} relationship.
+    Output only the new rules separated by newlines without any other text.
     """
 
     EXAMPLES = {
