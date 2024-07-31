@@ -16,12 +16,12 @@ class CorpusGenerator:
     Input rule: {example_input}
     Output: {example_output}
 
-    Now, generate 1-3 simple rules for the given input rule, focusing on the {relationship} relationship.
+    Now, generate 1-2 simple rules for the given input rule, focusing on the {relationship} relationship.
     Output only the new rules separated by newlines without any other text.
     """
 
     EXAMPLES = {
-        "specializes": ("If a plant receives sunlight, it grows.", "If a tomato plant receives 6 hours of direct sunlight daily, it produces more fruit."),
+        "specializes": ("If a plant receives sunlight, it grows.", "If plant uses sunlight to generate carbohydrates."),
         "generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
         "complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
         "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
@@ -35,7 +35,7 @@ class CorpusGenerator:
     Rephrased:
     """
 
-    def __init__(self, llm_client, rephrase_model="gpt-3.5-turbo"):
+    def __init__(self, llm_client, rephrase_model="meta-llama/llama-3.1-8b-instruct"):
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
@@ -66,7 +66,7 @@ class CorpusGenerator:
         """
         Rephrase the given rules using a different LLM model.
         """
-        rephrased_rules = []
+        rephrased_rules = rules
         for rule, relationship in rules:
             prompt = self.REPHRASE_PROMPT.format(sentence=rule)
             print(f"\nRephrasing rule: '{rule}'")
@@ -92,7 +92,7 @@ class CorpusGenerator:
             # Expand the current seed rule
             new_rules_with_relations = self.expand_rule(seed_rule)
             
-            # Rephrase the new rules
+            # Rephrase the new rules also returns the original rules
             rephrased_rules = self.rephrase_rules(new_rules_with_relations)
             
             print("\nNew rules generated and rephrased:")
@@ -111,9 +111,3 @@ class CorpusGenerator:
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a random seed.")
         return random.choice(list(self.knowledge_graph.nodes))
-
-# Example usage:
-# llm_client = YourLLMClient()  # Replace with your actual LLM client
-# generator = CorpusGenerator(llm_client)
-# sentences, graph = generator.bootstrap_corpus("Coffee wakes people up.", iterations=2)
-# next_seed = generator.select_random_seed()
