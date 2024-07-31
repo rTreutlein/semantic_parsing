@@ -52,6 +52,7 @@ This project aims to use Large Language Models (LLMs) to generate and bootstrap 
 - `build_corpus.py`: Expansion and refinement of the corpus
 - `utils/`: Helper functions and utilities
 - `data/`: Storage for generated and processed corpus files
+- `corpus_bootstrapping.md`: Detailed process for bootstrapping the corpus from seed sentences
 
 ## Contributing
 
