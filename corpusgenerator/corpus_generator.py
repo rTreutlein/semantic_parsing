@@ -22,8 +22,8 @@ class CorpusGenerator:
 
     EXAMPLES = {
         "rephrases": ("The cat sat on the mat.", "The feline rested on the rug."),
-        "explains": ("The economy is growing.", "More jobs are being created. People have more money to spend."),
-        "implies": ("The student studied all night.", "Exams are approaching. Academic performance is important."),
+        "explains": ("The economy is growing.", "People are earing and spending more money."),
+        "implies": ("The student studied all night.", "The student will have an Exams soon."),
         "contrasts": ("The summer was hot and dry.", "Winters can be cold and wet."),
         "compares": ("Coffee is a popular morning drink.", "Tea is also enjoyed by many people in the morning.")
     }
