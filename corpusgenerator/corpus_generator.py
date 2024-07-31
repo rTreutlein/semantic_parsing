@@ -12,7 +12,21 @@ class CorpusGenerator:
     Task: {task}
 
     Generate 1-3 simple sentences that {relationship} the input sentence.
+
+    Example:
+    Input sentence: {example_input}
+    Output: {example_output}
+
+    Now, generate 1-3 simple sentences for the given input sentence.
     """
+
+    EXAMPLES = {
+        "rephrases": ("The cat sat on the mat.", "The feline rested on the rug."),
+        "explains": ("The economy is growing.", "More jobs are being created. People have more money to spend."),
+        "implies": ("The student studied all night.", "Exams are approaching. Academic performance is important."),
+        "contrasts": ("The summer was hot and dry.", "Winters can be cold and wet."),
+        "compares": ("Coffee is a popular morning drink.", "Tea is also enjoyed by many people in the morning.")
+    }
 
     def __init__(self, llm_client):
         self.llm_client = llm_client
@@ -34,7 +48,14 @@ class CorpusGenerator:
         }
 
         for edge_type, (task, relationship) in prompts.items():
-            prompt = self.BASE_PROMPT.format(sentence=sentence, task=task, relationship=relationship)
+            example_input, example_output = self.EXAMPLES[edge_type]
+            prompt = self.BASE_PROMPT.format(
+                sentence=sentence,
+                task=task,
+                relationship=relationship,
+                example_input=example_input,
+                example_output=example_output
+            )
             response = self.llm_client.generate(prompt)
             new_sentences.extend([(s.strip(), edge_type) for s in response.split('\n') if s.strip()])
 
