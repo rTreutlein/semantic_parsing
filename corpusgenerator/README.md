@@ -53,6 +53,7 @@ This project aims to use Large Language Models (LLMs) to generate and bootstrap 
 - `utils/`: Helper functions and utilities
 - `data/`: Storage for generated and processed corpus files
 - `corpus_bootstrapping.md`: Detailed process for bootstrapping the corpus from seed sentences
+- `bootstrapping_example.md`: Step-by-step example of the bootstrapping process
 
 ## Contributing
 
