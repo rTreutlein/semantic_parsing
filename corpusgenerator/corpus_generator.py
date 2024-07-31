@@ -54,18 +54,21 @@ class CorpusGenerator:
                 example_input=example_input,
                 example_output=example_output
             )
-            print(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
-            print(f"Prompt: {prompt}")
             response = self.llm_client.generate(prompt)
-            print(f"Response: {response}")
-            return [(r.strip(), edge_type) for r in response.split('\n') if r.strip()]
+            return (edge_type, prompt, response, [(r.strip(), edge_type) for r in response.split('\n') if r.strip()])
 
         new_rules = []
+        output = []
         with ThreadPoolExecutor() as executor:
             future_to_edge_type = {executor.submit(expand_for_edge_type, edge_type): edge_type for edge_type in self.EXAMPLES}
             for future in as_completed(future_to_edge_type):
-                new_rules.extend(future.result())
+                edge_type, prompt, response, rules = future.result()
+                output.append(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
+                output.append(f"Prompt: {prompt}")
+                output.append(f"Response: {response}")
+                new_rules.extend(rules)
 
+        print("\n".join(output))
         return new_rules
 
     def rephrase_rules(self, rules: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
@@ -75,17 +78,21 @@ class CorpusGenerator:
         def rephrase_rule(rule_tuple):
             rule, relationship = rule_tuple
             prompt = self.REPHRASE_PROMPT.format(sentence=rule)
-            print(f"\nRephrasing rule: '{rule}'")
-            print(f"Prompt: {prompt}")
             response = self.llm_client.generate(prompt, model=self.rephrase_model)
-            print(f"Rephrased: {response}")
-            return (response, relationship)
+            return (rule, prompt, response, relationship)
 
         rephrased_rules = rules.copy()
+        output = []
         with ThreadPoolExecutor() as executor:
             future_to_rule = {executor.submit(rephrase_rule, rule_tuple): rule_tuple for rule_tuple in rules}
             for future in as_completed(future_to_rule):
-                rephrased_rules.append(future.result())
+                rule, prompt, response, relationship = future.result()
+                output.append(f"\nRephrasing rule: '{rule}'")
+                output.append(f"Prompt: {prompt}")
+                output.append(f"Rephrased: {response}")
+                rephrased_rules.append((response, relationship))
+
+        print("\n".join(output))
         return rephrased_rules
 
     def bootstrap_corpus(self, initial_seed: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
