@@ -4,19 +4,22 @@ from corpus_generator import CorpusGenerator
 
 def main():
     # Get OpenAI API key from environment variable
-    api_key = os.getenv("OPENAI_API_KEY")
+    #api_key = os.getenv("OPENAI_API_KEY")
+    base_url="https://openrouter.ai/api/v1"
+    api_key=os.getenv("OPENROUTER_API_KEY")
+
     if not api_key:
         raise ValueError("Please set the OPENAI_API_KEY environment variable.")
 
     # Initialize OpenAI client
-    llm_client = OpenAIClient(api_key)
+    llm_client = OpenAIClient(api_key,base_url=base_url)
 
     # Initialize CorpusGenerator
     generator = CorpusGenerator(llm_client)
 
     # Start the corpus generation process
     initial_seed = "Coffee wakes people up."
-    iterations = 3
+    iterations = 2
     sentences, graph = generator.bootstrap_corpus(initial_seed, iterations)
 
     # Print the generated sentences
