@@ -107,26 +107,41 @@ class CorpusGenerator:
         all_rules = [initial_seed]
         self.knowledge_graph.add_node(initial_seed)
         
-        for i in range(iterations):
-            print(f"\n--- Iteration {i+1} ---")
-            # Select a random seed for this iteration
-            seed_rule = self.select_random_seed()
-            print(f"Selected seed rule: '{seed_rule}'")
-            
-            # Expand the current seed rule
-            new_rules_with_relations = self.expand_rule(seed_rule)
-            
-            # Rephrase the new rules also returns the original rules
-            rephrased_rules = self.rephrase_rules(new_rules_with_relations)
-            
-            print("\nNew rules generated and rephrased:")
-            for new_rule, relationship in rephrased_rules:
-                all_rules.append(new_rule)
-                self.knowledge_graph.add_node(new_rule)
-                self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
-                print(f"- '{new_rule}' (Relationship: {relationship})")
-        
+        # First iteration
+        print(f"\n--- Iteration 1 ---")
+        seed_rule = initial_seed
+        new_rules_with_relations = self.expand_rule(seed_rule)
+        rephrased_rules = self.rephrase_rules(new_rules_with_relations)
+        self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
+
+        # Subsequent iterations with parallel processing
+        if iterations > 1:
+            with ThreadPoolExecutor() as executor:
+                future_to_iteration = {executor.submit(self._process_iteration, i): i for i in range(2, iterations + 1)}
+                for future in as_completed(future_to_iteration):
+                    iteration_rules = future.result()
+                    all_rules.extend(iteration_rules)
+
         return all_rules, self.knowledge_graph
+
+    def _process_iteration(self, iteration: int) -> List[str]:
+        print(f"\n--- Iteration {iteration} ---")
+        seed_rule = self.select_random_seed()
+        print(f"Selected seed rule: '{seed_rule}'")
+        new_rules_with_relations = self.expand_rule(seed_rule)
+        rephrased_rules = self.rephrase_rules(new_rules_with_relations)
+        return self._add_rules_to_graph(seed_rule, rephrased_rules, [])
+
+    def _add_rules_to_graph(self, seed_rule: str, rephrased_rules: List[Tuple[str, str]], all_rules: List[str]) -> List[str]:
+        new_rules = []
+        print("\nNew rules generated and rephrased:")
+        for new_rule, relationship in rephrased_rules:
+            all_rules.append(new_rule)
+            new_rules.append(new_rule)
+            self.knowledge_graph.add_node(new_rule)
+            self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
+            print(f"- '{new_rule}' (Relationship: {relationship})")
+        return new_rules
 
     def select_random_seed(self) -> str:
         """
