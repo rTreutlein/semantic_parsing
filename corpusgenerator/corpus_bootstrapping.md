@@ -4,64 +4,56 @@
 
 This document outlines the process of bootstrapping our corpus using everyday examples and common sense reasoning. The goal is to create a self-consistent and expandable knowledge base using Large Language Models (LLMs), focusing on simple, shorter sentences that capture everyday knowledge.
 
-## Seed Sentences
+## Seed Rules
 
-We start with a small set of seed sentences that serve as the foundation for our corpus. These sentences should be:
+We start with a small set of seed rules that serve as the foundation for our corpus. These rules should be:
 
 1. Simple and related to everyday life
-2. Capturing common sense knowledge
-3. Diverse in structure to allow for natural language variation
+2. Capturing common sense knowledge or logical relationships
+3. Expressed as clear, factual statements that can be translated into predicate logic
 
-Example seed sentences:
-- "Apples grow on trees."
-- "Water boils at 100 degrees Celsius."
-- "Dogs bark to communicate."
+Example seed rule:
+- "If a plant receives sunlight, it grows."
 
 ## Bootstrapping Steps
 
-1. **Seed Sentence Expansion**
-   - For each seed sentence, use the LLM to generate 2-3 related facts or rephrased versions.
-   - Keep sentences short and simple, focusing on everyday knowledge.
+1. **Seed Rule Expansion**
+   - For each seed rule, use the LLM to generate 1-3 related rules for each relationship type.
+   - Keep rules simple and focused on logical relationships that can be translated into predicate logic.
 
-2. **Cross-Referencing**
-   - Use the LLM to identify potential connections between different sentences.
-   - Generate new sentences that bridge related concepts.
+2. **Knowledge Graph Creation**
+   - Create a knowledge graph where each node is a rule from the corpus.
+   - Edges represent relationships between rules.
+   - Use the following edge types:
+     a. Specializes: Provides a more specific version of the rule
+     b. Generalizes: Presents a more general version of the rule
+     c. Complements: Adds complementary information to the rule
+     d. Negates: Presents an opposing or contradictory rule
+     e. Rephrase: Restates the rule using different words while maintaining the same meaning
 
-3. **Consistency Check**
-   - Run all generated content through the LLM to check for logical consistency.
+3. **Iterative Expansion**
+   - Select rules from the knowledge graph for further expansion.
+   - For each selected rule, generate new rules using the expand_rule method.
+   - Add new rules to the knowledge graph with appropriate relationships.
+
+4. **Consistency Check**
+   - Ensure that generated rules maintain logical consistency within the knowledge graph.
    - Resolve any contradictions or ambiguities.
 
-4. **Knowledge Graph Creation**
-   - Create a simple knowledge graph where each node is a sentence from the corpus.
-   - Edges represent relationships or connections between sentences.
-   - Use the following edge types:
-     a. Rephrases: Restates the sentence in a different way
-     b. Explains: Provides further explanation for a part of the sentence
-     c. Implies: Presents a more general scenario implied by the sentence
-     d. Contrasts: Shows a difference or opposite
-     e. Compares: Highlights similarities with another concept
-     f. Rephrase: Restates the sentence using different words while maintaining the same meaning
-
-5. **Iterative Expansion**
-   - Select sentences from the knowledge graph for further expansion or rephrasing.
-   - For each selected sentence, generate 1-2 new sentences for each applicable edge type.
-   - Repeat steps 1-4 for these new focus areas.
-
-6. **Validation**
+5. **Validation**
    - Periodically validate the entire corpus for internal consistency.
-   - Use common sense reasoning to verify the accuracy of statements.
+   - Verify that rules can be translated into predicate logic.
    - Check that edge relationships are correctly applied and meaningful.
 
 ## LLM Prompting Strategies
 
-- Use clear, specific prompts that encourage simple, factual responses.
-- Include instructions for maintaining consistency with existing information.
-- Encourage variation in sentence structure and phrasing.
-- For cross-referencing (step 2):
-  a. Use prompts that ask the LLM to identify concepts or keywords in the existing sentences.
-  b. Ask the LLM to find connections between these concepts and other common knowledge areas.
-  c. Request bridging sentences that link the identified concepts to new, related ideas.
-  d. Encourage the LLM to consider different perspectives or contexts for the existing information.
+- Use clear, specific prompts that encourage simple, factual rules.
+- Include instructions for maintaining consistency with existing rules.
+- Encourage the generation of rules that can be easily translated into predicate logic.
+- For each relationship type:
+  a. Provide clear examples of how to generate rules with that relationship.
+  b. Ask the LLM to consider different aspects or implications of the input rule.
+  c. Encourage the LLM to generate rules that maintain logical consistency within the knowledge graph.
 
 ## Quality Control
 

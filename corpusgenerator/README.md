@@ -6,10 +6,11 @@ This project aims to use Large Language Models (LLMs) to generate and bootstrap 
 
 ## Features
 
-- Utilizes state-of-the-art LLMs to generate initial corpus
-- Ensures self-consistency within the generated text
-- Provides mechanisms to expand and build upon the initial corpus
-- Implements validation and quality control measures
+- Utilizes state-of-the-art LLMs to generate a corpus of logical rules
+- Ensures self-consistency within the generated rules
+- Provides mechanisms to expand and build upon the initial set of rules
+- Implements a knowledge graph structure to represent relationships between rules
+- Supports multiple relationship types: specializes, generalizes, complements, negates, and rephrase
 
 ## Getting Started
 
@@ -31,29 +32,21 @@ This project aims to use Large Language Models (LLMs) to generate and bootstrap 
 
 ## Usage
 
-1. Configure your LLM API credentials in `config.py`
-2. Run the corpus generation script:
-   ```
-   python generate_corpus.py
-   ```
-3. Validate and analyze the generated corpus:
-   ```
-   python analyze_corpus.py
-   ```
-4. Expand the corpus using the build script:
-   ```
-   python build_corpus.py
+1. Configure your LLM API credentials (implementation details may vary)
+2. Use the CorpusGenerator class to generate and expand the corpus:
+   ```python
+   from corpus_generator import CorpusGenerator
+   
+   llm_client = YourLLMClient()  # Replace with your actual LLM client
+   generator = CorpusGenerator(llm_client)
+   sentences, graph = generator.bootstrap_corpus("Coffee wakes people up.", iterations=2)
    ```
 
 ## Project Structure
 
-- `generate_corpus.py`: Initial corpus generation using LLM
-- `analyze_corpus.py`: Validation and analysis of the generated corpus
-- `build_corpus.py`: Expansion and refinement of the corpus
-- `utils/`: Helper functions and utilities
-- `data/`: Storage for generated and processed corpus files
+- `corpus_generator.py`: Main class for generating and expanding the corpus of logical rules
 - `corpus_bootstrapping.md`: Detailed process for bootstrapping the corpus from seed sentences
-- `bootstrapping_example.md`: Step-by-step example of the bootstrapping process
+- `README.md`: This file, providing an overview of the project
 
 ## Contributing
 
