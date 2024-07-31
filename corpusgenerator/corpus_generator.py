@@ -9,21 +9,21 @@ class CorpusGenerator:
     def expand_sentence(self, sentence: str) -> List[str]:
         """
         Expand a sentence into related facts, rephrased versions, and new sentences for each edge type.
-        This method combines the functionality of the previous expand_seed_sentence and expand_graph methods.
         """
         new_sentences = []
         edge_types = [
             "rephrases", "explains", "implies", "contrasts", "compares"
         ]
 
-        # Generate related facts and rephrased versions
-        prompt = f"Generate 2-3 short, simple sentences that are related to or rephrase the following: '{sentence}'"
-        response = self.llm_client.generate(prompt)
-        new_sentences.extend([s.strip() for s in response.split('\n') if s.strip()])
+        prompts = {
+            "rephrases": f"Rephrase this sentence in a simple way: '{sentence}'",
+            "explains": f"Explain a part of this sentence further, starting with 'Because': '{sentence}'",
+            "implies": f"What more general scenario does this imply? Start with 'Generally,': '{sentence}'",
+            "contrasts": f"Provide a simple contrast to this: '{sentence}'",
+            "compares": f"Compare this to something similar: '{sentence}'"
+        }
 
-        # Generate new sentences for each edge type
-        for edge_type in edge_types:
-            prompt = f"Generate 1-2 new sentences that {edge_type} on the following: '{sentence}'"
+        for edge_type, prompt in prompts.items():
             response = self.llm_client.generate(prompt)
             new_sentences.extend([s.strip() for s in response.split('\n') if s.strip()])
 
