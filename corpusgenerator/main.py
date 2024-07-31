@@ -26,7 +26,7 @@ def main():
 
     # Start the corpus generation process
     initial_seed = "Coffee wakes people up."
-    iterations = 2
+    iterations = 10
     sentences, graph = generator.bootstrap_corpus(initial_seed, iterations)
 
     # Save the updated knowledge graph
