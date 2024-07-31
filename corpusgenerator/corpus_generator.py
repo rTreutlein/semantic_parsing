@@ -29,11 +29,12 @@ class CorpusGenerator:
     }
 
     REPHRASE_PROMPT = """
-    Rephrase the following sentence to express the same meaning using different words:
+    Rephrase the following sentence to express the same meaning using different words.
+    Output only the rephrased sentence, nothing else. Ensure the output is a single line.
 
     Original: {sentence}
 
-    Rephrased:
+    Rephrased sentence:
     """
 
     def __init__(self, llm_client, rephrase_model="meta-llama/llama-3.1-8b-instruct"):
@@ -89,8 +90,11 @@ class CorpusGenerator:
                 rule, prompt, response, relationship = future.result()
                 output.append(f"\nRephrasing rule: '{rule}'")
                 output.append(f"Prompt: {prompt}")
-                output.append(f"Rephrased: {response}")
-                rephrased_rules.append((response, relationship))
+                if '\n' not in response:
+                    output.append(f"Rephrased: {response}")
+                    rephrased_rules.append((response, relationship))
+                else:
+                    output.append(f"Skipped: Response contains multiple lines")
 
         print("\n".join(output))
         return rephrased_rules
