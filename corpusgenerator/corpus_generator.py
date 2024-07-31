@@ -6,9 +6,10 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
 
-    def expand_sentence(self, sentence: str) -> List[str]:
+    def expand_sentence(self, sentence: str) -> List[Tuple[str, str]]:
         """
         Expand a sentence into related facts, rephrased versions, and new sentences for each edge type.
+        Returns a list of tuples (new_sentence, relationship).
         """
         new_sentences = []
         edge_types = [
@@ -25,48 +26,28 @@ class CorpusGenerator:
 
         for edge_type, prompt in prompts.items():
             response = self.llm_client.generate(prompt)
-            new_sentences.extend([s.strip() for s in response.split('\n') if s.strip()])
+            new_sentences.extend([(s.strip(), edge_type) for s in response.split('\n') if s.strip()])
 
         return new_sentences
-
-    def create_knowledge_graph(self, sentences: List[str]) -> nx.DiGraph:
-        """
-        Create a knowledge graph from the given sentences.
-        """
-        for sentence in sentences:
-            self.knowledge_graph.add_node(sentence)
-
-        edge_types = [
-            "elaborates", "generalizes", "specifies", "contrasts", "compares",
-            "causes", "results_from", "exemplifies", "defines"
-        ]
-
-        for i, sentence1 in enumerate(sentences):
-            for j, sentence2 in enumerate(sentences[i+1:], start=i+1):
-                prompt = f"Determine the relationship between these two sentences:\n1. {sentence1}\n2. {sentence2}\nChoose from: {', '.join(edge_types)}"
-                relationship = self.llm_client.generate(prompt).strip().lower()
-                
-                if relationship in edge_types:
-                    self.knowledge_graph.add_edge(sentence1, sentence2, relationship=relationship)
-
-        return self.knowledge_graph
 
     def bootstrap_corpus(self, seed_sentence: str, iterations: int = 2) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
         """
         all_sentences = [seed_sentence]
+        self.knowledge_graph.add_node(seed_sentence)
         
         for _ in range(iterations):
             # Expand the current seed sentence
-            new_sentences = self.expand_sentence(seed_sentence)
-            all_sentences.extend(new_sentences)
+            new_sentences_with_relations = self.expand_sentence(seed_sentence)
             
-            # Create or update the knowledge graph
-            self.create_knowledge_graph(all_sentences)
+            for new_sentence, relationship in new_sentences_with_relations:
+                all_sentences.append(new_sentence)
+                self.knowledge_graph.add_node(new_sentence)
+                self.knowledge_graph.add_edge(seed_sentence, new_sentence, relationship=relationship)
             
             # Update seed sentence for next iteration
-            seed_sentence = new_sentences[-1]  # Use the last generated sentence as the new seed
+            seed_sentence = new_sentences_with_relations[-1][0]  # Use the last generated sentence as the new seed
         
         return all_sentences, self.knowledge_graph
 
