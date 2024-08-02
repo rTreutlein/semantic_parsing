@@ -4,8 +4,7 @@ import os
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
-import nltk
-from nltk import word_tokenize, pos_tag
+import spacy
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -48,9 +47,8 @@ class CorpusGenerator:
         self.rephrase_model = rephrase_model
         self.word_counter = Counter()
         
-        # Download necessary NLTK data
-        nltk.download('punkt', quiet=True)
-        nltk.download('averaged_perceptron_tagger', quiet=True)
+        # Load spaCy model
+        self.nlp = spacy.load("en_core_web_sm")
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
@@ -131,8 +129,8 @@ class CorpusGenerator:
             # First iteration (always sequential)
             print(f"\n--- Iteration 1 ---")
             seed_rule = initial_seed
-            new_rules_with_relations = self.expand_rule(seed_rule)
-            rephrased_rules = self.rephrase_rules(new_rules_with_relations)
+            new_rules_with_relations = self.expand_rule(seed_rule, debug=True)
+            rephrased_rules = self.rephrase_rules(new_rules_with_relations, debug=True)
             self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
@@ -182,10 +180,9 @@ class CorpusGenerator:
         """
         Update the word counter with nouns from the given sentence.
         """
-        tokens = word_tokenize(sentence)
-        pos_tags = pos_tag(tokens)
-        print(f"POS tags: {pos_tags}")
-        nouns = [word.lower() for word, pos in pos_tags if pos.startswith('NN')]
+        doc = self.nlp(sentence)
+        #print(f"POS tags: {[(token.text, token.pos_) for token in doc]}")
+        nouns = [token.text.lower() for token in doc if token.pos_ == "NOUN"]
         self.word_counter.update(nouns)
 
     def select_seed_with_least_used_word(self) -> str:
@@ -201,10 +198,10 @@ class CorpusGenerator:
         
         candidates = [node for node in self.knowledge_graph.nodes() if least_used_word in node.lower()]
         
-        print(f"word_counter: {self.word_counter}")
-        print(f"Least used words: {least_used_words}")
-        print(f"Randomly selected least used word: '{least_used_word}'")
-        print(f"Candidates: {candidates}")
+        #print(f"word_counter: {self.word_counter}")
+        print(f"Least used words: {least_used_words}\n")
+        print(f"Randomly selected least used word: '{least_used_word}'\n")
+        print(f"Candidates: {candidates}\n")
         if candidates:
             return random.choice(candidates)
         else:
