@@ -26,10 +26,14 @@ def main():
         print("No existing knowledge graph found. Starting with an empty graph.")
 
     # Start the corpus generation process
-    initial_seed = "x^2 is equal to x*x"
+    initial_seeds = [
+        "x^2 is equal to x*x",
+        "The sum of the angles in a triangle is 180 degrees",
+        "Water boils at 100 degrees Celsius at sea level"
+    ]
     iterations = 10
     parallel_iterations = 3  # Run 3 iterations in parallel after the first iteration
-    sentences, graph = generator.bootstrap_corpus(initial_seed, iterations, parallel_iterations)
+    sentences, graph = generator.bootstrap_corpus(initial_seeds, iterations, parallel_iterations)
 
     # Save the updated knowledge graph
     generator.save_knowledge_graph(graph_file)
