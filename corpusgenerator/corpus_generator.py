@@ -16,9 +16,8 @@ class CorpusGenerator:
     Input rule: {sentence}
     Task: Generate a new rule that {relationship} the input rule.
 
-    Example:
-    Input rule: {example_input}
-    Output: {example_output}
+    Examples:
+    {examples}
 
     Now, generate 1-2 simple rules for the given input rule, focusing on the {relationship} relationship.
     Output only the new rules separated by newlines without any other text.
@@ -76,12 +75,11 @@ class CorpusGenerator:
         Returns a list of tuples (new_rule, relationship).
         """
         def expand_for_edge_type(edge_type):
-            example_input, example_output = random.choice(self.EXAMPLES[edge_type])
+            examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in self.EXAMPLES[edge_type]])
             prompt = self.BASE_PROMPT.format(
                 sentence=rule,
                 relationship=edge_type,
-                example_input=example_input,
-                example_output=example_output
+                examples=examples
             )
             response = self.llm_client.generate(prompt)
             return (edge_type, prompt, response, [(r.strip(), edge_type) for r in response.split('\n') if r.strip()])
