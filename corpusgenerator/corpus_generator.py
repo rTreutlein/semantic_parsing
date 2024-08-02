@@ -4,6 +4,8 @@ import os
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
+import nltk
+from nltk import word_tokenize, pos_tag
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -45,6 +47,10 @@ class CorpusGenerator:
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
         self.word_counter = Counter()
+        
+        # Download necessary NLTK data
+        nltk.download('punkt', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
@@ -174,10 +180,12 @@ class CorpusGenerator:
 
     def _update_word_counter(self, sentence: str):
         """
-        Update the word counter with words from the given sentence.
+        Update the word counter with nouns from the given sentence.
         """
-        words = sentence.lower().split()
-        self.word_counter.update(words)
+        tokens = word_tokenize(sentence)
+        pos_tags = pos_tag(tokens)
+        nouns = [word.lower() for word, pos in pos_tags if pos.startswith('NN')]
+        self.word_counter.update(nouns)
 
     def select_seed_with_least_used_word(self) -> str:
         """
