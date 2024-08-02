@@ -1,21 +1,24 @@
 import networkx as nx
+from typing import List
 
-def print_tree(graph: nx.DiGraph, node: str, level: int = 0, visited: set = None):
-    if visited is None:
-        visited = set()
-    
+def print_tree(graph: nx.DiGraph, roots: List[str]):
+    visited = set()
+    for root in roots:
+        if root not in visited:
+            _print_tree_recursive(graph, root, 0, visited)
+
+def _print_tree_recursive(graph: nx.DiGraph, node: str, level: int, visited: set):
     if node in visited:
         return
     visited.add(node)
     
-    if level == 0:
-        print("  " * level + f"- {node}")
+    print("  " * level + f"- {node}")
     for neighbor in graph.neighbors(node):
         edge_data = graph.get_edge_data(node, neighbor)
         print("  " * (level + 1) + f"- [{edge_data['relationship']}] {neighbor}")
-        print_tree(graph, neighbor, level + 2, visited)
+        _print_tree_recursive(graph, neighbor, level + 2, visited)
 
-def print_deepest_path(graph: nx.DiGraph, root: str):
+def print_deepest_path(graph: nx.DiGraph, roots: List[str]):
     def dfs(node, path, visited):
         if node in visited:
             return path, len(path)
@@ -33,10 +36,17 @@ def print_deepest_path(graph: nx.DiGraph, root: str):
         
         return deepest_path, max_depth
 
-    deepest_path, _ = dfs(root, [], set())
+    overall_deepest_path = []
+    overall_max_depth = 0
+
+    for root in roots:
+        deepest_path, max_depth = dfs(root, [], set())
+        if max_depth > overall_max_depth:
+            overall_max_depth = max_depth
+            overall_deepest_path = deepest_path
     
     print("Deepest path:")
-    for i, (source, relationship, target) in enumerate(deepest_path):
+    for i, (source, relationship, target) in enumerate(overall_deepest_path):
         print(f"{'  ' * i}- {source}")
         print(f"{'  ' * (i+1)}[{relationship}]")
-    print(f"{'  ' * len(deepest_path)}- {deepest_path[-1][2]}")
+    print(f"{'  ' * len(overall_deepest_path)}- {overall_deepest_path[-1][2]}")
