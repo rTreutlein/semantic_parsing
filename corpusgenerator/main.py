@@ -51,11 +51,11 @@ def main():
 
     # Print the knowledge graph as a tree
     print("\nKnowledge Graph Tree Structure:")
-    print_tree(graph, initial_seed)
+    print_tree(graph, initial_seeds[0])
 
     # Print the deepest path in the knowledge graph
     print("\nDeepest Path in the Knowledge Graph:")
-    print_deepest_path(graph, initial_seed)
+    print_deepest_path(graph, initial_seeds[0])
 
 if __name__ == "__main__":
     main()
