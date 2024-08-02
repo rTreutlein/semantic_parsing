@@ -181,16 +181,20 @@ class CorpusGenerator:
 
     def select_seed_with_least_used_word(self) -> str:
         """
-        Select a node from the knowledge graph that contains the least used word.
+        Select a node from the knowledge graph that contains one of the least used words.
         """
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
-        least_used_word = min(self.word_counter, key=self.word_counter.get)
+        min_count = min(self.word_counter.values())
+        least_used_words = [word for word, count in self.word_counter.items() if count == min_count]
+        least_used_word = random.choice(least_used_words)
+        
         candidates = [node for node in self.knowledge_graph.nodes() if least_used_word in node.lower()]
         
         print(f"word_counter: {self.word_counter}")
-        print(f"Least used word: '{least_used_word}'")
+        print(f"Least used words: {least_used_words}")
+        print(f"Randomly selected least used word: '{least_used_word}'")
         print(f"Candidates: {candidates}")
         if candidates:
             return random.choice(candidates)
