@@ -36,8 +36,8 @@ def main() -> None:
         "Fire requires oxygen to burn.",
         "Objects cast shadows when light shines on them."
     ]
-    iterations: int = 10
-    parallel_iterations: int = 3  # Run 3 iterations in parallel after the first iteration
+    iterations: int = 1
+    parallel_iterations: int = 1  # Run 3 iterations in parallel after the first iteration
     sentences: List[str]
     graph: nx.DiGraph
     sentences, graph = generator.bootstrap_corpus(initial_seeds, iterations, parallel_iterations)

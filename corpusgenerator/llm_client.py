@@ -1,13 +1,12 @@
-import openai
-from typing import List
+from openai import OpenAI
 
 class OpenAIClient:
-    def __init__(self, api_key: str):
-        openai.api_key = api_key
+    def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
+        self.client = OpenAI(base_url=base_url,api_key=api_key)
 
-    def generate(self, prompt: str, model: str = "gpt-4o-mini") -> str:
+    def generate(self, prompt: str, model: str = "openai/gpt-4o-mini") -> str:
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -18,7 +17,7 @@ class OpenAIClient:
                 stop=None,
                 temperature=0.7,
             )
-            return response.choices[0].message['content'].strip()
+            return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Error in generating response: {e}")
             return ""
