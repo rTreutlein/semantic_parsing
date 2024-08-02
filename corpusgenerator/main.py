@@ -46,6 +46,13 @@ def main() -> None:
     generator.save_knowledge_graph(graph_file)
     print(f"Knowledge graph saved to {graph_file}")
 
+    # Write the generated sentences to a file
+    output_file = "generated_sentences.txt"
+    with open(output_file, "w") as f:
+        for sentence in sentences:
+            f.write(f"{sentence}\n")
+    print(f"\nGenerated sentences written to {output_file}")
+
     # Print the generated sentences
     print("\nGenerated sentences:")
     for i, sentence in enumerate(sentences, 1):
