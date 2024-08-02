@@ -1,9 +1,11 @@
 import os
+from typing import List
 from llm_client import OpenAIClient
 from corpus_generator import CorpusGenerator
 from utils import print_tree, print_deepest_path
+import networkx as nx
 
-def main():
+def main() -> None:
     # Get OpenAI API key from environment variable
     base_url = "https://openrouter.ai/api/v1"
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -18,7 +20,7 @@ def main():
     generator = CorpusGenerator(llm_client)
 
     # Check if a saved graph exists
-    graph_file = "knowledge_graph.graphml"
+    graph_file: str = "knowledge_graph.graphml"
     if os.path.exists(graph_file):
         print(f"Loading existing knowledge graph from {graph_file}")
         generator.load_knowledge_graph(graph_file)
@@ -26,7 +28,7 @@ def main():
         print("No existing knowledge graph found. Starting with an empty graph.")
 
     # Start the corpus generation process
-    initial_seeds = [
+    initial_seeds: List[str] = [
         "If an object is dropped, it will fall to the ground.",
         "When the sun sets, it gets darker outside.",
         "Water freezes at 0 degrees Celsius.",
@@ -34,8 +36,10 @@ def main():
         "Fire requires oxygen to burn.",
         "Objects cast shadows when light shines on them."
     ]
-    iterations = 10
-    parallel_iterations = 3  # Run 3 iterations in parallel after the first iteration
+    iterations: int = 10
+    parallel_iterations: int = 3  # Run 3 iterations in parallel after the first iteration
+    sentences: List[str]
+    graph: nx.DiGraph
     sentences, graph = generator.bootstrap_corpus(initial_seeds, iterations, parallel_iterations)
 
     # Save the updated knowledge graph

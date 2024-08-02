@@ -2,11 +2,12 @@ import networkx as nx
 import random
 import os
 import numpy as np
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scipy.spatial.distance import cosine
 import embedder
 from collections import defaultdict
+from llm_client import OpenAIClient
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -62,11 +63,11 @@ class CorpusGenerator:
     Rephrased sentence:
     """
 
-    def __init__(self, llm_client, rephrase_model="meta-llama/llama-3.1-8b-instruct"):
-        self.llm_client = llm_client
-        self.knowledge_graph = nx.DiGraph()
-        self.rephrase_model = rephrase_model
-        self.embeddings = defaultdict(lambda: None)
+    def __init__(self, llm_client: OpenAIClient, rephrase_model: str = "meta-llama/llama-3.1-8b-instruct"):
+        self.llm_client: OpenAIClient = llm_client
+        self.knowledge_graph: nx.DiGraph = nx.DiGraph()
+        self.rephrase_model: str = rephrase_model
+        self.embeddings: Dict[str, Optional[np.ndarray]] = defaultdict(lambda: None)
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
@@ -103,7 +104,7 @@ class CorpusGenerator:
         """
         Rephrase the given rules using a different LLM model.
         """
-        def rephrase_rule(rule_tuple):
+        def rephrase_rule(rule_tuple: Tuple[str, str]) -> Tuple[str, str, str, str]:
             rule, relationship = rule_tuple
             prompt = self.REPHRASE_PROMPT.format(sentence=rule)
             response = self.llm_client.generate(prompt, model=self.rephrase_model)
@@ -136,6 +137,7 @@ class CorpusGenerator:
         :param initial_seeds: The initial seed sentences to start the process.
         :param iterations: Total number of iterations to run.
         :param parallel_iterations: Number of iterations to run in parallel (default is 1, which means sequential processing).
+        :return: A tuple containing the list of all rules and the knowledge graph.
         """
         all_rules = list(self.knowledge_graph.nodes())
         if not all_rules:
@@ -177,10 +179,10 @@ class CorpusGenerator:
 
     def _process_iteration(self, iteration: int, debug: bool = False) -> List[str]:
         print(f"\n--- Iteration {iteration} ---")
-        seed_rule = self.select_most_novel_rule()
+        seed_rule: str = self.select_most_novel_rule()
         print(f"Selected seed rule: '{seed_rule}'")
-        new_rules_with_relations = self.expand_rule(seed_rule, debug=debug)
-        rephrased_rules = self.rephrase_rules(new_rules_with_relations, debug=debug)
+        new_rules_with_relations: List[Tuple[str, str]] = self.expand_rule(seed_rule, debug=debug)
+        rephrased_rules: List[Tuple[str, str]] = self.rephrase_rules(new_rules_with_relations, debug=debug)
         return self._add_rules_to_graph(seed_rule, rephrased_rules, [], debug=debug)
 
     def _add_rules_to_graph(self, seed_rule: str, rephrased_rules: List[Tuple[str, str]], all_rules: List[str], debug: bool = False) -> List[str]:
@@ -204,25 +206,25 @@ class CorpusGenerator:
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
-        all_rules = list(self.knowledge_graph.nodes())
-        embeddings = [self.embeddings[rule] for rule in all_rules]
+        all_rules: List[str] = list(self.knowledge_graph.nodes())
+        embeddings: List[np.ndarray] = [self.embeddings[rule] for rule in all_rules]
         
         # Calculate the average embedding
-        avg_embedding = np.mean(embeddings, axis=0)
+        avg_embedding: np.ndarray = np.mean(embeddings, axis=0)
         
         # Calculate the cosine distance between each rule's embedding and the average embedding
-        distances = [cosine(embedding, avg_embedding) for embedding in embeddings]
+        distances: List[float] = [cosine(embedding, avg_embedding) for embedding in embeddings]
         
         # Normalize distances to use as weights
-        weights = np.array(distances) / np.sum(distances)
+        weights: np.ndarray = np.array(distances) / np.sum(distances)
         
         # Sample a rule based on the weights
-        selected_rule = random.choices(all_rules, weights=weights, k=1)[0]
+        selected_rule: str = random.choices(all_rules, weights=weights, k=1)[0]
         
         print(f"Selected rule: '{selected_rule}'\n")
         return selected_rule
 
-    def _update_embeddings(self, rules: List[str]):
+    def _update_embeddings(self, rules: List[str]) -> None:
         """
         Update the embeddings for the given rules.
         """
@@ -232,13 +234,13 @@ class CorpusGenerator:
             for rule, embedding in zip(new_rules, new_embeddings):
                 self.embeddings[rule] = embedding
 
-    def save_knowledge_graph(self, filename: str):
+    def save_knowledge_graph(self, filename: str) -> None:
         """
         Save the knowledge graph to a file in GraphML format.
         """
         nx.write_graphml(self.knowledge_graph, filename)
 
-    def load_knowledge_graph(self, filename: str):
+    def load_knowledge_graph(self, filename: str) -> None:
         """
         Load the knowledge graph from a file in GraphML format.
         """
