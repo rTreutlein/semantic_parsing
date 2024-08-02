@@ -182,6 +182,7 @@ class CorpusGenerator:
         least_used_word = min(self.word_counter, key=self.word_counter.get)
         candidates = [node for node in self.knowledge_graph.nodes() if least_used_word in node.lower()]
         
+        print(f"Candidates: {candidates}")
         if candidates:
             return random.choice(candidates)
         else:
