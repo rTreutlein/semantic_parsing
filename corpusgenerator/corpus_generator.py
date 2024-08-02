@@ -46,7 +46,7 @@ class CorpusGenerator:
         self.rephrase_model = rephrase_model
         self.word_counter = Counter()
 
-    def expand_rule(self, rule: str) -> List[Tuple[str, str]]:
+    def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
         Expand a rule into related rules for each edge type.
         Returns a list of tuples (new_rule, relationship).
@@ -68,15 +68,17 @@ class CorpusGenerator:
             future_to_edge_type = {executor.submit(expand_for_edge_type, edge_type): edge_type for edge_type in self.EXAMPLES}
             for future in as_completed(future_to_edge_type):
                 edge_type, prompt, response, rules = future.result()
-                output.append(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
-                output.append(f"Prompt: {prompt}")
-                output.append(f"Response: {response}")
+                if debug:
+                    output.append(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
+                    output.append(f"Prompt: {prompt}")
+                    output.append(f"Response: {response}")
                 new_rules.extend(rules)
 
-        print("\n".join(output))
+        if debug:
+            print("\n".join(output))
         return new_rules
 
-    def rephrase_rules(self, rules: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+    def rephrase_rules(self, rules: List[Tuple[str, str]], debug: bool = False) -> List[Tuple[str, str]]:
         """
         Rephrase the given rules using a different LLM model.
         """
@@ -92,15 +94,18 @@ class CorpusGenerator:
             future_to_rule = {executor.submit(rephrase_rule, rule_tuple): rule_tuple for rule_tuple in rules}
             for future in as_completed(future_to_rule):
                 rule, prompt, response, relationship = future.result()
-                output.append(f"\nRephrasing rule: '{rule}'")
-                output.append(f"Prompt: {prompt}")
+                if debug:
+                    output.append(f"\nRephrasing rule: '{rule}'")
+                    output.append(f"Prompt: {prompt}")
                 if '\n' not in response:
-                    output.append(f"Rephrased: {response}")
+                    if debug:
+                        output.append(f"Rephrased: {response}")
                     rephrased_rules.append((response, relationship))
-                else:
+                elif debug:
                     output.append(f"Skipped: Response contains multiple lines")
 
-        print("\n".join(output))
+        if debug:
+            print("\n".join(output))
         return rephrased_rules
 
     def bootstrap_corpus(self, initial_seed: str, iterations: int = 2, parallel_iterations: int = 1) -> Tuple[List[str], nx.DiGraph]:
@@ -145,23 +150,25 @@ class CorpusGenerator:
 
         return all_rules, self.knowledge_graph
 
-    def _process_iteration(self, iteration: int) -> List[str]:
+    def _process_iteration(self, iteration: int, debug: bool = False) -> List[str]:
         print(f"\n--- Iteration {iteration} ---")
         seed_rule = self.select_seed_with_least_used_word()
         print(f"Selected seed rule: '{seed_rule}'")
-        new_rules_with_relations = self.expand_rule(seed_rule)
-        rephrased_rules = self.rephrase_rules(new_rules_with_relations)
-        return self._add_rules_to_graph(seed_rule, rephrased_rules, [])
+        new_rules_with_relations = self.expand_rule(seed_rule, debug=debug)
+        rephrased_rules = self.rephrase_rules(new_rules_with_relations, debug=debug)
+        return self._add_rules_to_graph(seed_rule, rephrased_rules, [], debug=debug)
 
-    def _add_rules_to_graph(self, seed_rule: str, rephrased_rules: List[Tuple[str, str]], all_rules: List[str]) -> List[str]:
+    def _add_rules_to_graph(self, seed_rule: str, rephrased_rules: List[Tuple[str, str]], all_rules: List[str], debug: bool = False) -> List[str]:
         new_rules = []
-        print("\nNew rules generated and rephrased:")
+        if debug:
+            print("\nNew rules generated and rephrased:")
         for new_rule, relationship in rephrased_rules:
             all_rules.append(new_rule)
             new_rules.append(new_rule)
             self.knowledge_graph.add_node(new_rule)
             self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
-            print(f"- '{new_rule}' (Relationship: {relationship})")
+            if debug:
+                print(f"- '{new_rule}' (Relationship: {relationship})")
             self._update_word_counter(new_rule)
         return new_rules
 
