@@ -1,10 +1,11 @@
 import networkx as nx
 import random
 import os
+import numpy as np
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from collections import Counter
-import spacy
+from scipy.spatial.distance import cosine
+from embedder import Embedder
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -142,7 +143,6 @@ class CorpusGenerator:
         if not all_rules:
             all_rules = [initial_seed]
             self.knowledge_graph.add_node(initial_seed)
-            self._update_word_counter(initial_seed)
         
             # First iteration (always sequential)
             print(f"\n--- Iteration 1 ---")
@@ -152,8 +152,6 @@ class CorpusGenerator:
             self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
-            for rule in all_rules:
-                self._update_word_counter(rule)
 
         # Subsequent iterations
         for i in range(2, iterations + 1, parallel_iterations):
@@ -174,7 +172,7 @@ class CorpusGenerator:
 
     def _process_iteration(self, iteration: int, debug: bool = False) -> List[str]:
         print(f"\n--- Iteration {iteration} ---")
-        seed_rule = self.select_seed_with_least_used_word()
+        seed_rule = self.select_most_novel_rule()
         print(f"Selected seed rule: '{seed_rule}'")
         new_rules_with_relations = self.expand_rule(seed_rule, debug=debug)
         rephrased_rules = self.rephrase_rules(new_rules_with_relations, debug=debug)
@@ -191,39 +189,30 @@ class CorpusGenerator:
             self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
             if debug:
                 print(f"- '{new_rule}' (Relationship: {relationship})")
-            self._update_word_counter(new_rule)
         return new_rules
 
-    def _update_word_counter(self, sentence: str):
+    def select_most_novel_rule(self) -> str:
         """
-        Update the word counter with nouns from the given sentence.
-        """
-        doc = self.nlp(sentence)
-        #print(f"POS tags: {[(token.text, token.pos_) for token in doc]}")
-        nouns = [token.text.lower() for token in doc if token.pos_ == "NOUN"]
-        self.word_counter.update(nouns)
-
-    def select_seed_with_least_used_word(self) -> str:
-        """
-        Select a node from the knowledge graph that contains one of the least used words.
+        Select the most novel rule from the knowledge graph based on vector embeddings.
         """
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
-        min_count = min(self.word_counter.values())
-        least_used_words = [word for word, count in self.word_counter.items() if count == min_count]
-        least_used_word = random.choice(least_used_words)
+        all_rules = list(self.knowledge_graph.nodes())
+        embeddings = self.embedder.embed_sentences(all_rules)
         
-        candidates = [node for node in self.knowledge_graph.nodes() if least_used_word in node.lower()]
+        # Calculate the average embedding
+        avg_embedding = np.mean(embeddings, axis=0)
         
-        #print(f"word_counter: {self.word_counter}")
-        print(f"Least used words: {least_used_words}\n")
-        print(f"Randomly selected least used word: '{least_used_word}'\n")
-        print(f"Candidates: {candidates}\n")
-        if candidates:
-            return random.choice(candidates)
-        else:
-            return random.choice(list(self.knowledge_graph.nodes()))
+        # Calculate the cosine distance between each rule's embedding and the average embedding
+        distances = [cosine(embedding, avg_embedding) for embedding in embeddings]
+        
+        # Select the rule with the maximum distance (most novel)
+        most_novel_index = np.argmax(distances)
+        most_novel_rule = all_rules[most_novel_index]
+        
+        print(f"Selected most novel rule: '{most_novel_rule}'\n")
+        return most_novel_rule
 
     def save_knowledge_graph(self, filename: str):
         """
