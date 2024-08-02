@@ -3,6 +3,7 @@ import random
 import os
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -43,6 +44,7 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
+        self.word_counter = Counter()
 
     def expand_rule(self, rule: str) -> List[Tuple[str, str]]:
         """
@@ -113,6 +115,7 @@ class CorpusGenerator:
         if not all_rules:
             all_rules = [initial_seed]
             self.knowledge_graph.add_node(initial_seed)
+            self._update_word_counter(initial_seed)
         
             # First iteration (always sequential)
             print(f"\n--- Iteration 1 ---")
@@ -122,6 +125,8 @@ class CorpusGenerator:
             self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
+            for rule in all_rules:
+                self._update_word_counter(rule)
 
         # Subsequent iterations
         for i in range(2, iterations + 1, parallel_iterations):
@@ -142,7 +147,7 @@ class CorpusGenerator:
 
     def _process_iteration(self, iteration: int) -> List[str]:
         print(f"\n--- Iteration {iteration} ---")
-        seed_rule = self.select_random_seed()
+        seed_rule = self.select_seed_with_least_used_word()
         print(f"Selected seed rule: '{seed_rule}'")
         new_rules_with_relations = self.expand_rule(seed_rule)
         rephrased_rules = self.rephrase_rules(new_rules_with_relations)
@@ -157,15 +162,30 @@ class CorpusGenerator:
             self.knowledge_graph.add_node(new_rule)
             self.knowledge_graph.add_edge(seed_rule, new_rule, relationship=relationship)
             print(f"- '{new_rule}' (Relationship: {relationship})")
+            self._update_word_counter(new_rule)
         return new_rules
 
-    def select_random_seed(self) -> str:
+    def _update_word_counter(self, sentence: str):
         """
-        Randomly select a node from the knowledge graph to use as the next seed phrase.
+        Update the word counter with words from the given sentence.
+        """
+        words = sentence.lower().split()
+        self.word_counter.update(words)
+
+    def select_seed_with_least_used_word(self) -> str:
+        """
+        Select a node from the knowledge graph that contains the least used word.
         """
         if not self.knowledge_graph.nodes:
-            raise ValueError("The knowledge graph is empty. Cannot select a random seed.")
-        return random.choice(list(self.knowledge_graph.nodes))
+            raise ValueError("The knowledge graph is empty. Cannot select a seed.")
+        
+        least_used_word = min(self.word_counter, key=self.word_counter.get)
+        candidates = [node for node in self.knowledge_graph.nodes() if least_used_word in node.lower()]
+        
+        if candidates:
+            return random.choice(candidates)
+        else:
+            return random.choice(list(self.knowledge_graph.nodes()))
 
     def save_knowledge_graph(self, filename: str):
         """
