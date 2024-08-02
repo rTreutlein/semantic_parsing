@@ -3,7 +3,7 @@ import os
 import re
 import argparse
 from utils.ragclass import RAG
-from utils.prompts import nl2pln, fix_opencog_pln
+from utils.prompts import nl2pln
 
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
