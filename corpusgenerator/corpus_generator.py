@@ -26,11 +26,11 @@ class CorpusGenerator:
     """
 
     EXAMPLES = {
-        #"specializes": ("If a plant receives sunlight, it grows.", "If plant uses sunlight to generate carbohydrates."),
-        #"generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
+        "specializes": ("If a plant receives sunlight, it grows.", "A plant uses sunlight to generate carbohydrates."),
+        "generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
         "explains": ("If a dog is given a treat, it wags its tail.", "Giving a dog a treat makes it happy.\nHappy dogs wag their tail."),
-        #"complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
-        #"negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
+        "complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
+        "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
     }
 
     REPHRASE_PROMPT = """
@@ -184,6 +184,7 @@ class CorpusGenerator:
         """
         tokens = word_tokenize(sentence)
         pos_tags = pos_tag(tokens)
+        print(f"POS tags: {pos_tags}")
         nouns = [word.lower() for word, pos in pos_tags if pos.startswith('NN')]
         self.word_counter.update(nouns)
 
