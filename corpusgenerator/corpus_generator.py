@@ -5,7 +5,7 @@ import numpy as np
 from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scipy.spatial.distance import cosine
-from embedder import Embedder
+import embedder
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -65,7 +65,6 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
-        self.embedder = Embedder()
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
@@ -196,7 +195,7 @@ class CorpusGenerator:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
         all_rules = list(self.knowledge_graph.nodes())
-        embeddings = self.embedder.embed_sentences(all_rules)
+        embeddings = embedder.embed_sentences(all_rules)
         
         # Calculate the average embedding
         avg_embedding = np.mean(embeddings, axis=0)
