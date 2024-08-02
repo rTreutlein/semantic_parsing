@@ -57,3 +57,4 @@ weasel==0.4.1
 wrapt==1.16.0
 hyperon
 pynndescent
+ollama

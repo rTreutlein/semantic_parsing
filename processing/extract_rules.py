@@ -28,11 +28,11 @@ def check_rule(sentence):
         completion = client.chat.completions.create(
             model="openai/gpt-4o-mini",
             temperature=0,
-            max_tokens=200,  # Increased to allow for longer predicate logic expressions
+            max_tokens=300,  # Increased to allow for longer predicate logic expressions
             messages=[
                 {
                     "role": "user",
-                    "content": f"""Convert this sentence into predicate logic: '{sentence}'""",
+                    "content": f"""Convert this sentence into predicate logic: '{sentence}' Keep your answer short. """,
                 },
             ],
         )
@@ -42,9 +42,10 @@ def check_rule(sentence):
         print(predicate_logic)
         
         # Check for implication symbols
-        implication_symbols = ['\u2192', '->', '\u21D2']  # Unicode right arrow, ASCII right arrow, Unicode rightwards double arrow
+        implication_symbols = ['\u2192', '->', '\u21D2', "\\rightarrow"]  # Unicode right arrow, ASCII right arrow, Unicode rightwards double arrow
         is_rule = any(symbol in predicate_logic for symbol in implication_symbols)
         
+        print(f"Is rule: {is_rule}")
         return sentence, "Yes" if is_rule else "No"
     except Exception as e:
         return sentence, "Error"

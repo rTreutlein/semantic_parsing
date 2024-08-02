@@ -1,9 +1,7 @@
-import json
 import numpy as np
 import time
 from data_processor import process_jsonl
 from embedder import embed_sentences, embed_from_cache
-from cluster_rater import cluster_and_rate
 
 from pynndescent import NNDescent
 
@@ -21,7 +19,7 @@ def main():
     embeddings, sentences = embed_from_cache()
 
     start_time = time.time()
-    index = NNDescent(embeddings, metric="cosine", n_neighbors=5)
+    index = NNDescent(embeddings, metric="cosine", n_neighbors=10)
     index.prepare()
     end_time = time.time()
     

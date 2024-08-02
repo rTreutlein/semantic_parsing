@@ -32,7 +32,8 @@ def main(file_path):
     # Filter sentences with language model
     #filtered_sentences = filter_sentences(sentences,6670)
     #print(f"{len(filtered_sentences)} sentences after filtering")
-    filtered_sentences = sentences
+    # Extract rules
+    filtered_sentences = extract_rules(sentences)
     
     # Update sentence_to_paragraph to only include filtered sentences
     filtered_sentence_to_paragraph = {s: sentence_to_paragraph[s] for s in filtered_sentences if s in sentence_to_paragraph}
@@ -57,14 +58,6 @@ def main(file_path):
     # Save ordered sentences to file
     ordered_sentences_file = file_path + '_ordered_sentences.json'
     save_ordered_sentences(sorted_sentences, ordered_sentences_file)
-
-    # Extract rules
-    rules = extract_rules(sorted_sentences)
-    print(f"Extracted {len(rules)} rules")
-
-    # Save extracted rules to file
-    rules_file = file_path + '_extracted_rules.json'
-    save_rules(rules, rules_file)
 
 if len(sys.argv) != 2:
     print("Usage: python main.py <file_path>")

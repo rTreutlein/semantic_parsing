@@ -2,8 +2,8 @@ from openai import OpenAI
 import os
 import re
 import argparse
-from ragclass import RAG
-from prompts import nl2pl, fix_predicatelogic
+from utils.ragclass import RAG
+from utils.prompts import nl2pl, fix_predicatelogic
 from processing.filter_predicate_logic import check_predicates
 
 # gets API Key from environment variable OPENAI_API_KEY
@@ -52,7 +52,8 @@ def process_sentence(line, rag):
     if pred_logic is None:
         return None
 
-    metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
+    pred_logic = pred_logic.replace("$", "\\$")
+    metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
 
     print(f"Metta: {metta}")
 
@@ -62,21 +63,15 @@ def process_sentence(line, rag):
         print(f"Fixed Logic: {pred_logic}")
         if pred_logic is None:
             return None
-        metta = os.popen(f"plparserexe \"{pred_logic.replace('$','\\$')}\"").read().strip()
+        pred_logic = pred_logic.replace("$", "\\$")
+        metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
         print(f"Fixed Metta: {metta}")
 
     if metta.startswith("Error:"):
         print("Failed to fix...")
         return None
 
-    is_trivial, _ = check_predicates(metta)
-    if is_trivial:
-        print("Skipping trivial metta statement.")
-        return None
-
     rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
-    with open("data2/fol.txt", "a") as file:
-        file.write(f"!(add-atom &kb2 (: d{idx} {metta}))\n")
     return metta
 
 def process_file(file_path, skip_lines=0, limit_lines=None):
@@ -90,6 +85,8 @@ def process_file(file_path, skip_lines=0, limit_lines=None):
             metta = process_sentence(line.strip(), rag)
             if metta is None:
                 break
+            with open("data2/fol.txt", "a") as file:
+                file.write(f"!(add-atom &kb2 (: d{i} {metta}))\n")
             res.append(metta)
             print(f"last idx: {i}")
             print("--------------------------------------------------------------------------------")

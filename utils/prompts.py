@@ -70,7 +70,8 @@ Your goal is to convert this sentence into OpenCog PLN notation. Follow these gu
 3. Break down complex concepts into simpler components using multiple links when necessary.
 4. Consider the logical structure and relationships within the sentence carefully.
 5. Use VariableNodes when appropriate, naming them $X, $Y, $Z, etc.
-6. Include strength and confidence values for each link (default to (stv 1.0 1.0) if uncertain).
+6. Include strength and confidence values for each link (default to (stv 0.9 0.5) if uncertain).
+7. The confidence value should never be 1.0
 
 Provide your final output enclosed within triple backticks (```). The output should be in valid OpenCog PLN format without any surrounding text.
 
@@ -80,12 +81,12 @@ Input: "Dogs are mammals that can bark."
 
 Output:
 ```
-(InheritanceLink (stv 1.0 1.0)
+(InheritanceLink (stv 0.9 0.9)
     (ConceptNode "Dog")
     (ConceptNode "Mammal")
 )
 
-(EvaluationLink (stv 1.0 1.0)
+(EvaluationLink (stv 0.9 0.9)
     (PredicateNode "can_bark")
     (ConceptNode "Dog")
 )
@@ -96,18 +97,3 @@ Additionally, here are some examples of previous conversions for reference:
 
 Now, please convert the given sentence to OpenCog PLN format following these instructions.
 """
-
-def fix_opencog_pln(line, original_pln, error_message, similar):
-    similar = '\n'.join(similar)
-    prompt = (
-        "Fix the following OpenCog PLN conversion error that occurred when converting the sentence:\n"
-        f"{line}\n"
-        "OpenCog PLN:\n"
-        f"{original_pln}\n"
-        "Error:\n"
-        f"{error_message}\n"
-        "Similar Sentences (for reference):\n"
-        f"{similar}\n"
-        "Output the fixed OpenCog PLN in between triple backticks."
-    )
-    return prompt

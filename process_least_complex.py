@@ -1,69 +1,76 @@
 import json
-import numpy as np
+import sys
+from cluster.embedder import embed_sentences, embed_from_cache
+from processing.sentence_complexity import calculate_complexity_score, calculate_corpus_statistics, normalize_measures, weights
+from utils.ragclass import RAG
+from convert_to_predicate_logic import process_sentence
 from pynndescent import NNDescent
-from cluster.embedder import embed_from_cache
-from processing.rate_complexity import analyze_sentence, calculate_complexity_score, calculate_corpus_statistics, normalize_measures
-from convert_to_predicate_logic import process_file
+import numpy as np
 
-def load_ordered_sentences(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+def load_sentence_to_paragraph(input_file):
 
-def find_densest_cluster(embeddings, sentences, n_least_complex=10, n_neighbors=100):
-    index = NNDescent(embeddings, metric="cosine", n_neighbors=n_neighbors)
+    """Load the sentence_to_paragraph dictionary from a JSON file."""
+    with open(input_file, 'r', encoding='utf-8') as f:
+        sentence_to_paragraph = json.load(f)
+    print(f"Loaded sentence_to_paragraph from {input_file}")
+    return sentence_to_paragraph
+
+def load_ordered_sentences(input_file):
+    """Load the ordered sentences from a JSON file."""
+    with open(input_file, 'r', encoding='utf-8') as f:
+        ordered_sentences = json.load(f)
+    print(f"Loaded ordered sentences from {input_file}")
+    return ordered_sentences
+
+def get_densest_cluster(embeddings):
+    """Get the densest cluster from the embeddings."""
+    index = NNDescent(embeddings, metric="cosine", n_neighbors=10)
     index.prepare()
-    
-    least_complex_indices = [sentences.index(s) for s in sentences[:n_least_complex]]
-    neighbors, distances = index.query([embeddings[i] for i in least_complex_indices], k=n_neighbors)
-    
-    average_distances = np.mean(distances, axis=1)
-    densest_cluster_index = np.argmin(average_distances)
-    
-    return least_complex_indices[densest_cluster_index], neighbors[densest_cluster_index]
+    neibours,distances = index.query(embeddings[-10:], k=100)
+    average_distances = np.median(distances, axis=1)
+    lowest_avg_distance_index = np.argmin(average_distances)
+    return neibours[lowest_avg_distance_index]
 
-def main(ordered_sentences_file):
-    # Load ordered sentences
-    ordered_sentences = load_ordered_sentences(ordered_sentences_file)
-    
-    # Load embeddings
-    embeddings, all_sentences = embed_from_cache()
-    
-    # Find the densest cluster among the 10 least complex sentences
-    center_index, neighbor_indices = find_densest_cluster(embeddings, all_sentences, n_least_complex=10, n_neighbors=100)
-    
-    # Get the sentences for the cluster
-    cluster_sentences = [all_sentences[i] for i in neighbor_indices]
-    
-    # Calculate corpus statistics for complexity sorting
-    means, std_devs, sentence_to_measures = calculate_corpus_statistics(cluster_sentences)
-    
-    # Define weights for complexity measures (you can adjust these as needed)
-    weights = {
-        'num_words': 0.5,
-        'num_clauses': 0.1,
-        'parse_tree_depth': 0.1,
-        'num_logical_connectives': 0.1,
-        'num_quantifiers': 0.1,
-        'num_modifiers': 0.1,
-    }
-    
-    # Sort cluster sentences by complexity
-    sorted_cluster_sentences = sorted(
-        cluster_sentences,
+
+if len(sys.argv) != 3:
+    print("Usage: python process_least_complex.py <sentence_to_paragraph_file> <ordered_sentences_file>")
+    sys.exit(1)
+
+sentence_to_paragraph_file = sys.argv[1]
+ordered_sentences_file = sys.argv[2]
+
+sentence_to_paragraph = load_sentence_to_paragraph(sentence_to_paragraph_file)
+#ordered_sentences = load_ordered_sentences(ordered_sentences_file)
+
+#embeddings = embed_sentences(ordered_sentences)
+embeddings,sentences = embed_from_cache()
+print('\n'.join(sentences[-10:]))
+print(embeddings.shape)
+densest_cluster = get_densest_cluster(embeddings)
+#densest_cluster contains the sentence index convert to sentence list
+densest_cluster = [sentences[i] for i in densest_cluster]
+
+for i in densest_cluster:
+    print(i)
+
+print("-"*100)
+
+# Calculate corpus statistics
+means, std_devs, sentence_to_measures = calculate_corpus_statistics(sentences)
+
+#sort cluster by complexity
+sorted_cluster = sorted(
+        densest_cluster,
         key=lambda s: calculate_complexity_score(
             normalize_measures(sentence_to_measures[s], means, std_devs),
             weights
         ),
-        reverse=True
     )
-    
-    # Save sorted cluster sentences to a file
-    with open('sorted_cluster_sentences.txt', 'w', encoding='utf-8') as f:
-        for sentence in sorted_cluster_sentences:
-            f.write(f"{sentence}\n")
-    
-    # Convert sorted cluster sentences to predicate logic
-    process_file('sorted_cluster_sentences.txt')
 
-if __name__ == "__main__":
-    main('path_to_your_ordered_sentences.json')
+# Process sentences
+rag = RAG(collection_name="least_complex")
+
+for sentence in sorted_cluster:
+    print(sentence)
+    #metta = process_sentence(sentence, rag)
+    #print(metta)
