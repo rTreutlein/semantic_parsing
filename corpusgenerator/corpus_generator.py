@@ -189,7 +189,8 @@ class CorpusGenerator:
 
     def select_most_novel_rule(self) -> str:
         """
-        Select the most novel rule from the knowledge graph based on vector embeddings.
+        Select a rule from the knowledge graph based on vector embeddings,
+        using the distance as a weight for sampling.
         """
         if not self.knowledge_graph.nodes:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
@@ -203,12 +204,14 @@ class CorpusGenerator:
         # Calculate the cosine distance between each rule's embedding and the average embedding
         distances = [cosine(embedding, avg_embedding) for embedding in embeddings]
         
-        # Select the rule with the maximum distance (most novel)
-        most_novel_index = np.argmax(distances)
-        most_novel_rule = all_rules[most_novel_index]
+        # Normalize distances to use as weights
+        weights = np.array(distances) / np.sum(distances)
         
-        print(f"Selected most novel rule: '{most_novel_rule}'\n")
-        return most_novel_rule
+        # Sample a rule based on the weights
+        selected_rule = random.choices(all_rules, weights=weights, k=1)[0]
+        
+        print(f"Selected rule: '{selected_rule}'\n")
+        return selected_rule
 
     def save_knowledge_graph(self, filename: str):
         """
