@@ -25,11 +25,31 @@ class CorpusGenerator:
     """
 
     EXAMPLES = {
-        "specializes": ("If a plant receives sunlight, it grows.", "A plant uses sunlight to generate carbohydrates."),
-        "generalizes": ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
-        "explains": ("If a dog is given a treat, it wags its tail.", "Giving a dog a treat makes it happy.\nHappy dogs wag their tail."),
-        "complements": ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
-        "negates": ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
+        "specializes": [
+            ("If a plant receives sunlight, it grows.", "A plant uses sunlight to generate carbohydrates."),
+            ("Water is essential for life.", "H2O molecules are crucial for cellular functions."),
+            ("Exercise improves health.", "Cardiovascular exercise strengthens the heart muscle."),
+        ],
+        "generalizes": [
+            ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
+            ("Apples are rich in fiber.", "Many fruits contain beneficial dietary fiber."),
+            ("Cats purr when content.", "Animals often display specific behaviors when they're happy."),
+        ],
+        "explains": [
+            ("If a dog is given a treat, it wags its tail.", "Giving a dog a treat makes it happy.\nHappy dogs wag their tail."),
+            ("The sky appears blue.", "Sunlight scatters in the atmosphere.\nBlue light scatters more than other colors."),
+            ("Plants grow towards light.", "Plants contain photoreceptors.\nPhotoreceptors detect light direction."),
+        ],
+        "complements": [
+            ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
+            ("Reading enhances vocabulary.", "Writing practice improves language skills."),
+            ("Adequate sleep boosts immune function.", "Stress management techniques support mental health."),
+        ],
+        "negates": [
+            ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
+            ("Regular exercise promotes health.", "A sedentary lifestyle can lead to various health issues."),
+            ("Saving money contributes to financial stability.", "Overspending can result in financial stress."),
+        ],
     }
 
     REPHRASE_PROMPT = """
@@ -56,7 +76,7 @@ class CorpusGenerator:
         Returns a list of tuples (new_rule, relationship).
         """
         def expand_for_edge_type(edge_type):
-            example_input, example_output = self.EXAMPLES[edge_type]
+            example_input, example_output = random.choice(self.EXAMPLES[edge_type])
             prompt = self.BASE_PROMPT.format(
                 sentence=rule,
                 relationship=edge_type,
