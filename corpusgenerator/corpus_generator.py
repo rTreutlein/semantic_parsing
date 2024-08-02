@@ -65,10 +65,7 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
-        self.word_counter = Counter()
-        
-        # Load spaCy model
-        self.nlp = spacy.load("en_core_web_sm")
+        self.embedder = Embedder()
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
