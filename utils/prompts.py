@@ -54,3 +54,60 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
         "Output the fixed logic in between triple backticks."
     )
     return prompt
+
+def nl2pln(sentence, similar):
+    return f"""
+You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format. Here is the sentence:
+
+<sentence>
+{sentence}
+</sentence>
+
+Your goal is to convert this sentence into OpenCog PLN notation. Follow these guidelines:
+
+1. Use simple English names for concepts and relationships.
+2. Use the appropriate OpenCog PLN syntax, including InheritanceLink, EvaluationLink, and ConceptNode.
+3. Break down complex concepts into simpler components using multiple links when necessary.
+4. Consider the logical structure and relationships within the sentence carefully.
+5. Use VariableNodes when appropriate, naming them $X, $Y, $Z, etc.
+6. Include strength and confidence values for each link (default to (stv 1.0 1.0) if uncertain).
+
+Provide your final output enclosed within triple backticks (```). The output should be in valid OpenCog PLN format without any surrounding text.
+
+Here's an example to guide you:
+
+Input: "Dogs are mammals that can bark."
+
+Output:
+```
+(InheritanceLink (stv 1.0 1.0)
+    (ConceptNode "Dog")
+    (ConceptNode "Mammal")
+)
+
+(EvaluationLink (stv 1.0 1.0)
+    (PredicateNode "can_bark")
+    (ConceptNode "Dog")
+)
+```
+
+Additionally, here are some examples of previous conversions for reference:
+{similar}
+
+Now, please convert the given sentence to OpenCog PLN format following these instructions.
+"""
+
+def fix_opencog_pln(line, original_pln, error_message, similar):
+    similar = '\n'.join(similar)
+    prompt = (
+        "Fix the following OpenCog PLN conversion error that occurred when converting the sentence:\n"
+        f"{line}\n"
+        "OpenCog PLN:\n"
+        f"{original_pln}\n"
+        "Error:\n"
+        f"{error_message}\n"
+        "Similar Sentences (for reference):\n"
+        f"{similar}\n"
+        "Output the fixed OpenCog PLN in between triple backticks."
+    )
+    return prompt
