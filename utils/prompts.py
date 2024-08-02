@@ -41,6 +41,7 @@ Now, please convert the given sentence to first-order predicate logic following 
 """
      
 def fix_predicatelogic(line, original_pred_logic, error_message, similar):
+    similar = '\n'.join(similar)
     prompt = (
         "Fix the following predicate logic error that happened when converting the Sentence:\n"
         f"{line}\n"
@@ -49,7 +50,7 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
         "Error:\n"
         f"{error_message}\n"
         "Similar Sentences (for reference):\n"
-        f"{"\n".join(similar)}\n"
+        f"{similar}\n"
         "Output the fixed logic in between triple backticks."
     )
     return prompt
