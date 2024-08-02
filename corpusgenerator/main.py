@@ -27,9 +27,6 @@ def main():
 
     # Start the corpus generation process
     initial_seeds = [
-        "x^2 is equal to x*x",
-        "The sum of the angles in a triangle is 180 degrees",
-        "Water boils at 100 degrees Celsius at sea level"
     ]
     iterations = 10
     parallel_iterations = 3  # Run 3 iterations in parallel after the first iteration
