@@ -26,7 +26,7 @@ def main():
         print("No existing knowledge graph found. Starting with an empty graph.")
 
     # Start the corpus generation process
-    initial_seed = "Coffee wakes people up."
+    initial_seed = "x^2 is equal to x*x"
     iterations = 10
     parallel_iterations = 3  # Run 3 iterations in parallel after the first iteration
     sentences, graph = generator.bootstrap_corpus(initial_seed, iterations, parallel_iterations)
