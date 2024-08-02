@@ -6,6 +6,7 @@ from typing import List, Dict, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scipy.spatial.distance import cosine
 import embedder
+from collections import defaultdict
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -65,6 +66,7 @@ class CorpusGenerator:
         self.llm_client = llm_client
         self.knowledge_graph = nx.DiGraph()
         self.rephrase_model = rephrase_model
+        self.embeddings = defaultdict(lambda: None)
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
@@ -151,6 +153,9 @@ class CorpusGenerator:
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
 
+        # Calculate embeddings for all rules
+        self._update_embeddings(all_rules)
+
         # Subsequent iterations
         for i in range(2, iterations + 1, parallel_iterations):
             batch_size = min(parallel_iterations, iterations - i + 1)
@@ -161,10 +166,12 @@ class CorpusGenerator:
                     for future in as_completed(future_to_iteration):
                         iteration_rules = future.result()
                         all_rules.extend(iteration_rules)
+                        self._update_embeddings(iteration_rules)
             else:
                 # Sequential processing for single iterations
                 iteration_rules = self._process_iteration(i)
                 all_rules.extend(iteration_rules)
+                self._update_embeddings(iteration_rules)
 
         return all_rules, self.knowledge_graph
 
@@ -198,7 +205,7 @@ class CorpusGenerator:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
         all_rules = list(self.knowledge_graph.nodes())
-        embeddings = embedder.embed_sentences(all_rules)
+        embeddings = [self.embeddings[rule] for rule in all_rules]
         
         # Calculate the average embedding
         avg_embedding = np.mean(embeddings, axis=0)
@@ -214,6 +221,16 @@ class CorpusGenerator:
         
         print(f"Selected rule: '{selected_rule}'\n")
         return selected_rule
+
+    def _update_embeddings(self, rules: List[str]):
+        """
+        Update the embeddings for the given rules.
+        """
+        new_rules = [rule for rule in rules if self.embeddings[rule] is None]
+        if new_rules:
+            new_embeddings = embedder.embed_sentences(new_rules)
+            for rule, embedding in zip(new_rules, new_embeddings):
+                self.embeddings[rule] = embedding
 
     def save_knowledge_graph(self, filename: str):
         """
