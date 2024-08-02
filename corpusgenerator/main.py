@@ -27,6 +27,8 @@ def main():
 
     # Start the corpus generation process
     initial_seeds = [
+        "If an object is dropped, it will fall to the ground.",
+        "When the sun sets, it gets darker outside."
     ]
     iterations = 10
     parallel_iterations = 3  # Run 3 iterations in parallel after the first iteration
