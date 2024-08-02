@@ -2,6 +2,8 @@ from openai import OpenAI
 import os
 import re
 import argparse
+import tempfile
+import subprocess
 from utils.ragclass import RAG
 from utils.prompts import nl2pln
 
@@ -41,7 +43,23 @@ def process_sentence(line, rag):
         if user_input == 'y':
             break
         elif user_input == 'n':
-            pln = input("Please provide the correct OpenCog PLN conversion: ")
+            # Create a temporary file with the LLM output
+            with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as temp_file:
+                temp_file.write(pln)
+                temp_file_path = temp_file.name
+
+            # Open the default text editor for the user to make changes
+            editor = os.environ.get('EDITOR', 'nano')  # Default to nano if EDITOR is not set
+            subprocess.call([editor, temp_file_path])
+
+            # Read the edited content
+            with open(temp_file_path, 'r') as temp_file:
+                pln = temp_file.read().strip()
+
+            # Remove the temporary file
+            os.unlink(temp_file_path)
+
+            print(f"Updated OpenCog PLN: {pln}")
             break
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
