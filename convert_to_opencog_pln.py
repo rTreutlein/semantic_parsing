@@ -47,15 +47,15 @@ def convert_to_opencog_pln(line, similar):
         print(tmp, end="", flush=True)
     return extract_opencog_pln(txt)
 
-def HumanCheck(pln : str) -> str:
+def HumanCheck(pln : str, sentence: str) -> str:
     while True:
         user_input = input("Is this conversion correct? (y/n): ").lower()
         if user_input == 'y':
             break
         elif user_input == 'n':
-            # Create a temporary file with the LLM output
+            # Create a temporary file with the sentence as reference and the LLM output
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as temp_file:
-                temp_file.write(pln)
+                temp_file.write(f"# Sentence: {sentence}\n{pln}")
                 temp_file_path = temp_file.name
 
             # Open the default text editor for the user to make changes
@@ -64,7 +64,8 @@ def HumanCheck(pln : str) -> str:
 
             # Read the edited content
             with open(temp_file_path, 'r') as temp_file:
-                pln = temp_file.read().strip()
+                lines = temp_file.readlines()
+                pln = ''.join(lines[1:]).strip()  # Exclude the first line (sentence reference)
 
             # Remove the temporary file
             os.unlink(temp_file_path)
@@ -89,7 +90,7 @@ def process_sentence(line, rag):
     if pln is None:
         return None
 
-    pln = HumanCheck(pln)
+    pln = HumanCheck(pln, line)
 
     rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}")
     
