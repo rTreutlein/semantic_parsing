@@ -6,12 +6,15 @@ import tempfile
 import subprocess
 from utils.ragclass import RAG
 from utils.prompts import nl2pln
+from python_metta_example import MeTTaHandler
 
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
   api_key=os.getenv("OPENROUTER_API_KEY"),
 )
+
+metta_handler = MeTTaHandler()
 
 def extract_opencog_pln(response):
     match = re.search(r'```(.*?)```', response, re.DOTALL)
@@ -65,6 +68,11 @@ def process_sentence(line, rag):
             print("Invalid input. Please enter 'y' or 'n'.")
 
     rag.store_embedding(f"Sentence: {line}\nOpenCog PLN: {pln}")
+    
+    # Add the PLN statement to MeTTa and run forward chaining
+    fc_result = metta_handler.add_atom_and_run_fc(pln)
+    print(f"Forward chaining result: {fc_result}")
+    
     return pln
 
 def process_file(file_path, skip_lines=0, limit_lines=None):
