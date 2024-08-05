@@ -4,6 +4,7 @@ import re
 import argparse
 import tempfile
 import subprocess
+import sys
 from utils.ragclass import RAG
 from utils.prompts import nl2pln
 from python_metta_example import MeTTaHandler
@@ -23,24 +24,30 @@ def extract_opencog_pln(response):
     return None
 
 def convert_to_opencog_pln(line, similar):
-    completion = client.chat.completions.create(
+
+    promt = nl2pln(line, similar)
+    print("--------------------------------------------------------------------------------")
+    print(f"Prompt: {promt}")
+    
+    stream = client.chat.completions.create(
         model="anthropic/claude-3.5-sonnet",
         temperature=0.5,
-        messages=[{"role": "user", "content": nl2pln(line, similar)},],
+        messages=[{"role": "user", "content":  promt},],
+        stream=True
     )
-    txt = completion.choices[0].message.content
+    
+    txt = ""
+    print("--------------------------------------------------------------------------------")
+    print("LLM output:")
+    for response in stream:
+        if response.choices[0].delta.content is None:
+            continue
+        tmp = response.choices[0].delta.content
+        txt += tmp
+        print(tmp, end="", flush=True)
     return extract_opencog_pln(txt)
 
-def process_sentence(line, rag):
-    similar = rag.search_similar(line, limit=5)
-
-    print(f"Processing line: {line}")
-    pln = convert_to_opencog_pln(line, similar)
-
-    print(f"OpenCog PLN: {pln}")
-    if pln is None:
-        return None
-
+def HumanCheck(pln : str) -> str:
     while True:
         user_input = input("Is this conversion correct? (y/n): ").lower()
         if user_input == 'y':
@@ -62,12 +69,29 @@ def process_sentence(line, rag):
             # Remove the temporary file
             os.unlink(temp_file_path)
 
+            print("--------------------------------------------------------------------------------")
             print(f"Updated OpenCog PLN: {pln}")
             break
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
 
-    rag.store_embedding(f"Sentence: {line}\nOpenCog PLN: {pln}")
+    return pln
+
+def process_sentence(line, rag):
+    similar = rag.search_similar(line, limit=5)
+
+    print(f"Processing line: {line}")
+    pln = convert_to_opencog_pln(line, similar)
+
+    print("--------------------------------------------------------------------------------")
+    print(f"Sentence: {line}")
+    print(f"OpenCog PLN: {pln}")
+    if pln is None:
+        return None
+
+    pln = HumanCheck(pln)
+
+    rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}")
     
     # Add the PLN statement to MeTTa and run forward chaining
     fc_result = metta_handler.add_atom_and_run_fc(pln)
