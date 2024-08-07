@@ -33,35 +33,40 @@ class CorpusGenerator:
         self.rephrase_model: str = rephrase_model
         self.embeddings: Dict[str, Optional[np.ndarray]] = defaultdict(lambda: None)
 
+    def _get_connected_edge_types(self, rule: str) -> List[str]:
+        """
+        Get the edge types connected to the given rule in the knowledge graph.
+        """
+        connected_edges = self.knowledge_graph.in_edges(rule, data=True) + self.knowledge_graph.out_edges(rule, data=True)
+        return list(set(edge['relationship'] for _, _, edge in connected_edges))
+
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
-        Expand a rule into related rules for each edge type.
+        Expand a rule into related rules for one edge type, chosen based on sampling from existing connections.
         Returns a list of tuples (new_rule, relationship).
         """
-        def expand_for_edge_type(edge_type):
-            examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in self.EXAMPLES[edge_type]])
-            prompt = self.BASE_PROMPT.format(
-                sentence=rule,
-                relationship=edge_type,
-                examples=examples
-            )
-            response = self.llm_client.generate(prompt)
-            return (edge_type, prompt, response, [(r.strip(), edge_type) for r in response.split('\n') if r.strip()])
+        connected_edge_types = self._get_connected_edge_types(rule)
+        
+        # If the rule has no connections, choose a random edge type from EXAMPLES
+        if not connected_edge_types:
+            edge_type = random.choice(list(self.EXAMPLES.keys()))
+        else:
+            edge_type = random.choice(connected_edge_types)
 
-        new_rules = []
-        output = []
-        with ThreadPoolExecutor() as executor:
-            future_to_edge_type = {executor.submit(expand_for_edge_type, edge_type): edge_type for edge_type in self.EXAMPLES}
-            for future in as_completed(future_to_edge_type):
-                edge_type, prompt, response, rules = future.result()
-                if debug:
-                    output.append(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
-                    output.append(f"Prompt: {prompt}")
-                    output.append(f"Response: {response}")
-                new_rules.extend(rules)
+        examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in self.EXAMPLES[edge_type]])
+        prompt = self.BASE_PROMPT.format(
+            sentence=rule,
+            relationship=edge_type,
+            examples=examples
+        )
+        response = self.llm_client.generate(prompt)
+        new_rules = [(r.strip(), edge_type) for r in response.split('\n') if r.strip()]
 
         if debug:
-            print("\n".join(output))
+            print(f"\nExpanding rule: '{rule}' with relationship: '{edge_type}'")
+            print(f"Prompt: {prompt}")
+            print(f"Response: {response}")
+
         return new_rules
 
     def bootstrap_corpus(self, initial_seeds: List[str], iterations: int = 2, parallel_iterations: int = 1) -> Tuple[List[str], nx.DiGraph]:
