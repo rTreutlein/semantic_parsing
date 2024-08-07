@@ -101,21 +101,14 @@ class CorpusGenerator:
             all_rules = initial_seeds.copy()
             for seed in initial_seeds:
                 self.knowledge_graph.add_node(seed)
-        
-            # First iteration (always sequential)
-            print(f"\n--- Iteration 1 ---")
-            for seed_rule in initial_seeds:
-                print(f"Processing seed: '{seed_rule}'")
-                new_rules = self.expand_rule(seed_rule, debug=True)
-                self._add_rules_to_graph(seed_rule, new_rules, all_rules)
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
 
         # Calculate embeddings for all rules
         self._update_embeddings(all_rules)
 
-        # Subsequent iterations
-        for i in range(2, iterations + 1, parallel_iterations):
+        # Iterations
+        for i in range(1, iterations + 1, parallel_iterations):
             batch_size = min(parallel_iterations, iterations - i + 1)
             if batch_size > 1:
                 # Parallel processing for batches
