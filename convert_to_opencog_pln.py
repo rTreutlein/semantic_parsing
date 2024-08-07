@@ -1,51 +1,23 @@
-from openai import OpenAI
-import os
-import re
 import argparse
-from utils.ragclass import RAG
+from utils.common import process_file, create_openai_completion, extract_logic
 from utils.prompts import nl2pln
 from python_metta_example import MeTTaHandler
 from utils.checker import HumanCheck
 
-# gets API Key from environment variable OPENAI_API_KEY
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key=os.getenv("OPENROUTER_API_KEY"),
-)
-
 metta_handler = MeTTaHandler()
 
-def extract_opencog_pln(response):
-    match = re.search(r'```(.*?)```', response, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return None
-
 def convert_to_opencog_pln(line, similar):
-
-    promt = nl2pln(line, similar)
+    prompt = nl2pln(line, similar)
     print("--------------------------------------------------------------------------------")
-    print(f"Prompt: {promt}")
+    print(f"Prompt: {prompt}")
     
-    stream = client.chat.completions.create(
-        model="anthropic/claude-3.5-sonnet",
-        temperature=0.5,
-        messages=[{"role": "user", "content":  promt},],
-        stream=True
-    )
-    
-    txt = ""
+    txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
     print("--------------------------------------------------------------------------------")
     print("LLM output:")
-    for response in stream:
-        if response.choices[0].delta.content is None:
-            continue
-        tmp = response.choices[0].delta.content
-        txt += tmp
-        print(tmp, end="", flush=True)
-    return extract_opencog_pln(txt)
+    print(txt)
+    return extract_logic(txt)
 
-def process_sentence(line, rag):
+def process_sentence(line, rag, index):
     similar = rag.search_similar(line, limit=5)
 
     print(f"Processing line: {line}")
@@ -67,23 +39,6 @@ def process_sentence(line, rag):
     
     return pln
 
-def process_file(file_path, skip_lines=0, limit_lines=None):
-    collection_name = os.path.splitext(os.path.basename(file_path))[0]
-    rag = RAG(collection_name=collection_name)
-    res = []
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
-        for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
-            pln = process_sentence(line.strip(), rag)
-            if pln is None:
-                break
-            with open("data2/opencog_pln.txt", "a") as file:
-                file.write(f"{pln}\n")
-            res.append(pln)
-            print(f"last idx: {i}")
-            print("--------------------------------------------------------------------------------")
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
     parser.add_argument("file_path", help="Path to the input file")
@@ -91,4 +46,4 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
     args = parser.parse_args()
 
-    process_file(args.file_path, args.skip, args.limit)
+    process_file(args.file_path, process_sentence, "data2/opencog_pln.txt", args.skip, args.limit)
