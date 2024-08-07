@@ -33,25 +33,43 @@ class CorpusGenerator:
         self.rephrase_model: str = rephrase_model
         self.embeddings: Dict[str, Optional[np.ndarray]] = defaultdict(lambda: None)
 
-    def _get_connected_edge_types(self, rule: str) -> List[str]:
+    def _get_connected_edge_types(self, rule: str) -> Dict[str, int]:
         """
-        Get the edge types connected to the given rule in the knowledge graph.
+        Get the outgoing edge types connected to the given rule in the knowledge graph,
+        along with their frequencies.
         """
-        connected_edges = self.knowledge_graph.in_edges(rule, data=True) + self.knowledge_graph.out_edges(rule, data=True)
-        return list(set(edge['relationship'] for _, _, edge in connected_edges))
+        connected_edges = self.knowledge_graph.out_edges(rule, data=True)
+        edge_type_counts = {}
+        for _, _, edge in connected_edges:
+            edge_type = edge['relationship']
+            edge_type_counts[edge_type] = edge_type_counts.get(edge_type, 0) + 1
+        return edge_type_counts
 
     def expand_rule(self, rule: str, debug: bool = False) -> List[Tuple[str, str]]:
         """
-        Expand a rule into related rules for one edge type, chosen based on sampling from existing connections.
-        Returns a list of tuples (new_rule, relationship).
+        Expand a rule into related rules for one edge type, chosen based on inverse probability
+        of existing connections. Returns a list of tuples (new_rule, relationship).
         """
         connected_edge_types = self._get_connected_edge_types(rule)
+        all_edge_types = set(self.EXAMPLES.keys())
         
-        # If the rule has no connections, choose a random edge type from EXAMPLES
-        if not connected_edge_types:
-            edge_type = random.choice(list(self.EXAMPLES.keys()))
-        else:
-            edge_type = random.choice(connected_edge_types)
+        # Calculate weights for edge type selection
+        weights = []
+        edge_types = []
+        for edge_type in all_edge_types:
+            if edge_type in connected_edge_types:
+                weight = 1 / connected_edge_types[edge_type]
+            else:
+                weight = 1  # Highest weight for non-existing edge types
+            weights.append(weight)
+            edge_types.append(edge_type)
+        
+        # Normalize weights
+        total_weight = sum(weights)
+        normalized_weights = [w / total_weight for w in weights]
+        
+        # Choose an edge type based on the calculated weights
+        edge_type = random.choices(edge_types, weights=normalized_weights, k=1)[0]
 
         examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in self.EXAMPLES[edge_type]])
         prompt = self.BASE_PROMPT.format(
