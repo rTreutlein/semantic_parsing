@@ -8,6 +8,7 @@ from scipy.spatial.distance import cosine
 import embedder
 from collections import defaultdict
 from llm_client import OpenAIClient
+from examples import EXAMPLES
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -24,43 +25,6 @@ class CorpusGenerator:
 
     Now, generate 1-2 simple rules for the given input rule, focusing on the {relationship} relationship.
     Output only the new rules separated by newlines without any other text.
-    """
-
-    EXAMPLES = {
-        "specializes": [
-            ("If a plant receives sunlight, it grows.", "A plant uses sunlight to generate carbohydrates."),
-            ("Water is essential for life.", "H2O molecules are crucial for cellular functions."),
-            ("Exercise improves health.", "Cardiovascular exercise strengthens the heart muscle."),
-        ],
-        "generalizes": [
-            ("If a dog is given a treat, it wags its tail.", "If an animal is rewarded, it shows signs of happiness."),
-            ("Apples are rich in fiber.", "Many fruits contain beneficial dietary fiber."),
-            ("Cats purr when content.", "Animals often display specific behaviors when they're happy."),
-        ],
-        "explains": [
-            ("If a dog is given a treat, it wags its tail.", "Giving a dog a treat makes it happy.\nHappy dogs wag their tail."),
-            ("The sky appears blue.", "Sunlight scatters in the atmosphere.\nBlue light scatters more than other colors."),
-            ("Plants grow towards light.", "Plants contain photoreceptors.\nPhotoreceptors detect light direction."),
-        ],
-        "complements": [
-            ("Regular exercise improves cardiovascular health.", "A balanced diet enhances overall physical well-being."),
-            ("Reading enhances vocabulary.", "Writing practice improves language skills."),
-            ("Adequate sleep boosts immune function.", "Stress management techniques support mental health."),
-        ],
-        "negates": [
-            ("Studying hard leads to good grades.", "Procrastination often results in poor academic performance."),
-            ("Regular exercise promotes health.", "A sedentary lifestyle can lead to various health issues."),
-            ("Saving money contributes to financial stability.", "Overspending can result in financial stress."),
-        ],
-    }
-
-    REPHRASE_PROMPT = """
-    Rephrase the following sentence to express the same meaning using different words.
-    Output only the rephrased sentence, nothing else. Ensure the output is a single line.
-
-    Original: {sentence}
-
-    Rephrased sentence:
     """
 
     def __init__(self, llm_client: OpenAIClient, rephrase_model: str = "meta-llama/llama-3.1-8b-instruct"):
@@ -100,36 +64,6 @@ class CorpusGenerator:
             print("\n".join(output))
         return new_rules
 
-    def rephrase_rules(self, rules: List[Tuple[str, str]], debug: bool = False) -> List[Tuple[str, str]]:
-        """
-        Rephrase the given rules using a different LLM model.
-        """
-        def rephrase_rule(rule_tuple: Tuple[str, str]) -> Tuple[str, str, str, str]:
-            rule, relationship = rule_tuple
-            prompt = self.REPHRASE_PROMPT.format(sentence=rule)
-            response = self.llm_client.generate(prompt, model=self.rephrase_model)
-            return (rule, prompt, response, relationship)
-
-        rephrased_rules = rules.copy()
-        output = []
-        with ThreadPoolExecutor() as executor:
-            future_to_rule = {executor.submit(rephrase_rule, rule_tuple): rule_tuple for rule_tuple in rules}
-            for future in as_completed(future_to_rule):
-                rule, prompt, response, relationship = future.result()
-                if debug:
-                    output.append(f"\nRephrasing rule: '{rule}'")
-                    output.append(f"Prompt: {prompt}")
-                if '\n' not in response:
-                    if debug:
-                        output.append(f"Rephrased: {response}")
-                    rephrased_rules.append((response, relationship))
-                elif debug:
-                    output.append(f"Skipped: Response contains multiple lines")
-
-        if debug:
-            print("\n".join(output))
-        return rephrased_rules
-
     def bootstrap_corpus(self, initial_seeds: List[str], iterations: int = 2, parallel_iterations: int = 1) -> Tuple[List[str], nx.DiGraph]:
         """
         Run the corpus bootstrapping process for a given number of iterations.
@@ -149,9 +83,8 @@ class CorpusGenerator:
             print(f"\n--- Iteration 1 ---")
             for seed_rule in initial_seeds:
                 print(f"Processing seed: '{seed_rule}'")
-                new_rules_with_relations = self.expand_rule(seed_rule, debug=True)
-                rephrased_rules = self.rephrase_rules(new_rules_with_relations, debug=True)
-                self._add_rules_to_graph(seed_rule, rephrased_rules, all_rules)
+                new_rules = self.expand_rule(seed_rule, debug=True)
+                self._add_rules_to_graph(seed_rule, new_rules, all_rules)
         else:
             print(f"\nUsing existing knowledge graph with {len(all_rules)} rules.")
 
