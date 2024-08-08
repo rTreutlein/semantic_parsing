@@ -2,7 +2,7 @@ import os
 import argparse
 from utils.common import process_file, create_openai_completion, extract_logic
 from utils.prompts import nl2pl, fix_predicatelogic
-from utils.checker import HumanCheck
+from utils.checker import HumanCheck, check_predicate_logic
 from metta.python_metta_example import MeTTaHandler
 
 def convert_to_predicate_logic(line, similar):
@@ -27,24 +27,14 @@ def process_sentence(line, rag, index):
     if pred_logic is None:
         return None
 
-    pred_logic = pred_logic.replace("$", "\\$")
-    metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
+    def fix_logic(pred_logic, error_message):
+        return fix_predicate_logic(line, similar, pred_logic, error_message)
+
+    metta = check_predicate_logic(pred_logic, fix_logic)
+    if metta is None:
+        return None
 
     print(f"Metta: {metta}")
-
-    if metta.startswith("Error:"):
-        print("Trying to fix...")
-        pred_logic = fix_predicate_logic(line, similar, pred_logic, metta)
-        print(f"Fixed Logic: {pred_logic}")
-        if pred_logic is None:
-            return None
-        pred_logic = pred_logic.replace("$", "\\$")
-        metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
-        print(f"Fixed Metta: {metta}")
-
-    if metta.startswith("Error:"):
-        print("Failed to fix...")
-        return None
 
     metta = HumanCheck(metta, line)
 

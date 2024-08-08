@@ -4,6 +4,25 @@ import subprocess
 import os
 
 
+def check_predicate_logic(pred_logic: str, fix_function=None) -> str:
+    pred_logic = pred_logic.replace("$", "\\$")
+    metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
+
+    if metta.startswith("Error:") and fix_function:
+        print("Trying to fix...")
+        pred_logic = fix_function(pred_logic, metta)
+        if pred_logic is None:
+            return None
+        pred_logic = pred_logic.replace("$", "\\$")
+        metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
+
+    if metta.startswith("Error:"):
+        print("Failed to fix...")
+        return None
+
+    return metta
+
+
 def HumanCheck(pln : str, sentence: str) -> str:
     while True:
         user_input = input("Is this conversion correct? (y/n): ").lower()
