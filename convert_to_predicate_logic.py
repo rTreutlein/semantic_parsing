@@ -2,6 +2,8 @@ import os
 import argparse
 from utils.common import process_file, create_openai_completion, extract_logic
 from utils.prompts import nl2pl, fix_predicatelogic
+from utils.checker import HumanCheck
+from metta.python_metta_example import MeTTaHandler
 
 def convert_to_predicate_logic(line, similar):
     prompt = nl2pl(line, similar)
@@ -12,6 +14,8 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     prompt = fix_predicatelogic(line, original_pred_logic, error_message, similar)
     txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
     return extract_logic(txt)
+
+metta_handler = MeTTaHandler()
 
 def process_sentence(line, rag, index):
     similar = rag.search_similar(line, limit=5)
@@ -41,6 +45,8 @@ def process_sentence(line, rag, index):
     if metta.startswith("Error:"):
         print("Failed to fix...")
         return None
+
+    metta = HumanCheck(metta, line)
 
     rag.store_embedding(f"Sentence: {line}\nPredicate Logic: {pred_logic}")
     return f"!(add-atom &kb2 (: d{index} {metta}))"

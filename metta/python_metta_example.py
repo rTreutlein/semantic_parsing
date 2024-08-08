@@ -20,9 +20,10 @@ class MeTTaHandler:
 
     def add_atom_and_run_fc(self, atom):
         identifier = self.generate_random_identifier()
-        self.metta.run(f'!(add-atom &kb (: {identifier} {atom}))')
-        res = self.metta.run(f'!(fc &kb (: {identifier} {atom}) (fromNumber 3))')
+        res = self.metta.run(f'!(add-atom &kb (: {identifier} {atom}))')
         return res
+        #res = self.metta.run(f'!(fc &kb (: {identifier} {atom}) (fromNumber 1))')
+        #return res
 
 if __name__ == "__main__":
     handler = MeTTaHandler()

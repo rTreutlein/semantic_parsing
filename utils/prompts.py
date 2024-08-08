@@ -1,5 +1,6 @@
 
 def nl2pl(sentence,similar):
+    similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to first-order predicate logic. Here is the sentence:
 
@@ -56,6 +57,7 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
     return prompt
 
 def nl2pln(sentence, similar):
+    similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format. Here is the sentence:
 
@@ -70,8 +72,7 @@ Your goal is to convert this sentence into OpenCog PLN notation. Follow these gu
 3. Break down complex concepts into simpler components using multiple links when necessary.
 4. Consider the logical structure and relationships within the sentence carefully.
 5. Use VariableNodes when appropriate, naming them $X, $Y, $Z, etc.
-6. Include strength and confidence values for each link (default to (stv 0.9 0.5) if uncertain).
-7. The confidence value should never be 1.0
+6. Don't inlucde a TruthValue
 
 Provide your final output enclosed within triple backticks (```). The output should be in valid OpenCog PLN format without any surrounding text.
 
@@ -81,12 +82,12 @@ Input: "Dogs are mammals that can bark."
 
 Output:
 ```
-(InheritanceLink (stv 0.9 0.9)
+(InheritanceLink
     (ConceptNode "Dog")
     (ConceptNode "Mammal")
 )
 
-(EvaluationLink (stv 0.9 0.9)
+(EvaluationLink
     (PredicateNode "can_bark")
     (ConceptNode "Dog")
 )

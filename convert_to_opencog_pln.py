@@ -1,7 +1,7 @@
 import argparse
 from utils.common import process_file, create_openai_completion, extract_logic
 from utils.prompts import nl2pln
-from python_metta_example import MeTTaHandler
+from metta.python_metta_example import MeTTaHandler
 from utils.checker import HumanCheck
 
 metta_handler = MeTTaHandler()
