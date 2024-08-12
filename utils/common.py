@@ -39,4 +39,7 @@ def create_openai_completion(prompt, model="openai/gpt-4o-2024-08-06", temperatu
         temperature=temperature,
         messages=[{"role": "user", "content": prompt}],
     )
+    if not completion.choices:
+        print(completion.finish_reason)
+        raise Exception("OpenAI API returned no choices")
     return completion.choices[0].message.content
