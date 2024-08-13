@@ -7,6 +7,7 @@ from corpusgenerator.corpus_generator import CorpusGenerator
 from convert_to_predicate_logic import process_sentence, metta_handler
 from utils.ragclass import RAG
 from utils.llm_client import OpenAIClient
+from check_compound_predicates import check_and_generate_equivalences
 
 def integrate_corpusgenerator():
     """
@@ -40,6 +41,14 @@ def integrate_corpusgenerator():
             metta_atom = process_sentence(new_sentence, rag_explicit, rag_predicate, f"generated_{i}")
             if metta_atom:
                 metta_handler.metta.run(metta_atom)
+                
+                # Check for compound predicates and generate equivalences
+                equivalences = check_and_generate_equivalences(metta_atom)
+                for compound, equivalence in equivalences:
+                    print(f"Compound Predicate found: {compound}")
+                    print(f"Generated Equivalence: {equivalence}")
+                    # You can choose to add these equivalences to the MeTTa knowledge base if needed
+                    # metta_handler.metta.run(f'(= ({compound} $x) {equivalence})')
 
     # Step 8: Save the final MeTTa knowledge base
     metta_handler.metta.run('!(save-space &kb "final_knowledge_base.metta")')
