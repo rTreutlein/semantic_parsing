@@ -3,55 +3,45 @@ This file describes the steps to integrate the corpusgenerator into the convert_
 """
 
 import os
-from corpusgenerator.utils.utils import print_deepest_path
-from corpusgenerator.generator import generate_corpus
+from corpusgenerator.corpus_generator import CorpusGenerator
 from convert_to_predicate_logic import process_sentence, metta_handler
 from utils.ragclass import RAG
+from utils.llm_client import OpenAIClient
 
 def integrate_corpusgenerator():
     """
     Steps to integrate corpusgenerator into the convert_to_predicate_logic.py pipeline:
     """
 
-    # Step 1: Generate the initial corpus
-    graph, roots = generate_corpus()
-
-    # Step 2: Print the deepest path in the generated corpus
-    print_deepest_path(graph, roots)
-
-    # Step 3: Initialize RAG instances for explicit sentences and predicate logic
+    # Step 1: Initialize the CorpusGenerator and other necessary components
+    llm_client = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
+    corpus_generator = CorpusGenerator(llm_client)
     rag_explicit = RAG(collection_name="generated_corpus_explicit")
     rag_predicate = RAG(collection_name="generated_corpus_predicate")
 
-    # Step 4: Process each sentence in the graph
-    for node in graph.nodes():
-        sentence = graph.nodes[node]['text']
+    # Step 2: Start with a seed sentence
+    seed_sentence = "All humans are mortal."
+
+    # Step 3: Convert the seed sentence to predicate logic
+    metta_atom = process_sentence(seed_sentence, rag_explicit, rag_predicate, "seed")
+    if metta_atom:
+        metta_handler.metta.run(metta_atom)
+
+    # Step 4: Main loop for generating and processing new sentences
+    for i in range(10):  # Adjust the number of iterations as needed
+        # Step 5: Get a new seed sentence from the MeTTa knowledge space
+        new_seed = metta_handler.metta.run('!(get-random-atom &kb)')
         
-        # Step 5: Convert the sentence to predicate logic
-        metta_atom = process_sentence(sentence, rag_explicit, rag_predicate, node)
+        # Step 6: Generate a new sentence using the CorpusGenerator
+        new_sentences = corpus_generator.expand_rule(new_seed)
         
-        if metta_atom:
-            # Step 6: Add the MeTTa atom to the knowledge base
-            metta_handler.metta.run(metta_atom)
+        # Step 7: Process the new sentence
+        for new_sentence, _ in new_sentences:
+            metta_atom = process_sentence(new_sentence, rag_explicit, rag_predicate, f"generated_{i}")
+            if metta_atom:
+                metta_handler.metta.run(metta_atom)
 
-    # Step 7: Use the updated knowledge base for further generations
-    def get_similar_sentences(sentence):
-        # Implement logic to retrieve similar sentences from the MeTTa knowledge base
-        # This could involve querying the knowledge base or using the RAG instances
-        pass
-
-    # Step 8: Generate new sentences using the updated knowledge base
-    new_graph, new_roots = generate_corpus(get_similar_sentences)
-
-    # Step 9: Process the new sentences
-    for node in new_graph.nodes():
-        sentence = new_graph.nodes[node]['text']
-        metta_atom = process_sentence(sentence, rag_explicit, rag_predicate, node)
-        
-        if metta_atom:
-            metta_handler.metta.run(metta_atom)
-
-    # Step 10: Save the final MeTTa knowledge base
+    # Step 8: Save the final MeTTa knowledge base
     metta_handler.metta.run('!(save-space &kb "final_knowledge_base.metta")')
 
 if __name__ == "__main__":
