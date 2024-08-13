@@ -16,14 +16,12 @@ def extract_logic(response):
     return None
 
 def process_file(file_path, process_sentence_func, output_file, skip_lines=0, limit_lines=None):
-    collection_name = os.path.splitext(os.path.basename(file_path))[0]
-    rag = RAG(collection_name=collection_name)
     res = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
-            result = process_sentence_func(line.strip(), rag, i)
+            result = process_sentence_func(line.strip(), i)
             if result is None:
                 break
             with open(output_file, "a") as out_file:
@@ -40,6 +38,6 @@ def create_openai_completion(prompt, model="openai/gpt-4o-2024-08-06", temperatu
         messages=[{"role": "user", "content": prompt}],
     )
     if not completion.choices:
-        print(completion.finish_reason)
+        print(completion)
         raise Exception("OpenAI API returned no choices")
     return completion.choices[0].message.content
