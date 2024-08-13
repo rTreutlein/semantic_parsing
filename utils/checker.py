@@ -4,7 +4,7 @@ import subprocess
 import os
 
 
-def check_predicate_logic(pred_logic: str, fix_function=None) -> str:
+def check_predicate_logic(pred_logic: str, fix_function=None) -> str|None:
     pred_logic = pred_logic.replace("$", "\\$")
     metta = os.popen(f"plparserexe \"{pred_logic}\"").read().strip()
 
