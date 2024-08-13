@@ -5,10 +5,10 @@ import numpy as np
 from typing import List, Dict, Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scipy.spatial.distance import cosine
-import embedder
+import utils.embedder as embedder
 from collections import defaultdict
-from llm_client import OpenAIClient
-from examples import EXAMPLES
+from utils.llm_client import OpenAIClient
+from utils.examples import EXAMPLES
 
 class CorpusGenerator:
     BASE_PROMPT = """
@@ -51,7 +51,7 @@ class CorpusGenerator:
         of existing connections. Returns a list of tuples (new_rule, relationship).
         """
         connected_edge_types = self._get_connected_edge_types(rule)
-        all_edge_types = set(self.EXAMPLES.keys())
+        all_edge_types = set(EXAMPLES.keys())
         
         # Calculate weights for edge type selection
         weights = []
@@ -71,7 +71,7 @@ class CorpusGenerator:
         # Choose an edge type based on the calculated weights
         edge_type = random.choices(edge_types, weights=normalized_weights, k=1)[0]
 
-        examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in self.EXAMPLES[edge_type]])
+        examples = "\n".join([f"Input rule: {input}\nOutput: {output}" for input, output in EXAMPLES[edge_type]])
         prompt = self.BASE_PROMPT.format(
             sentence=rule,
             relationship=edge_type,
@@ -108,16 +108,18 @@ class CorpusGenerator:
         self._update_embeddings(all_rules)
 
         # Iterations
-        for i in range(1, iterations + 1, parallel_iterations):
-            batch_size = min(parallel_iterations, iterations - i + 1)
+        for i in range(0, iterations, parallel_iterations):
+            batch_size = min(parallel_iterations, iterations - i)
             if batch_size > 1:
                 # Parallel processing for batches
+                tmp_iter_ruels = []
                 with ThreadPoolExecutor() as executor:
                     future_to_iteration = {executor.submit(self._process_iteration, j): j for j in range(i, i + batch_size)}
                     for future in as_completed(future_to_iteration):
                         iteration_rules = future.result()
+                        tmp_iter_ruels.extend(iteration_rules)
                         all_rules.extend(iteration_rules)
-                        self._update_embeddings(iteration_rules)
+                self._update_embeddings(tmp_iter_ruels)
             else:
                 # Sequential processing for single iterations
                 iteration_rules = self._process_iteration(i)
@@ -130,9 +132,8 @@ class CorpusGenerator:
         print(f"\n--- Iteration {iteration} ---")
         seed_rule: str = self.select_most_novel_rule()
         print(f"Selected seed rule: '{seed_rule}'")
-        new_rules_with_relations: List[Tuple[str, str]] = self.expand_rule(seed_rule, debug=debug)
-        rephrased_rules: List[Tuple[str, str]] = self.rephrase_rules(new_rules_with_relations, debug=debug)
-        return self._add_rules_to_graph(seed_rule, rephrased_rules, [], debug=debug)
+        new_rules: List[Tuple[str, str]] = self.expand_rule(seed_rule, debug=debug)
+        return self._add_rules_to_graph(seed_rule, new_rules, [], debug=debug)
 
     def _add_rules_to_graph(self, seed_rule: str, rephrased_rules: List[Tuple[str, str]], all_rules: List[str], debug: bool = False) -> List[str]:
         new_rules = []
@@ -156,6 +157,8 @@ class CorpusGenerator:
             raise ValueError("The knowledge graph is empty. Cannot select a seed.")
         
         all_rules: List[str] = list(self.knowledge_graph.nodes())
+        if len(all_rules) == 1:
+            return all_rules[0]
         embeddings: List[np.ndarray] = [self.embeddings[rule] for rule in all_rules]
         
         # Calculate the average embedding

@@ -1,9 +1,9 @@
 import os
 import networkx as nx
-from utils import print_tree
+from utils.utils import print_tree 
 
 def print_knowledge_graph():
-    graph_file = "knowledge_graph.graphml"
+    graph_file = "data/knowledge_graph.graphml"
     
     if os.path.exists(graph_file):
         print(f"Loading existing knowledge graph from {graph_file}")
@@ -15,7 +15,7 @@ def print_knowledge_graph():
         
         print("\nKnowledge Graph Tree Structure:")
         root_node = next(iter(graph.nodes()))  # Get the first node as the root
-        print_tree(graph, root_node)
+        print_tree(graph, [root_node])
     else:
         print(f"No knowledge graph file found at {graph_file}")
 

@@ -1,14 +1,16 @@
 import os
 from typing import List
-from llm_client import OpenAIClient
+from utils.llm_client import OpenAIClient
 from corpus_generator import CorpusGenerator
-from utils import print_tree, print_deepest_path
+from utils.utils import print_tree, print_deepest_path
 import networkx as nx
 
 def main() -> None:
     # Get OpenAI API key from environment variable
-    base_url = "https://openrouter.ai/api/v1"
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    #base_url = "https://openrouter.ai/api/v1"
+    #api_key = os.getenv("OPENROUTER_API_KEY")
+    base_url = "https://api.deepseek.com"
+    api_key = os.getenv("DEEPSEEK_API_KEY")
 
     if not api_key:
         raise ValueError("Please set the OPENROUTER_API_KEY environment variable.")
@@ -29,15 +31,10 @@ def main() -> None:
 
     # Start the corpus generation process
     initial_seeds: List[str] = [
-        "If an object is dropped, it will fall to the ground.",
-        "When the sun sets, it gets darker outside.",
-        "Water freezes at 0 degrees Celsius.",
-        "Plants need sunlight and water to grow.",
-        "Fire requires oxygen to burn.",
-        "Objects cast shadows when light shines on them."
+        "If you take care of something, it will last longer",
     ]
-    iterations: int = 1
-    parallel_iterations: int = 1  # Run 3 iterations in parallel after the first iteration
+    iterations: int = 100
+    parallel_iterations: int = 5  # Run 3 iterations in parallel after the first iteration
     sentences: List[str]
     graph: nx.DiGraph
     sentences, graph = generator.bootstrap_corpus(initial_seeds, iterations, parallel_iterations)
