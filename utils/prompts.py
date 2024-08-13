@@ -11,12 +11,11 @@ You are tasked with making all implicit information in a sentence explicit. Here
 Your goal is to rewrite this sentence, making all implicit information explicit. Follow these guidelines:
 
 1. Identify any implied subjects, objects, or actions that are not directly stated.
-2. Add context or background information that might be assumed but not explicitly mentioned.
-3. Clarify any ambiguous pronouns or references.
-4. Expand on any idiomatic expressions or figurative language.
-5. Maintain the original meaning of the sentence while adding clarity.
+2. Add the implied thigns to the sentence.
+3. Try to keep the sentence as concise as possible.
+4. Change as little as possible while still making the meaning of the sentence explicit.
 
-Provide your final output enclosed within triple backticks (```). The output should be a single, coherent sentence or a short paragraph if necessary.
+Provide your final output enclosed within triple backticks (```). The output should be a single, coherent sentence.
 
 Here are some examples of previous conversions for reference:
 {similar}
