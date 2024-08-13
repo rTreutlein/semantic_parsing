@@ -5,9 +5,9 @@ import string
 class MeTTaHandler:
     def __init__(self):
         self.metta = MeTTa()
-        self.run_metta_from_file('chainer.metta')
+        self.run_metta_from_file('metta/chainer.metta')
         self.metta.run('!(bind! &kb (new-space))')
-        self.run_metta_from_file('rules.metta')
+        self.run_metta_from_file('metta/rules.metta')
 
     def run_metta_from_file(self, file_path):
         with open(file_path, 'r') as file:
