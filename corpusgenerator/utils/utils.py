@@ -12,7 +12,6 @@ def _print_tree_recursive(graph: nx.DiGraph, node: str, level: int, visited: set
         return
     visited.add(node)
     
-    print("  " * level + f"- {node}")
     for neighbor in graph.neighbors(node):
         edge_data = graph.get_edge_data(node, neighbor)
         print("  " * (level + 1) + f"- [{edge_data['relationship']}] {neighbor}")

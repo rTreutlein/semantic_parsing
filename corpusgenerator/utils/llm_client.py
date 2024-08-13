@@ -4,7 +4,7 @@ class OpenAIClient:
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1"):
         self.client = OpenAI(base_url=base_url,api_key=api_key)
 
-    def generate(self, prompt: str, model: str = "openai/gpt-4o-mini") -> str:
+    def generate(self, prompt: str, model: str = "deepseek-chat") -> str:
         try:
             response = self.client.chat.completions.create(
                 model=model,
