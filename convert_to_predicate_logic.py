@@ -50,7 +50,11 @@ def process_sentence(line, rag_explicit, rag_predicate, index):
 
     print(f"Metta: {metta}")
 
-    metta = HumanCheck(metta, explicit_sentence)
+    while True:
+        pred_logic = HumanCheck(pred_logic, explicit_sentence)
+        metta = check_predicate_logic(pred_logic, id)
+        if metta:
+            break
 
     rag_explicit.store_embedding(f"Original Sentence: {line}\nExplicit Sentence: {explicit_sentence}")
     rag_predicate.store_embedding(f"Explicit Sentence: {explicit_sentence}\nPredicate Logic: {pred_logic}")
@@ -70,5 +74,5 @@ if __name__ == "__main__":
     def process_sentence_wrapper(line, index):
         return process_sentence(line, rag_explicit, rag_predicate, index)
 
-    process_file(args.file_path, process_sentence_wrapper, "data2/fol.txt", args.skip, args.limit)
+    process_file(args.file_path, process_sentence_wrapper, args.file_path.replace(".txt", "_fol.txt"), args.skip, args.limit)
 
