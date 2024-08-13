@@ -1,58 +1,67 @@
 import re
 from typing import List, Tuple
+from utils.llm_client import OpenAIClient
+import os
 
-def extract_predicates(metta_atom: str) -> List[str]:
-    """
-    Extract predicates from a MeTTa atom.
-    """
-    predicate_pattern = r'\(([^()]+)\)'
-    return re.findall(predicate_pattern, metta_atom)
+class CompoundPredicateChecker:
+    def __init__(self):
+        self.llm_client = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
 
-def is_compound_predicate(predicate: str) -> bool:
-    """
-    Check if a predicate is compound (contains multiple words).
-    """
-    return len(predicate.split()) > 1
+    def extract_predicates(self, metta_atom: str) -> List[str]:
+        """
+        Extract predicates from a MeTTa atom.
+        """
+        predicate_pattern = r'\(([^()]+)\)'
+        return re.findall(predicate_pattern, metta_atom)
 
-def split_compound_predicate(predicate: str) -> List[str]:
-    """
-    Split a compound predicate into its constituent parts.
-    """
-    return predicate.split()
+    def check_compound_predicates(self, predicates: List[str]) -> List[str]:
+        """
+        Use LLM to check if predicates are compound.
+        """
+        prompt = f"""
+        Given the following list of predicates, identify which ones are compound (contain multiple concepts):
+        {', '.join(predicates)}
 
-def generate_equivalence(compound_predicate: str, constituents: List[str]) -> str:
-    """
-    Generate the predicate logic equivalence of a compound predicate to its constituents.
-    """
-    compound_var = f"${compound_predicate.replace(' ', '_')}"
-    constituent_vars = [f"${const}" for const in constituents]
-    
-    left_side = f"{compound_predicate}({compound_var})"
-    right_side = " ∧ ".join([f"{const}({var})" for const, var in zip(constituents, constituent_vars)])
-    
-    return f"∀ {compound_var} ({left_side} ↔ ({right_side}))"
+        Return only the compound predicates, separated by commas.
+        """
+        response = self.llm_client.generate(prompt)
+        return [pred.strip() for pred in response.split(',') if pred.strip()]
 
-def check_and_generate_equivalences(metta_atom: str) -> List[Tuple[str, str]]:
-    """
-    Check for compound predicates in a MeTTa atom and generate their equivalences.
-    """
-    predicates = extract_predicates(metta_atom)
-    equivalences = []
+    def generate_equivalence(self, compound_predicate: str) -> str:
+        """
+        Use LLM to generate the predicate logic equivalence of a compound predicate.
+        """
+        prompt = f"""
+        Generate the predicate logic equivalence for the compound predicate: {compound_predicate}
 
-    for predicate in predicates:
-        if is_compound_predicate(predicate):
-            constituents = split_compound_predicate(predicate)
-            equivalence = generate_equivalence(predicate, constituents)
+        Use the following format:
+        ∀ $x (CompoundPredicate($x) ↔ (Predicate1($x) ∧ Predicate2($x) ∧ ...))
+
+        Return only the equivalence statement.
+        """
+        return self.llm_client.generate(prompt)
+
+    def check_and_generate_equivalences(self, metta_atom: str) -> List[Tuple[str, str]]:
+        """
+        Check for compound predicates in a MeTTa atom and generate their equivalences using LLM.
+        """
+        predicates = self.extract_predicates(metta_atom)
+        compound_predicates = self.check_compound_predicates(predicates)
+        equivalences = []
+
+        for predicate in compound_predicates:
+            equivalence = self.generate_equivalence(predicate)
             equivalences.append((predicate, equivalence))
 
-    return equivalences
+        return equivalences
 
 # Example usage
 if __name__ == "__main__":
+    checker = CompoundPredicateChecker()
     metta_atom = "(= (LargeRedBall $x) (and (Ball $x) (Large $x) (Red $x)))"
-    results = check_and_generate_equivalences(metta_atom)
+    results = checker.check_and_generate_equivalences(metta_atom)
     
     for compound, equivalence in results:
         print(f"Compound Predicate: {compound}")
-        print(f"Equivalence: {equivalence}")
+        print(f"Generated Equivalence: {equivalence}")
         print()
