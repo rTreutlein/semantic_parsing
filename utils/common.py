@@ -21,7 +21,13 @@ def process_file(file_path, process_sentence_func, output_file, skip_lines=0, li
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end], start=skip_lines):
-            result = process_sentence_func(line.strip(), i)
+            if i < skip_lines:
+                result = rag.search_similar(line.strip(), limit=1)
+                if result:
+                    result = result[0]
+                    metta_handler.add_atom_and_run_fc(result)
+            else:
+                result = process_sentence_func(line.strip(), i)
             if result is None:
                 break
             with open(output_file, "a") as out_file:

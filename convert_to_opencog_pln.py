@@ -52,6 +52,14 @@ if __name__ == "__main__":
     rag=RAG(collection_name=f"{collection_name}_pln")
 
     def process_sentence_wrapper(line, index):
-        return process_sentence(line, rag)
+        if index < args.skip:
+            # Retrieve PLN from RAG database and add to MeTTa
+            similar = rag.search_similar(line, limit=1)
+            if similar:
+                pln = similar[0]
+                metta_handler.add_atom_and_run_fc(pln)
+                return pln
+        else:
+            return process_sentence(line, rag)
 
     process_file(args.file_path, process_sentence_wrapper, "data2/opencog_pln.txt", args.skip, args.limit)
