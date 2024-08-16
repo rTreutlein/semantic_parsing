@@ -80,3 +80,27 @@ class RAG:
         except Exception as e:
             print(f"An unexpected error occurred: {str(e)}")
             return []
+    def search_exact(self, sentence):
+        """
+        Search for an exact match of the given sentence in Qdrant.
+        """
+        try:
+            query_vector = self.get_embedding(sentence)
+            search_result = self.qdrant_client.search(
+                collection_name=self.collection_name,
+                query_vector=query_vector,
+                limit=10  # Arbitrary limit to get a reasonable number of candidates
+            )
+            for hit in search_result:
+                if hit.vector == query_vector:
+                    return hit.payload.get("text")
+            return None
+        except Timeout:
+            print("Timeout occurred during the search operation")
+            return None
+        except UnexpectedResponse as e:
+            print(f"Unexpected response from Qdrant: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
+            return None
