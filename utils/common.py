@@ -15,7 +15,10 @@ def extract_logic(response):
         return match.group(1).strip()
     return None
 
-def process_file(file_path, process_sentence_func, output_file, skip_lines=0, limit_lines=None):
+def process_file(file_path, process_sentence_func, output_file, skip_lines=0, limit_lines=None, rag=None, metta_handler=None):
+    if rag is None or metta_handler is None:
+        raise ValueError("rag and metta_handler must be provided")
+        
     res = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
