@@ -21,8 +21,6 @@ def fix_predicate_logic(line, similar, original_pred_logic, error_message):
     txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
     return extract_logic(txt)
 
-metta_handler = MeTTaHandler()
-
 def process_sentence(line, rag_explicit, rag_predicate, index):
     similar_original = rag_explicit.search_similar(line, limit=5)
 
