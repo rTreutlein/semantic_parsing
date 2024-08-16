@@ -31,18 +31,20 @@ class RAG:
             print(f"Error occurred while getting embedding: {str(e)}")
             raise
 
-    def store_embedding(self, text):
+    def store_embedding(self, text, payload=None):
         """
         Store the embedding of a predicate in Qdrant if it doesn't already exist.
         """
         embedding = self.get_embedding(text)
+        if payload is None:
+            payload = {"text": text}
         self.qdrant_client.upsert(
             collection_name=self.collection_name,
             points=[
                 models.PointStruct(
                     id=str(uuid.uuid4()),
                     vector=embedding,
-                    payload={"text": text}
+                    payload=payload
                 )
             ]
         )
