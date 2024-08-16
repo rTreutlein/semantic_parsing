@@ -17,7 +17,7 @@ def convert_to_opencog_pln(line, similar):
     print(txt)
     return extract_logic(txt)
 
-def process_sentence(line, rag, index):
+def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
 
     print(f"Processing line: {line}")
@@ -45,5 +45,10 @@ if __name__ == "__main__":
     parser.add_argument("--skip", type=int, default=0, help="Number of lines to skip at the beginning of the file")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
     args = parser.parse_args()
+
+    rag= RAG(collection_name=f"{collection_name}_pln")
+
+    def process_sentence_wrapper(line, index):
+        return process_sentence(line, rag)
 
     process_file(args.file_path, process_sentence, "data2/opencog_pln.txt", args.skip, args.limit)
