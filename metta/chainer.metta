@@ -60,7 +60,9 @@
           ($mapped-tail (map $f $tail)))
      ())))
 
-(= (clean_fc $kb $query $n) (clean (fc $kb $query $n)))
+(= (clean_fc $kb $query $n)
+   (let (($fc_result (fc $kb $query $n)))
+     (clean $fc_result)))
 
 (= (testd) (: p (-> a b)))
 (= (testd) (: p c))
