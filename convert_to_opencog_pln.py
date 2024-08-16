@@ -3,6 +3,8 @@ from utils.common import process_file, create_openai_completion, extract_logic
 from utils.prompts import nl2pln
 from metta.python_metta_example import MeTTaHandler
 from utils.checker import HumanCheck
+from utils.ragclass import RAG
+import os
 
 metta_handler = MeTTaHandler()
 
@@ -46,9 +48,10 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
     args = parser.parse_args()
 
-    rag= RAG(collection_name=f"{collection_name}_pln")
+    collection_name = os.path.splitext(os.path.basename(args.file_path))[0]
+    rag=RAG(collection_name=f"{collection_name}_pln")
 
     def process_sentence_wrapper(line, index):
         return process_sentence(line, rag)
 
-    process_file(args.file_path, process_sentence, "data2/opencog_pln.txt", args.skip, args.limit)
+    process_file(args.file_path, process_sentence_wrapper, "data2/opencog_pln.txt", args.skip, args.limit)

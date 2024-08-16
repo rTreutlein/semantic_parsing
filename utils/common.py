@@ -31,7 +31,7 @@ def process_file(file_path, process_sentence_func, output_file, skip_lines=0, li
             print("--------------------------------------------------------------------------------")
     return res
 
-def create_openai_completion(prompt, model="openai/gpt-4o-2024-08-06", temperature=0.5):
+def create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5):
     completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
