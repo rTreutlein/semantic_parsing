@@ -42,3 +42,30 @@
     (let (: $prfarg $prms) (bc $kb (: $prfarg $prms) $k)
      (fc $kb (: ($prfabs $prfarg) $ccln) $k)))
 
+
+(= (clean $a)
+    (case (trace! $a $a)
+     (
+      ((: $prf (-> $c $d)) (empty))
+      ($_ $a)
+     )
+    )
+)
+
+(= (map $f $xs)
+   (if (== $xs ()) ()
+   (let* (($head (car-atom $xs))
+          ($tail (cdr-atom $xs))
+          ($mapped-head ($f $head))
+          ($mapped-tail (map $f $tail)))
+     ())))
+
+(= (clean_fc $kb $query $n) (clean (fc $kb $query $n)))
+
+(= (testd) (: p (-> a b)))
+(= (testd) (: p c))
+(= (testd) (: p b))
+
+!(testd)
+!(clean (testd))
+
