@@ -1,10 +1,13 @@
 !(add-atom &kb (: ModusPonens
-                (ImplicationLink
-                    (AndLink
-                        (ImplicationLink (VariableNode "$p") (VariableNode "$q"))
-                        (VariableNode "$p")
-                    )
-                    (VariableNode "$q"))))
+                (-> (ImplicationLink $p $q)
+                    (-> "$p"
+                    "$q"))))
+
+!(add-atom &kb (: ModusPonens
+                (-> (InheritanceLink $p $q)
+                    (-> "$p"
+                    "$q"))))
+
 
 ; Hypothetical Syllogism
 !(add-atom &kb (: HypotheticalSyllogism
