@@ -6,7 +6,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from requests.exceptions import RequestException, Timeout
 
 class RAG:
-    def __init__(self, collection_name="sentences", ollama_base_url="http://spc:11434", qdrant_url="http://localhost:6333"):
+    def __init__(self, collection_name="sentences", ollama_base_url="http://127.0.0.1:11434", qdrant_url="http://truenas:9333"):
         self.collection_name = collection_name
         self.ollama_base_url = ollama_base_url
         self.qdrant_client = QdrantClient(qdrant_url)
@@ -19,7 +19,7 @@ class RAG:
         try:
             response = requests.post(
                 f"{self.ollama_base_url}/api/embeddings",
-                json={"model": "rjmalagon/gte-qwen2-7b-instruct-embed-f16", "prompt": text},
+                json={"model": "nomic-embed-text", "prompt": text},
                 timeout=30
             )
             response.raise_for_status()
