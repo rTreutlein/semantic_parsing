@@ -55,7 +55,7 @@ class RAG:
         if not any(collection.name == self.collection_name for collection in collections):
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=models.VectorParams(size=3584, distance=models.Distance.COSINE),
+                vectors_config=models.VectorParams(size=768, distance=models.Distance.COSINE),
             )
             print(f"Created '{self.collection_name}' collection in Qdrant")
 
