@@ -57,7 +57,8 @@ if __name__ == "__main__":
             similar = rag.search_similar(line, limit=1)
             if similar:
                 pln = similar[0]
-                metta_handler.add_atom_and_run_fc(pln)
+                fc_result = metta_handler.add_atom_and_run_fc(pln)
+                print(f"Forward chaining result: {fc_result}")
                 return pln
         else:
             return process_sentence(line, rag)

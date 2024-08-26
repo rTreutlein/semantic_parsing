@@ -80,6 +80,7 @@ class RAG:
         except Exception as e:
             print(f"An unexpected error occurred: {str(e)}")
             return []
+
     def search_exact(self, sentence):
         """
         Search for an exact match of the given sentence in Qdrant.
