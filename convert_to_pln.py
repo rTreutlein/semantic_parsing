@@ -53,7 +53,11 @@ def process_sentence(line, rag):
     if fc_results:
         english_results = [convert_pln_to_english(result) for result in fc_results]
         print(f"Forward chaining results in English: {english_results}")
-        rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}\nForward Chaining:\n{fc_results}\nEnglish Results:\n{english_results}")
+        
+        # Store each forward chaining result separately
+        for fc_result, english_result in zip(fc_results, english_results):
+            rag.store_embedding(f"Sentence:\n{english_result}\nOpenCog PLN:\n{fc_result}")
+        
         return pln, fc_results, english_results
     
     return pln, None, None
@@ -79,6 +83,11 @@ if __name__ == "__main__":
                 if fc_results:
                     english_results = [convert_pln_to_english(result) for result in fc_results]
                     print(f"Forward chaining results in English: {english_results}")
+                    
+                    # Store each forward chaining result separately
+                    for fc_result, english_result in zip(fc_results, english_results):
+                        rag.store_embedding(f"Sentence:\n{english_result}\nOpenCog PLN:\n{fc_result}")
+                    
                     return pln, fc_results, english_results
                 return pln, None, None
         else:
