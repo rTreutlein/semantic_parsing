@@ -47,14 +47,14 @@ def process_sentence(line, rag):
     rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}")
     
     # Add the PLN statement to MeTTa and run forward chaining
-    fc_result = metta_handler.add_atom_and_run_fc(pln)
-    print(f"Forward chaining result: {fc_result}")
+    fc_results = metta_handler.add_atom_and_run_fc(pln)
+    print(f"Forward chaining results: {fc_results}")
     
-    if fc_result:
-        english_result = convert_pln_to_english(fc_result)
-        print(f"Forward chaining result in English: {english_result}")
-        rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}\nForward Chaining:\n{fc_result}\nEnglish Result:\n{english_result}")
-        return pln, fc_result, english_result
+    if fc_results:
+        english_results = [convert_pln_to_english(result) for result in fc_results]
+        print(f"Forward chaining results in English: {english_results}")
+        rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}\nForward Chaining:\n{fc_results}\nEnglish Results:\n{english_results}")
+        return pln, fc_results, english_results
     
     return pln, None, None
 
@@ -74,12 +74,12 @@ if __name__ == "__main__":
             similar = rag.search_similar(line, limit=1)
             if similar:
                 pln = similar[0]
-                fc_result = metta_handler.add_atom_and_run_fc(pln)
-                print(f"Forward chaining result: {fc_result}")
-                if fc_result:
-                    english_result = convert_pln_to_english(fc_result)
-                    print(f"Forward chaining result in English: {english_result}")
-                    return pln, fc_result, english_result
+                fc_results = metta_handler.add_atom_and_run_fc(pln)
+                print(f"Forward chaining results: {fc_results}")
+                if fc_results:
+                    english_results = [convert_pln_to_english(result) for result in fc_results]
+                    print(f"Forward chaining results in English: {english_results}")
+                    return pln, fc_results, english_results
                 return pln, None, None
         else:
             return process_sentence(line, rag)
