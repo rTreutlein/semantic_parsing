@@ -1,6 +1,6 @@
 import argparse
 from utils.common import process_file, create_openai_completion, extract_logic
-from utils.prompts import nl2pln
+from utils.prompts import nl2pln, pln2nl
 from metta.python_metta_example import MeTTaHandler
 from utils.checker import HumanCheck
 from utils.ragclass import RAG
@@ -18,6 +18,17 @@ def convert_to_opencog_pln(line, similar):
     print("LLM output:")
     print(txt)
     return extract_logic(txt)
+
+def convert_pln_to_english(pln):
+    prompt = pln2nl(pln)
+    print("--------------------------------------------------------------------------------")
+    print(f"PLN to NL Prompt: {prompt}")
+    
+    txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
+    print("--------------------------------------------------------------------------------")
+    print("PLN to NL LLM output:")
+    print(txt)
+    return txt.strip()
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
@@ -39,7 +50,13 @@ def process_sentence(line, rag):
     fc_result = metta_handler.add_atom_and_run_fc(pln)
     print(f"Forward chaining result: {fc_result}")
     
-    return pln
+    if fc_result:
+        english_result = convert_pln_to_english(fc_result)
+        print(f"Forward chaining result in English: {english_result}")
+        rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}\nForward Chaining:\n{fc_result}\nEnglish Result:\n{english_result}")
+        return pln, fc_result, english_result
+    
+    return pln, None, None
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
@@ -59,7 +76,11 @@ if __name__ == "__main__":
                 pln = similar[0]
                 fc_result = metta_handler.add_atom_and_run_fc(pln)
                 print(f"Forward chaining result: {fc_result}")
-                return pln
+                if fc_result:
+                    english_result = convert_pln_to_english(fc_result)
+                    print(f"Forward chaining result in English: {english_result}")
+                    return pln, fc_result, english_result
+                return pln, None, None
         else:
             return process_sentence(line, rag)
 

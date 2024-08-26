@@ -81,6 +81,20 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
     return prompt
 
 def nl2pln(sentence, similar):
+    # ... (existing code remains unchanged)
+
+def pln2nl(pln):
+    return f"""
+You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Logic Networks) statements into natural language. Your task is to convert the following PLN statement into clear, concise English:
+
+<pln>
+{pln}
+</pln>
+
+Please provide a natural language explanation of what this PLN statement means. Make sure your explanation is easy to understand for someone who isn't familiar with PLN syntax. Focus on conveying the meaning and implications of the statement.
+
+Natural language explanation:
+"""
     similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format. Here is the sentence:
