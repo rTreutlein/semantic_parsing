@@ -5,9 +5,10 @@ import string
 class MeTTaHandler:
     def __init__(self):
         self.metta = MeTTa()
-        self.run_metta_from_file('metta/chainer.metta')
-        self.metta.run('!(bind! &kb (new-space))')
-        self.run_metta_from_file('metta/rules.metta')
+        self.run_metta_from_file('metta/Num.metta')
+        self.run_metta_from_file('metta/Intersection.metta')
+        self.run_metta_from_file('metta/sythesize.metta')
+        self.run_metta_from_file('metta/rules_pln.metta')
 
     def run_metta_from_file(self, file_path):
         with open(file_path, 'r') as file:
@@ -20,13 +21,18 @@ class MeTTaHandler:
 
     def add_atom_and_run_fc(self, atom):
         identifier = self.generate_random_identifier()
-        res = self.metta.run(f'!(add-atom &kb (: {identifier} {atom}))')
+        self.metta.run(f'(= (kb) (: {identifier} {atom}))')
+        res = self.metta.run('!(fc kb rb)')
+        out = [elem.get_children()[2] for elem in res[0]]
+        return out
+
+    def run(self,atom):
+        res = self.metta.run(atom)
         return res
-        #res = self.metta.run(f'!(fc &kb (: {identifier} {atom}) (fromNumber 1))')
-        #return res
 
 if __name__ == "__main__":
     handler = MeTTaHandler()
     # Example usage
-    result = handler.add_atom_and_run_fc("(Concept \"example\")")
+    result = handler.add_atom_and_run_fc("(ImplicationLink (PredicateNode b) (PredicateNode c))")
+    result = handler.add_atom_and_run_fc("(ImplicationLink (PredicateNode a) (PredicateNode b))")
     print(result)

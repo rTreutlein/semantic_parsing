@@ -1,34 +1,34 @@
-!(add-atom &kb (: ModusPonens
+(= (rb) (: ModusPonens
                 (-> (ImplicationLink $p $q) $p $q)))
 
-!(add-atom &kb (: ModusPonens
+(= (rb) (: ModusPonens
                 (-> (InheritanceLink $p $q) $p $q)))
 
 ; Hypothetical Syllogism
-!(add-atom &kb (: HypotheticalSyllogism
+(= (rb) (: HypotheticalSyllogism
                 (-> (ImplicationLink $p $q) (ImplicationLink $q $r)
                     (ImplicationLink $p $r))))
 
 ; Disjunctive Syllogism (Left)
-!(add-atom &kb (: DisjunctiveSyllogism
+(= (rb) (: DisjunctiveSyllogism
                 (-> (OrLink $p $q) (NotLink $p) $q)))
 
 ; Disjunctive Syllogism (Right)
-!(add-atom &kb (: DisjunctiveSyllogism
+(= (rb) (: DisjunctiveSyllogism
                 (-> (OrLink $p $q) (NotLink $q) $p)))
 
 ; Conjunction Introduction
-!(add-atom &kb (: ConjunctionIntroduction
+(= (rb) (: ConjunctionIntroduction
                 (-> $p $q (AndLink $p $q))))
 
 ; Conjunction Elimination (Left)
-!(add-atom &kb (: ConjunctionEliminationLeft
+(= (rb) (: ConjunctionEliminationLeft
                 (-> (AndLink $p $q) $p)))
 
 ; Conjunction Elimination (Right)
-!(add-atom &kb (: ConjunctionEliminationRight
+(= (rb) (: ConjunctionEliminationRight
                 (-> (AndLink $p $q) $q)))
 
 ; Disjunction Introduction
-!(add-atom &kb (: DisjunctionIntroductionLeft
+(= (rb) (: DisjunctionIntroduction
                 (-> $p $q (OrLink $p $q))))
