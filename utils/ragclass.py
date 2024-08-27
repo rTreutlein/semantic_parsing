@@ -31,20 +31,23 @@ class RAG:
             print(f"Error occurred while getting embedding: {str(e)}")
             raise
 
-    def store_embedding(self, text, payload=None):
+    def store_embedding(self, data):
         """
-        Store the embedding of a predicate in Qdrant if it doesn't already exist.
+        Store the embedding of a JSON object in Qdrant.
         """
+        if not isinstance(data, dict):
+            raise ValueError("Input must be a dictionary (JSON object)")
+        
+        text = data.get('sentence', '') + ' ' + data.get('pln', '')
         embedding = self.get_embedding(text)
-        if payload is None:
-            payload = {"text": text}
+        
         self.qdrant_client.upsert(
             collection_name=self.collection_name,
             points=[
                 models.PointStruct(
                     id=str(uuid.uuid4()),
                     vector=embedding,
-                    payload=payload
+                    payload=data
                 )
             ]
         )
@@ -69,7 +72,7 @@ class RAG:
                 query_vector=query_vector,
                 limit=limit
             )
-            similar_items = [hit.payload.get("text") for hit in search_result]
+            similar_items = [hit.payload for hit in search_result]
             return similar_items
         except Timeout:
             print("Timeout occurred during the search operation")
@@ -93,8 +96,8 @@ class RAG:
                 limit=10  # Arbitrary limit to get a reasonable number of candidates
             )
             for hit in search_result:
-                if hit.vector == query_vector:
-                    return hit.payload.get("text")
+                if hit.payload.get('sentence') == sentence:
+                    return hit.payload
             return None
         except Timeout:
             print("Timeout occurred during the search operation")
