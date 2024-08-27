@@ -43,7 +43,7 @@ Your goal is to convert this sentence into first-order predicate logic notation.
 
 Before you give your final answer, take a moment to consider the best way to represent the logical structure of the sentence. You may use <thinking> tags to show your thought process, but this is optional.
 
-Provide your final output enclosed within triple backticks (```). The output should be comprehensible without any surrounding text.
+Provide your final output enclosed within triple backticks (```). The output should be comprehensible without any of the surrounding text.
 
 Remember to use granular predicates to break down complex concepts into simpler logical components.
 
@@ -90,7 +90,7 @@ You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Lo
 
 Please provide a natural language explanation of what this PLN statement means. Make sure your explanation is easy to understand for someone who isn't familiar with PLN syntax. Focus on conveying the meaning and implications of the statement.
 
-Provide your final output enclosed within triple backticks (```). The output should be a single, coherent sentence without any surrounding text.
+Provide your final output enclosed within triple backticks (```). The output should be comprehensible without any of the surrounding text.
 
 Natural language explanation:
 """
