@@ -8,8 +8,8 @@ import os
 
 metta_handler = MeTTaHandler()
 
-def convert_to_opencog_pln(line, similar):
-    prompt = nl2pln(line, similar)
+def convert_to_opencog_pln(line, similar_examples):
+    prompt = nl2pln(line, similar_examples)
     print("--------------------------------------------------------------------------------")
     print(f"Prompt: {prompt}")
     
@@ -32,10 +32,10 @@ def convert_pln_to_english(pln):
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
-    similar_sentences = [item['sentence'] for item in similar]
+    similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}" for item in similar if 'sentence' in item and 'pln' in item]
 
     print(f"Processing line: {line}")
-    pln = convert_to_opencog_pln(line, similar_sentences)
+    pln = convert_to_opencog_pln(line, similar_examples)
 
     print("--------------------------------------------------------------------------------")
     print(f"Sentence: {line}")
