@@ -32,9 +32,10 @@ def convert_pln_to_english(pln):
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
+    similar_sentences = [item['sentence'] for item in similar]
 
     print(f"Processing line: {line}")
-    pln = convert_to_opencog_pln(line, similar)
+    pln = convert_to_opencog_pln(line, similar_sentences)
 
     print("--------------------------------------------------------------------------------")
     print(f"Sentence: {line}")
@@ -44,7 +45,10 @@ def process_sentence(line, rag):
 
     pln = HumanCheck(pln, line)
 
-    rag.store_embedding(f"Sentence:\n{line}\nOpenCog PLN:\n{pln}")
+    rag.store_embedding({
+        "sentence": line,
+        "pln": pln
+    })
     
     # Add the PLN statement to MeTTa and run forward chaining
     fc_results = metta_handler.add_atom_and_run_fc(pln)
@@ -56,7 +60,10 @@ def process_sentence(line, rag):
         
         # Store each forward chaining result separately
         for fc_result, english_result in zip(fc_results, english_results):
-            rag.store_embedding(f"Sentence:\n{english_result}\nOpenCog PLN:\n{fc_result}")
+            rag.store_embedding({
+                "sentence": english_result,
+                "pln": fc_result
+            })
         
         return pln, fc_results, english_results
     
@@ -75,9 +82,9 @@ if __name__ == "__main__":
     def process_sentence_wrapper(line, index):
         if index < args.skip:
             # Retrieve PLN from RAG database and add to MeTTa
-            similar = rag.search_similar(line, limit=1)
+            similar = rag.search_exact(line)
             if similar:
-                pln = similar[0]
+                pln = similar['pln']
                 print(pln)
                 fc_results = metta_handler.add_atom_and_run_fc(pln)
                 print(f"Forward chaining results: {fc_results}")
@@ -87,7 +94,10 @@ if __name__ == "__main__":
                     
                     # Store each forward chaining result separately
                     for fc_result, english_result in zip(fc_results, english_results):
-                        rag.store_embedding(f"Sentence:\n{english_result}\nOpenCog PLN:\n{fc_result}")
+                        rag.store_embedding({
+                            "sentence": english_result,
+                            "pln": fc_result
+                        })
                     
                     return pln, fc_results, english_results
                 return pln, None, None
