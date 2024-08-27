@@ -90,6 +90,8 @@ You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Lo
 
 Please provide a natural language explanation of what this PLN statement means. Make sure your explanation is easy to understand for someone who isn't familiar with PLN syntax. Focus on conveying the meaning and implications of the statement.
 
+Provide your final output enclosed within triple backticks (```). The output should be a single, coherent sentence without any surrounding text.
+
 Natural language explanation:
 """
 
