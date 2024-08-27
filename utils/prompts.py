@@ -92,7 +92,18 @@ Please provide a natural language explanation of what this PLN statement means. 
 
 Provide your final output enclosed within triple backticks (```). The output should be comprehensible without any of the surrounding text.
 
-Natural language explanation:
+Here's an example to guide you:
+
+Input PLN:
+(InheritanceLink
+    (ConceptNode "Dog")
+    (ConceptNode "Mammal")
+)
+
+Output:
+```Dogs are a type of mammal. This statement indicates that all dogs belong to the broader category of mammals, sharing characteristics common to all mammals.```
+
+Now, please provide a natural language explanation for the given PLN statement:
 """
 
 def nl2pln(sentence, similar):
