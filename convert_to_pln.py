@@ -78,6 +78,7 @@ if __name__ == "__main__":
             similar = rag.search_similar(line, limit=1)
             if similar:
                 pln = similar[0]
+                print(pln)
                 fc_results = metta_handler.add_atom_and_run_fc(pln)
                 print(f"Forward chaining results: {fc_results}")
                 if fc_results:
@@ -91,6 +92,7 @@ if __name__ == "__main__":
                     return pln, fc_results, english_results
                 return pln, None, None
         else:
+            input("Checkpoint")
             return process_sentence(line, rag)
 
     process_file(args.file_path, process_sentence_wrapper, "data2/opencog_pln.txt", args.skip, args.limit)
