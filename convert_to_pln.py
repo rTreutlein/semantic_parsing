@@ -87,7 +87,7 @@ if __name__ == "__main__":
                 pln = similar['pln']
                 print(pln)
                 fc_results = metta_handler.add_atom_and_run_fc(pln)
-                print(f"Forward chaining results: {fc_results}")
+                print(f"Forward chaining results: {fc_results}",flush=True)
                 if fc_results:
                     english_results = [convert_pln_to_english(result) for result in fc_results]
                     print(f"Forward chaining results in English: {english_results}")
