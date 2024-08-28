@@ -29,11 +29,7 @@ def convert_pln_to_english(pln):
     print("PLN to NL LLM output:")
     print(txt)
     
-    # Extract the converted sentence from within the backticks
-    converted_sentence = txt.strip()
-    if converted_sentence.startswith("```") and converted_sentence.endswith("```"):
-        converted_sentence = converted_sentence[3:-3].strip()
-    return converted_sentence
+    return extract_logic(txt)
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
