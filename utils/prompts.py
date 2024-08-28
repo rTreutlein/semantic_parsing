@@ -90,7 +90,7 @@ You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Lo
 
 Please provide a natural language explanation of what this PLN statement means. Make sure your explanation is easy to understand for someone who isn't familiar with PLN syntax. Focus on conveying the meaning and implications of the statement.
 
-Provide your final output enclosed within triple backticks (```). The output should be comprehensible without any of the surrounding text.
+Provide your final output enclosed within triple backticks (```). It should be a single sentence that is comprehensible without any of the surrounding text.
 
 Here's an example to guide you:
 
@@ -101,7 +101,8 @@ Input PLN:
 )
 
 Output:
-```Dogs are a type of mammal. This statement indicates that all dogs belong to the broader category of mammals, sharing characteristics common to all mammals.```
+This statement indicates that all dogs belong to the broader category of mammals, sharing characteristics common to all mammals.
+```Dogs are mammals```
 
 Now, please provide a natural language explanation for the given PLN statement:
 """
