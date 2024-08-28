@@ -8,8 +8,8 @@ import os
 
 metta_handler = MeTTaHandler()
 
-def convert_to_opencog_pln(line, similar_examples):
-    prompt = nl2pln(line, similar_examples)
+def convert_logic(input_text, prompt_func, similar_examples):
+    prompt = prompt_func(input_text, similar_examples)
     print("--------------------------------------------------------------------------------")
     print(f"Prompt: {prompt}")
     
@@ -19,24 +19,30 @@ def convert_to_opencog_pln(line, similar_examples):
     print(txt)
     return extract_logic(txt)
 
-def convert_pln_to_english(pln):
-    prompt = pln2nl(pln)
-    print("--------------------------------------------------------------------------------")
-    print(f"PLN to NL Prompt: {prompt}")
+def run_forward_chaining(pln):
+    fc_results = metta_handler.add_atom_and_run_fc(pln)
+    print(f"Forward chaining results: {fc_results}")
+    return fc_results
+
+def store_results(rag, sentence, pln, fc_results=None, english_results=None):
+    rag.store_embedding({
+        "sentence": sentence,
+        "pln": pln
+    })
     
-    txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
-    print("--------------------------------------------------------------------------------")
-    print("PLN to NL LLM output:")
-    print(txt)
-    
-    return extract_logic(txt)
+    if fc_results and english_results:
+        for fc_result, english_result in zip(fc_results, english_results):
+            rag.store_embedding({
+                "sentence": english_result,
+                "pln": fc_result
+            })
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
     similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}" for item in similar if 'sentence' in item and 'pln' in item]
 
     print(f"Processing line: {line}")
-    pln = convert_to_opencog_pln(line, similar_examples)
+    pln = convert_logic(line, nl2pln, similar_examples)
 
     print("--------------------------------------------------------------------------------")
     print(f"Sentence: {line}")
@@ -46,28 +52,16 @@ def process_sentence(line, rag):
 
     pln = HumanCheck(pln, line)
 
-    rag.store_embedding({
-        "sentence": line,
-        "pln": pln
-    })
-    
-    # Add the PLN statement to MeTTa and run forward chaining
-    fc_results = metta_handler.add_atom_and_run_fc(pln)
-    print(f"Forward chaining results: {fc_results}")
+    fc_results = run_forward_chaining(pln)
     
     if fc_results:
-        english_results = [convert_pln_to_english(result) for result in fc_results]
+        english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
         print(f"Forward chaining results in English: {english_results}")
         
-        # Store each forward chaining result separately
-        for fc_result, english_result in zip(fc_results, english_results):
-            rag.store_embedding({
-                "sentence": english_result,
-                "pln": fc_result
-            })
-        
+        store_results(rag, line, pln, fc_results, english_results)
         return pln, fc_results, english_results
     
+    store_results(rag, line, pln)
     return pln, None, None
 
 if __name__ == "__main__":
