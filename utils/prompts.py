@@ -80,7 +80,8 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
     )
     return prompt
 
-def pln2nl(pln):
+def pln2nl(pln, similar_examples):
+    similar = '\n'.join(similar_examples)
     return f"""
 You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Logic Networks) statements into natural language. Your task is to convert the following PLN statement into clear, concise English:
 
@@ -103,6 +104,9 @@ Input PLN:
 Output:
 This statement indicates that all dogs belong to the broader category of mammals, sharing characteristics common to all mammals.
 ```Dogs are mammals```
+
+Additionally, here are some examples of previous conversions for reference:
+{similar}
 
 Now, please provide a natural language explanation for the given PLN statement:
 """

@@ -84,7 +84,9 @@ if __name__ == "__main__":
                 fc_results = run_forward_chaining(pln)
                 print(f"Forward chaining results: {fc_results}", flush=True)
                 if fc_results:
-                    english_results = [convert_logic(result, pln2nl, []) for result in fc_results]
+                    similar_examples = rag.search_similar(line, limit=5)
+                    similar_examples = [f"PLN: {item['pln']}\nEnglish: {item['sentence']}" for item in similar_examples if 'pln' in item and 'sentence' in item]
+                    english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
                     print(f"Forward chaining results in English: {english_results}")
                     
                     store_results(rag, line, pln, fc_results, english_results)
