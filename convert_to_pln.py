@@ -24,6 +24,15 @@ def run_forward_chaining(pln):
     print(f"Forward chaining results: {fc_results}")
     return fc_results
 
+def process_forward_chaining_results(fc_results, line, pln, rag, similar_examples):
+    if fc_results:
+        english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
+        print(f"Forward chaining results in English: {english_results}")
+        store_results(rag, line, pln, fc_results, english_results)
+        return pln, fc_results, english_results
+    store_results(rag, line, pln)
+    return pln, None, None
+
 def store_results(rag, sentence, pln, fc_results=None, english_results=None):
     rag.store_embedding({
         "sentence": sentence,
@@ -53,16 +62,7 @@ def process_sentence(line, rag):
     pln = HumanCheck(pln, line)
 
     fc_results = run_forward_chaining(pln)
-    
-    if fc_results:
-        english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
-        print(f"Forward chaining results in English: {english_results}")
-        
-        store_results(rag, line, pln, fc_results, english_results)
-        return pln, fc_results, english_results
-    
-    store_results(rag, line, pln)
-    return pln, None, None
+    return process_forward_chaining_results(fc_results, line, pln, rag, similar_examples)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
@@ -83,15 +83,9 @@ if __name__ == "__main__":
                 print(pln)
                 fc_results = run_forward_chaining(pln)
                 print(f"Forward chaining results: {fc_results}", flush=True)
-                if fc_results:
-                    similar_examples = rag.search_similar(line, limit=5)
-                    similar_examples = [f"PLN: {item['pln']}\nEnglish: {item['sentence']}" for item in similar_examples if 'pln' in item and 'sentence' in item]
-                    english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
-                    print(f"Forward chaining results in English: {english_results}")
-                    
-                    store_results(rag, line, pln, fc_results, english_results)
-                    return pln, fc_results, english_results
-                return pln, None, None
+                similar_examples = rag.search_similar(line, limit=5)
+                similar_examples = [f"PLN: {item['pln']}\nEnglish: {item['sentence']}" for item in similar_examples if 'pln' in item and 'sentence' in item]
+                return process_forward_chaining_results(fc_results, line, pln, rag, similar_examples)
         else:
             input("Checkpoint")
             return process_sentence(line, rag)
