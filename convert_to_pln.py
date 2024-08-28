@@ -81,19 +81,13 @@ if __name__ == "__main__":
             if similar:
                 pln = similar['pln']
                 print(pln)
-                fc_results = metta_handler.add_atom_and_run_fc(pln)
-                print(f"Forward chaining results: {fc_results}",flush=True)
+                fc_results = run_forward_chaining(pln)
+                print(f"Forward chaining results: {fc_results}", flush=True)
                 if fc_results:
-                    english_results = [convert_pln_to_english(result) for result in fc_results]
+                    english_results = [convert_logic(result, pln2nl, []) for result in fc_results]
                     print(f"Forward chaining results in English: {english_results}")
                     
-                    # Store each forward chaining result separately
-                    for fc_result, english_result in zip(fc_results, english_results):
-                        rag.store_embedding({
-                            "sentence": english_result,
-                            "pln": fc_result
-                        })
-                    
+                    store_results(rag, line, pln, fc_results, english_results)
                     return pln, fc_results, english_results
                 return pln, None, None
         else:
