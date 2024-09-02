@@ -3,13 +3,13 @@ import random
 import string
 from typing import List
 from synthesizepy.synthesizer import (
-    Atom, Expression, kb, rb, parse_sexpr, print_sexpr, fc, synthesize
+    Atom, Expression, parse_sexpr, print_sexpr, fc
 )
 
 class SynthesizerHandler:
     def __init__(self):
-        self.kb = kb
-        self.rb = rb
+        self.kb = []
+        self.rb = []
 
     @staticmethod
     def generate_random_identifier(length=8):
@@ -21,9 +21,10 @@ class SynthesizerHandler:
         new_expression = Expression(Atom('Symbol', ':'), (Atom('Symbol', identifier), parsed_atom))
         self.kb.append(new_expression)
         
-        self.kb = fc(self.kb, self.rb)
+        res = fc(self.kb, self.rb)
+        self.kb += res
         
-        return [print_sexpr(elem) for elem in self.kb]
+        return [print_sexpr(elem.arguments[1]) for elem in res]
 
     def store_kb_to_file(self, filename: str):
         kb_content = [print_sexpr(expr) for expr in self.kb]
@@ -39,10 +40,12 @@ if __name__ == "__main__":
     handler = SynthesizerHandler()
     # Example usage
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode take_care_of) (PredicateNode last_longer))')
+    print("res:")
     print(result)
-    result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode last_longer) (AndLink (PredicateNode requires_less_frequent_replacement) (PredicateNode requires_less_frequent_maintenance)))')
-    print(result)
+    #result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode last_longer) (AndLink (PredicateNode requires_less_frequent_replacement) (PredicateNode requires_less_frequent_maintenance)))')
+    #print("res:")
+    #print(result)
 
     # Example of storing and loading KB
-    handler.store_kb_to_file('kb_backup.json')
-    handler.load_kb_from_file('kb_backup.json')
+    #handler.store_kb_to_file('kb_backup.json')
+    #handler.load_kb_from_file('kb_backup.json')
