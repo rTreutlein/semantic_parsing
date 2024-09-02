@@ -206,4 +206,4 @@ def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
     # Clean the new results
     cleaned_results = [result for expr in new_results for result in clean(expr)]
     
-    return list(set(kb + cleaned_results))
+    return list(set(cleaned_results))
