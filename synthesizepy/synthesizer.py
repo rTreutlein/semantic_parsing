@@ -38,7 +38,9 @@ Rule = Callable[..., Expression]
 
 # Define functions for each rule
 def modus_ponens(p, q):
-    if isinstance(p, Expression) and p.operator.value == 'ImplicationLink' and p.arguments[0] == q.arguments[1]:
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    if isinstance(p, Expression) and ptype.operator.value == 'ImplicationLink' and ptype.arguments[0] == qtype:
         return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'modus_ponens'), p.arguments[0]), p.arguments[1]))
     return None
 
