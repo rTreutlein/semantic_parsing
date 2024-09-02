@@ -20,26 +20,26 @@ class MeTTaHandler:
     def generate_random_identifier(length=8):                                
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))                                                                   
                                                                              
-    def add_atom_and_run_fc(self, atom):                                     
+    def add_atom_and_run_fc(self, atom) -> list[str]:
         identifier = self.generate_random_identifier()                       
         self.metta.run(f'(= (kb) (: {identifier} {atom}))')                  
         res = self.metta.run('!(fc kb rb)')                                  
         out = [str(elem.get_children()[2]) for elem in res[0]]               
-        return out                                                           
+        return out
                                                                              
     def run(self, atom):                                                     
         res = self.metta.run(atom)                                           
         return res                                                           
                                                                              
     def store_kb_to_file(self, filename):                                    
-        kb_content = self.metta.run('!(kb)')                                  
+        kb_content = self.metta.run('!(collapse (kb))')                                  
         with open(filename, 'w') as f:                                       
-            json.dump(str(kb_content), f)                                    
+            json.dump(str(kb_content[0][0]), f)                                    
                                                                              
     def load_kb_from_file(self, filename):                                   
         with open(filename, 'r') as f:                                       
             kb_content = json.load(f)                                        
-        self.metta.run(f'(= (kb) {kb_content})')                             
+        self.metta.run(f'(= (kb) (superpose {kb_content}))')                             
                                                                              
 if __name__ == "__main__":                                                   
     handler = MeTTaHandler()                                                 
