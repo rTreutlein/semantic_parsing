@@ -219,6 +219,39 @@ def remove_common_elements(list1: List[Expression], list2: List[Expression]) -> 
     """
     return [item for item in list1 if item not in list2]
 
+def clean(a: Expression) -> List[Expression]:
+    """
+    Clean the given expression by removing certain types of expressions.
+    
+    :param a: The expression to clean
+    :return: A list of cleaned expressions
+    """
+    if isinstance(a, Expression) and a.operator.value == ':':
+        inner_expr = a.arguments[1]
+        if isinstance(inner_expr, Expression):
+            op = inner_expr.operator.value
+            if op in ['DisjunctionIntroduction', 'ConjunctionIntroduction', 
+                      'ConjunctionEliminationLeft', 'ConjunctionEliminationRight']:
+                return []
+    return [a]
+
+def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
+    """
+    Perform forward chaining on the knowledge base.
+    
+    :param kb: The current knowledge base
+    :param rb: The rule base
+    :return: The new knowledge base after forward chaining
+    """
+    query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])
+    depth_1_results = synthesize(query, lambda: kb, lambda: rb, 1)
+    depth_0_results = synthesize(query, lambda: kb, lambda: rb, 0)
+    
+    new_results = remove_common_elements(depth_1_results, depth_0_results)
+    cleaned_results = [result for expr in new_results for result in clean(expr)]
+    
+    return list(set(kb + cleaned_results))
+
 if __name__ == "__main__":
     print("\nRunning main program:")
     query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])

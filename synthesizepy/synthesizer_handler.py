@@ -3,7 +3,7 @@ import random
 import string
 from typing import List
 from synthesizepy.synthesizer import (
-    Atom, Expression, synthesize, kb, rb, parse_sexpr, print_sexpr, parse_query
+    Atom, Expression, synthesize, kb, rb, parse_sexpr, print_sexpr, parse_query, fc
 )
 
 class SynthesizerHandler:
@@ -21,10 +21,9 @@ class SynthesizerHandler:
         new_expression = Expression(Atom('Symbol', ':'), (Atom('Symbol', identifier), parsed_atom))
         self.kb.append(new_expression)
         
-        query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])
-        results = synthesize(query, lambda: self.kb, lambda: self.rb, 1)
+        self.kb = fc(self.kb, self.rb)
         
-        return [print_sexpr(elem) for elem in results]
+        return [print_sexpr(elem) for elem in self.kb]
 
     def run(self, atom: str):
         parsed_query = parse_query(atom)
