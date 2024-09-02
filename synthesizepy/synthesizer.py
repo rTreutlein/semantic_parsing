@@ -40,8 +40,8 @@ Rule = Callable[..., Expression]
 def modus_ponens(p, q):
     ptype = p.arguments[1]
     qtype = q.arguments[1]
-    if isinstance(p, Expression) and ptype.operator.value == 'ImplicationLink' and ptype.arguments[0] == qtype:
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'modus_ponens'), p.arguments[0]), p.arguments[1]))
+    if isinstance(ptype, Expression) and ptype.operator.value == 'ImplicationLink' and ptype.arguments[0] == qtype:
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'modus_ponens'), (p.arguments[0], q.arguments[0])), ptype.arguments[1]))
     return None
 
 def modus_ponens_inheritance(p, q):
