@@ -47,11 +47,11 @@ def modus_ponens_inheritance(p, q):
         return p.arguments[1]
     return None
 
-def hypothetical_syllogism(p, q, r):
+def hypothetical_syllogism(p, q):
     if isinstance(p, Expression) and p.operator.value == 'ImplicationLink' and \
        isinstance(q, Expression) and q.operator.value == 'ImplicationLink' and \
        p.arguments[1] == q.arguments[0]:
-        return Expression(Atom('ImplicationLink'), (p.arguments[0], q.arguments[1]))
+        return Expression(Atom('Symbol','ImplicationLink'), (p.arguments[0], q.arguments[1]))
     return None
 
 def disjunctive_syllogism_left(p, q):
@@ -67,7 +67,7 @@ def disjunctive_syllogism_right(p, q):
     return None
 
 def conjunction_introduction(p, q):
-    return Expression(Atom('AndLink'), (p, q))
+    return Expression(Atom('Symbol','AndLink'), (p, q))
 
 def conjunction_elimination_left(p):
     if isinstance(p, Expression) and p.operator.value == 'AndLink':
@@ -80,12 +80,12 @@ def conjunction_elimination_right(p):
     return None
 
 def disjunction_introduction(p, q):
-    return Expression(Atom('OrLink'), (p, q))
+    return Expression(Atom('Symbol','OrLink'), (p, q))
 
 # Add the functions to the rb list
 rb = [modus_ponens, modus_ponens_inheritance, hypothetical_syllogism, disjunctive_syllogism_left, disjunctive_syllogism_right, conjunction_introduction, conjunction_elimination_left, conjunction_elimination_right, disjunction_introduction]
 
-def match(pattern: Union[Expression, Atom], expression: Union[Expression, Atom]) -> dict:
+def match(pattern: Union[Expression, Atom], expression: Union[Expression, Atom]) -> dict | None:
     """Simple pattern matching function"""
     bindings = {}
     
@@ -107,9 +107,9 @@ def match(pattern: Union[Expression, Atom], expression: Union[Expression, Atom])
         return bindings
     return None
 
-def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callable[[], List[Rule]], depth: int) -> List[Expression]:
+def synthesize(query: Expression, kb: List[Expression], rb: List[Rule], depth: int) -> List[Expression]:
     if depth == 0:
-        return [axiom for axiom in kb() if match(query, axiom)]
+        return [axiom for axiom in kb if match(query, axiom)]
 
     results = set()
 
@@ -125,13 +125,14 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
             if match(query, conclusion):
                 results.add(conclusion)
         else:
-            all_premises = kb()  # Use kb() directly instead of recursive call
+            query = Expression(Atom('Symbol', ':'), (Atom('Variable', '$term'), Atom('Variable', '$type')))
+            all_premises = synthesize(query,kb,rb,depth-1)
             for premise_combination in itertools.combinations(all_premises, num_premises):
                 conclusion = rule(*premise_combination)
                 if conclusion is not None and match(query, conclusion):
                     results.add(conclusion)
 
-    return list(results), rb
+    return list(results)
 
 def printall(lst):
     for result in lst:
@@ -191,12 +192,10 @@ def print_sexpr(expr: Union[Expression, Atom]) -> str:
         return expr.value
     elif isinstance(expr, Expression):
         return f"({expr.operator.value} {' '.join(print_sexpr(arg) for arg in expr.arguments)})"
-    elif isinstance(expr, tuple) and len(expr) == 2:  # Query
-        return f"(: {print_sexpr(expr[1])} {print_sexpr(expr[0])})"
     else:
         raise ValueError(f"Unexpected type: {type(expr)}")
 
-def parse_query(query_str: str) -> Expression:
+def parse_query(query_str: str) -> Expression | Atom:
     """
     Parse a full query string into an Expression.
     
@@ -233,7 +232,7 @@ def clean(a: Expression) -> List[Expression]:
                 return []
     return [a]
 
-def fc(kb: List[Expression], rb: List[Rule]) -> Tuple[List[Expression], List[Rule]]:
+def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
     """
     Perform forward chaining on the knowledge base.
     
@@ -241,11 +240,11 @@ def fc(kb: List[Expression], rb: List[Rule]) -> Tuple[List[Expression], List[Rul
     :param rb: The rule base
     :return: The new knowledge base after forward chaining
     """
-    query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])
-    depth_0_results = synthesize(query, lambda: kb, lambda: rb, 0)
+    query = Expression(Atom('Symbol', ':'), (Atom('Variable', '$term'), Atom('Variable', '$type')))
+    depth_0_results = synthesize(query, kb, rb, 0)
     print("depth0------------------------------")
     printall(depth_0_results)
-    depth_1_results = synthesize(query, lambda: kb, lambda: rb, 1)
+    depth_1_results = synthesize(query, kb, rb, 1)
     print("depth1------------------------------")
     printall(depth_1_results)
     
@@ -255,4 +254,4 @@ def fc(kb: List[Expression], rb: List[Rule]) -> Tuple[List[Expression], List[Rul
     # Clean the new results
     cleaned_results = [result for expr in new_results for result in clean(expr)]
     
-    return list(set(cleaned_results)), rb
+    return list(set(cleaned_results))
