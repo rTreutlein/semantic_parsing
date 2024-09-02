@@ -1,7 +1,8 @@
-from hyperon import MeTTa                                                    
-import random                                                                
-import string                                                                
-import json                                                                  
+from hyperon import MeTTa
+import random
+import string
+import json
+from typing import List
                                                                              
 class MeTTaHandler:                                                          
     def __init__(self):                                                      
