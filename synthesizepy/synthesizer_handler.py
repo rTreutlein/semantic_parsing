@@ -3,13 +3,13 @@ import random
 import string
 from typing import List
 from synthesizepy.synthesizer import (
-    Atom, Expression, kb, rb, parse_sexpr, print_sexpr, fc
+    Atom, Expression, kb, rb, parse_sexpr, print_sexpr, fc, synthesize
 )
 
 class SynthesizerHandler:
     def __init__(self):
-        self.kb = kb()
-        self.rb = rb()
+        self.kb = kb
+        self.rb = rb
 
     @staticmethod
     def generate_random_identifier(length=8):

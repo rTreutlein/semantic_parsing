@@ -84,38 +84,36 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
 
     return list(results)
 
-def kb() -> List[Expression]:
-    return [
-        Expression(Atom('Symbol', ':'), (Atom('Symbol', 'a'), Atom('Symbol', 'A'))),
-        Expression(Atom('Symbol', ':'), (Atom('Symbol', 'ab'), 
-                                         Expression(Atom('Symbol', 'Implication'), 
-                                                    (Atom('Symbol', 'A'), Atom('Symbol', 'B'))))),
-        Expression(Atom('Symbol', ':'), (Atom('Symbol', 'bc'), 
-                                         Expression(Atom('Symbol', 'Implication'), 
-                                                    (Atom('Symbol', 'B'), Atom('Symbol', 'C'))))),
-    ]
+kb = [
+    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'a'), Atom('Symbol', 'A'))),
+    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'ab'), 
+                                     Expression(Atom('Symbol', 'Implication'), 
+                                                (Atom('Symbol', 'A'), Atom('Symbol', 'B'))))),
+    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'bc'), 
+                                     Expression(Atom('Symbol', 'Implication'), 
+                                                (Atom('Symbol', 'B'), Atom('Symbol', 'C'))))),
+]
 
-def rb() -> List[Rule]:
-    def deduction_rule(p: Expression, q: Expression):
-        if not (isinstance(p.arguments[0], Atom) and isinstance(q.arguments[0], Atom)):
-            return None
-        
-        if not (isinstance(p.arguments[1], Expression) and isinstance(q.arguments[1], Expression)):
-            return None
-        
-        if not (p.arguments[1].operator.value == 'Implication' and q.arguments[1].operator.value == 'Implication'):
-            return None
-        
-        if p.arguments[1].arguments[1] != q.arguments[1].arguments[0]:
-            return None
-        
-        result = Expression.create(Atom('Symbol', ':'), [
-            Expression.create(Atom('Symbol', 'Deduction'), (p.arguments[0], q.arguments[0])),
-            Expression.create(Atom('Symbol', 'Implication'), (p.arguments[1].arguments[0], q.arguments[1].arguments[1]))
-        ])
-        return result
+def deduction_rule(p: Expression, q: Expression):
+    if not (isinstance(p.arguments[0], Atom) and isinstance(q.arguments[0], Atom)):
+        return None
+    
+    if not (isinstance(p.arguments[1], Expression) and isinstance(q.arguments[1], Expression)):
+        return None
+    
+    if not (p.arguments[1].operator.value == 'Implication' and q.arguments[1].operator.value == 'Implication'):
+        return None
+    
+    if p.arguments[1].arguments[1] != q.arguments[1].arguments[0]:
+        return None
+    
+    result = Expression.create(Atom('Symbol', ':'), [
+        Expression.create(Atom('Symbol', 'Deduction'), (p.arguments[0], q.arguments[0])),
+        Expression.create(Atom('Symbol', 'Implication'), (p.arguments[1].arguments[0], q.arguments[1].arguments[1]))
+    ])
+    return result
 
-    return [deduction_rule]
+rb = [deduction_rule]
 
 def printall(lst):
     for result in lst:
