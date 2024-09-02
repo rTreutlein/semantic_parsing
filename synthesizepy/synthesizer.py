@@ -84,37 +84,6 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
 
     return list(results)
 
-kb = [
-    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'a'), Atom('Symbol', 'A'))),
-    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'ab'), 
-                                     Expression(Atom('Symbol', 'Implication'), 
-                                                (Atom('Symbol', 'A'), Atom('Symbol', 'B'))))),
-    Expression(Atom('Symbol', ':'), (Atom('Symbol', 'bc'), 
-                                     Expression(Atom('Symbol', 'Implication'), 
-                                                (Atom('Symbol', 'B'), Atom('Symbol', 'C'))))),
-]
-
-def deduction_rule(p: Expression, q: Expression):
-    if not (isinstance(p.arguments[0], Atom) and isinstance(q.arguments[0], Atom)):
-        return None
-    
-    if not (isinstance(p.arguments[1], Expression) and isinstance(q.arguments[1], Expression)):
-        return None
-    
-    if not (p.arguments[1].operator.value == 'Implication' and q.arguments[1].operator.value == 'Implication'):
-        return None
-    
-    if p.arguments[1].arguments[1] != q.arguments[1].arguments[0]:
-        return None
-    
-    result = Expression.create(Atom('Symbol', ':'), [
-        Expression.create(Atom('Symbol', 'Deduction'), (p.arguments[0], q.arguments[0])),
-        Expression.create(Atom('Symbol', 'Implication'), (p.arguments[1].arguments[0], q.arguments[1].arguments[1]))
-    ])
-    return result
-
-rb = [deduction_rule]
-
 def printall(lst):
     for result in lst:
         print(print_sexpr(result))
@@ -222,31 +191,14 @@ def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
     :return: The new knowledge base after forward chaining
     """
     query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])
-    depth_1_results = synthesize(query, lambda: kb, lambda: rb, 1)
     depth_0_results = synthesize(query, lambda: kb, lambda: rb, 0)
+    print("depth0------------------------------")
+    printall(depth_0_results)
+    depth_1_results = synthesize(query, lambda: kb, lambda: rb, 1)
+    print("depth1------------------------------")
+    printall(depth_1_results)
     
     new_results = remove_common_elements(depth_1_results, depth_0_results)
     cleaned_results = [result for expr in new_results for result in clean(expr)]
     
     return list(set(kb + cleaned_results))
-
-if __name__ == "__main__":
-    print("\nRunning main program:")
-    query = Expression(Atom('Symbol', ':'), [Atom('Variable', '$term'), Atom('Variable', '$type')])
-    print("Query:", print_sexpr(query))
-    
-    print("\nSynthesizing at depth 0:")
-    dept0 = synthesize(query, kb, rb, 0)
-    print("\nResults at depth 0:")
-    printall(dept0)
-    
-    print("\nSynthesizing at depth 1:")
-    dept1 = synthesize(query, kb, rb, 1)
-    print("\nResults at depth 1:")
-    printall(dept1)
-    
-    # Remove elements from dept1 that appear in dept0
-    unique_dept1 = remove_common_elements(dept1, dept0)
-    
-    print("\nUnique elements in dept1:")
-    printall(unique_dept1)
