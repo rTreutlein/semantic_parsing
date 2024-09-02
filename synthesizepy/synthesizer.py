@@ -164,7 +164,9 @@ def remove_common_elements(list1: List[Expression], list2: List[Expression]) -> 
     :param list2: The list of elements to remove
     :return: A new list with common elements removed
     """
-    return [item for item in list1 if item not in list2]
+    # Convert list2 to a set for faster lookup
+    set_list2 = set(list2)
+    return [item for item in list1 if item not in set_list2]
 
 def clean(a: Expression) -> List[Expression]:
     """
@@ -198,7 +200,10 @@ def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
     print("depth1------------------------------")
     printall(depth_1_results)
     
+    # Remove common elements between depth_1_results and depth_0_results
     new_results = remove_common_elements(depth_1_results, depth_0_results)
+    
+    # Clean the new results
     cleaned_results = [result for expr in new_results for result in clean(expr)]
     
     return list(set(kb + cleaned_results))
