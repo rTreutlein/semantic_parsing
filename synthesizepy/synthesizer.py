@@ -45,44 +45,58 @@ def modus_ponens(p, q):
     return None
 
 def modus_ponens_inheritance(p, q):
-    if isinstance(p, Expression) and p.operator.value == 'InheritanceLink' and p.arguments[0] == q.arguments[1]:
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'modus_ponens_inheritance'), p.arguments[0]), p.arguments[1]))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'InheritanceLink' and ptype.arguments[0] == qtype:
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'modus_ponens_inheritance'), (p.arguments[0], q.arguments[0])), ptype.arguments[1]))
     return None
 
 def hypothetical_syllogism(p, q):
-    if isinstance(p, Expression) and p.operator.value == 'ImplicationLink' and \
-       isinstance(q, Expression) and q.operator.value == 'ImplicationLink' and \
-       p.arguments[1] == q.arguments[0]:
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'hypothetical_syllogism'), p.arguments[0]), Expression(Atom('Symbol', 'ImplicationLink'), (p.arguments[0], q.arguments[1]))))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'ImplicationLink' and \
+       isinstance(qtype, Expression) and qtype.operator.value == 'ImplicationLink' and \
+       ptype.arguments[1] == qtype.arguments[0]:
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'hypothetical_syllogism'), (p.arguments[0], q.arguments[0])), Expression(Atom('Symbol', 'ImplicationLink'), (p.arguments[0], qtype.arguments[1]))))
     return None
 
 def disjunctive_syllogism_left(p, q):
-    if isinstance(p, Expression) and p.operator.value == 'OrLink' and \
-       isinstance(q, Expression) and q.operator.value == 'NotLink' and p.arguments[0] == q.arguments[0]:
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunctive_syllogism_left'), p.arguments[0]), p.arguments[1]))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'OrLink' and \
+       isinstance(qtype, Expression) and qtype.operator.value == 'NotLink' and ptype.arguments[0] == qtype.arguments[0]:
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunctive_syllogism_left'), (p.arguments[0], q.arguments[0])), ptype.arguments[1]))
     return None
 
 def disjunctive_syllogism_right(p, q):
-    if isinstance(p, Expression) and p.operator.value == 'OrLink' and \
-       isinstance(q, Expression) and q.operator.value == 'NotLink' and p.arguments[1] == q.arguments[0]:
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunctive_syllogism_right'), p.arguments[1]), p.arguments[0]))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'OrLink' and \
+       isinstance(qtype, Expression) and qtype.operator.value == 'NotLink' and ptype.arguments[1] == qtype.arguments[0]:
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunctive_syllogism_right'), (p.arguments[0], q.arguments[0])), ptype.arguments[0]))
     return None
 
 def conjunction_introduction(p, q):
-    return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_introduction'), p), Expression(Atom('Symbol', 'AndLink'), (p, q))))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_introduction'), (p.arguments[0], q.arguments[0])), Expression(Atom('Symbol', 'AndLink'), (ptype, qtype))))
 
 def conjunction_elimination_left(p):
-    if isinstance(p, Expression) and p.operator.value == 'AndLink':
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_elimination_left'), p.arguments[0]), p.arguments[0]))
+    ptype = p.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'AndLink':
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_elimination_left'), p.arguments[0]), ptype.arguments[0]))
     return None
 
 def conjunction_elimination_right(p):
-    if isinstance(p, Expression) and p.operator.value == 'AndLink':
-        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_elimination_right'), p.arguments[1]), p.arguments[1]))
+    ptype = p.arguments[1]
+    if isinstance(ptype, Expression) and ptype.operator.value == 'AndLink':
+        return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'conjunction_elimination_right'), p.arguments[0]), ptype.arguments[1]))
     return None
 
 def disjunction_introduction(p, q):
-    return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunction_introduction'), p), Expression(Atom('Symbol', 'OrLink'), (p, q))))
+    ptype = p.arguments[1]
+    qtype = q.arguments[1]
+    return Expression(Atom('Symbol', ':'), (Expression(Atom('Symbol', 'disjunction_introduction'), (p.arguments[0], q.arguments[0])), Expression(Atom('Symbol', 'OrLink'), (ptype, qtype))))
 
 # Add the functions to the rb list
 rb = [modus_ponens, modus_ponens_inheritance, hypothetical_syllogism, disjunctive_syllogism_left, disjunctive_syllogism_right, conjunction_introduction, conjunction_elimination_left, conjunction_elimination_right, disjunction_introduction]
