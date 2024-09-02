@@ -3,7 +3,7 @@ import random
 import string
 from typing import List
 from synthesizepy.synthesizer import (
-    Atom, Expression, synthesize, kb, rb, parse_sexpr, print_sexpr, parse_query, fc
+    Atom, Expression, kb, rb, parse_sexpr, print_sexpr, fc
 )
 
 class SynthesizerHandler:
@@ -24,11 +24,6 @@ class SynthesizerHandler:
         self.kb = fc(self.kb, self.rb)
         
         return [print_sexpr(elem) for elem in self.kb]
-
-    def run(self, atom: str):
-        parsed_query = parse_query(atom)
-        results = synthesize(parsed_query, lambda: self.kb, lambda: self.rb, 1)
-        return [print_sexpr(elem) for elem in results]
 
     def store_kb_to_file(self, filename: str):
         kb_content = [print_sexpr(expr) for expr in self.kb]

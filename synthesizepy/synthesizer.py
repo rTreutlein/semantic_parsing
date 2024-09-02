@@ -84,26 +84,6 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
 
     return list(results)
 
-(= (clean $a)
-    (case $a
-     (
-      ((: (DisjunctionIntroduction $x $y) $t) (empty))
-      ((: (ConjunctionIntroduction $x $y) $t) (empty))
-      ((: (ConjunctionEliminationLeft $x $y) $t) (empty))
-      ((: (ConjunctionEliminationRight $x $y) $t) (empty))
-      ($_ $a)
-     )
-    )
-)
-
-(= (fc $kb $rb)
-    (let* (($out (inverse-intersect (collapse (synthesize (: $term $type) $kb $rb (S Z))) (collapse (synthesize (: $term $type) $kb $rb Z))))
-           ($clean (clean (superpose $out)))
-           ($_ (add-atom &self (= ($kb) $clean)))
-          )
-    $clean
-))
-
 def kb() -> List[Expression]:
     return [
         Expression(Atom('Symbol', ':'), (Atom('Symbol', 'a'), Atom('Symbol', 'A'))),
