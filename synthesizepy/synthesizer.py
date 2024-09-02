@@ -36,6 +36,55 @@ class Expression:
 # Type aliases
 Rule = Callable[..., Expression]
 
+# Define functions for each rule
+def modus_ponens(p, q):
+    if isinstance(p, Expression) and p.operator.value == 'ImplicationLink' and p.arguments[0] == q:
+        return p.arguments[1]
+    return None
+
+def modus_ponens_inheritance(p, q):
+    if isinstance(p, Expression) and p.operator.value == 'InheritanceLink' and p.arguments[0] == q:
+        return p.arguments[1]
+    return None
+
+def hypothetical_syllogism(p, q, r):
+    if isinstance(p, Expression) and p.operator.value == 'ImplicationLink' and \
+       isinstance(q, Expression) and q.operator.value == 'ImplicationLink' and \
+       p.arguments[1] == q.arguments[0]:
+        return Expression(Atom('ImplicationLink'), (p.arguments[0], q.arguments[1]))
+    return None
+
+def disjunctive_syllogism_left(p, q):
+    if isinstance(p, Expression) and p.operator.value == 'OrLink' and \
+       isinstance(q, Expression) and q.operator.value == 'NotLink' and p.arguments[0] == q.arguments[0]:
+        return p.arguments[1]
+    return None
+
+def disjunctive_syllogism_right(p, q):
+    if isinstance(p, Expression) and p.operator.value == 'OrLink' and \
+       isinstance(q, Expression) and q.operator.value == 'NotLink' and p.arguments[1] == q.arguments[0]:
+        return p.arguments[0]
+    return None
+
+def conjunction_introduction(p, q):
+    return Expression(Atom('AndLink'), (p, q))
+
+def conjunction_elimination_left(p):
+    if isinstance(p, Expression) and p.operator.value == 'AndLink':
+        return p.arguments[0]
+    return None
+
+def conjunction_elimination_right(p):
+    if isinstance(p, Expression) and p.operator.value == 'AndLink':
+        return p.arguments[1]
+    return None
+
+def disjunction_introduction(p, q):
+    return Expression(Atom('OrLink'), (p, q))
+
+# Add the functions to the rb list
+rb = [modus_ponens, modus_ponens_inheritance, hypothetical_syllogism, disjunctive_syllogism_left, disjunctive_syllogism_right, conjunction_introduction, conjunction_elimination_left, conjunction_elimination_right, disjunction_introduction]
+
 def match(pattern: Union[Expression, Atom], expression: Union[Expression, Atom]) -> dict:
     """Simple pattern matching function"""
     bindings = {}
@@ -65,10 +114,10 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
     results = set()
 
     # Try axioms
-    results.update([axiom for axiom in kb() if match(query, axiom)])
+    results.update([axiom for axiom in kb if match(query, axiom)])
 
     # Try rules
-    for rule in rb():
+    for rule in rb:
         num_premises = rule.__code__.co_argcount
         
         if num_premises == 0:
@@ -82,7 +131,7 @@ def synthesize(query: Expression, kb: Callable[[], List[Expression]], rb: Callab
                 if conclusion is not None and match(query, conclusion):
                     results.add(conclusion)
 
-    return list(results)
+    return list(results), rb
 
 def printall(lst):
     for result in lst:
@@ -184,7 +233,7 @@ def clean(a: Expression) -> List[Expression]:
                 return []
     return [a]
 
-def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
+def fc(kb: List[Expression], rb: List[Rule]) -> Tuple[List[Expression], List[Rule]]:
     """
     Perform forward chaining on the knowledge base.
     
@@ -206,4 +255,4 @@ def fc(kb: List[Expression], rb: List[Rule]) -> List[Expression]:
     # Clean the new results
     cleaned_results = [result for expr in new_results for result in clean(expr)]
     
-    return list(set(cleaned_results))
+    return list(set(cleaned_results)), rb
