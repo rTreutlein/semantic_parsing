@@ -31,7 +31,7 @@
 ;;
 ;; TODO: recurse over curried rules instead of duplicating code over
 ;; tuples.
-(: synthesize (-> $a (-> $kt) (-> $rt) $s Nat $a))
+(: synthesize (-> $a (-> $kt) (-> $s $rt) $s Nat $a))
 ;; Nullary rule (axiom)
 (= (synthesize $query $kb $rb S Z)
    (let $query ($kb) $query))
@@ -39,20 +39,20 @@
    (let $query ($kb) $query))
 ;; Unary rule
 (= (synthesize $query $kb $rb $s (S $k))
-   (let* (((: $ructor (-> $premise $conclusion)) ($rb))
+   (let* (((: $ructor (-> $premise $conclusion)) ($rb $s))
           ((: ($ructor $proof) $conclusion) $query)
           ((: $proof $premise) (synthesize (: $proof $premise) $kb $rb Z $k)))
      $query))
 ;; Binary rule
 (= (synthesize $query $kb $rb $s (S $k))
-   (let* (((: $ructor (-> $premise1 $premise2 $conclusion)) ($rb))
+   (let* (((: $ructor (-> $premise1 $premise2 $conclusion)) ($rb $s))
           ((: ($ructor $proof1 $proof2) $conclusion) $query)
           ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb Z $k))
           ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb Z $k)))
      $query))
 
 (= (fc $kb $rb)
-    (let* (($out (synthesize (: $term $type) $kb $rb (S Z)))
+    (let* (($out (synthesize (: $term $type) $kb $rb S (S Z)))
            ;;($_ (add-atom &self (= ($kb) $out)))
           )
     $out

@@ -1,34 +1,12 @@
-(= (rb) (: ModusPonens
-                (-> (ImplicationLink $p $q) $p $q)))
+(: rb (-> $state Atom))
+(= (rb $_) (: ModusPonens (-> (ImplicationLink $p $q) $p $q)))
+(= (rb $_) (: Deduction (-> (ImplicationLink $p $q) (ImplicationLink $q $r) (ImplicationLink $p $r))))
+(= (rb $_) (: DisjunctiveSyllogism (-> (OrLink $p $q) (NotLink $p) $q)))
+(= (rb $_) (: DisjunctiveSyllogism (-> (OrLink $p $q) (NotLink $q) $p)))
+(= (rb Z) (: ConjunctionIntroduction (-> $p $q (AndLink $p $q))))
+(= (rb Z) (: ConjunctionEliminationLeft (-> (AndLink $p $q) $p)))
+(= (rb Z) (: ConjunctionEliminationRight (-> (AndLink $p $q) $q)))
+(= (rb Z) (: DisjunctionIntroduction (-> $p $q (OrLink $p $q))))
+(= (rb Z) (: DisjunctionIntroductionLeft (-> $p (OrLink $p $q))))
+(= (rb Z) (: DisjunctionIntroductionRight (-> $q (OrLink $p $q))))
 
-(= (rb) (: ModusPonens
-                (-> (InheritanceLink $p $q) $p $q)))
-
-; Hypothetical Syllogism
-(= (rb) (: HypotheticalSyllogism
-                (-> (ImplicationLink $p $q) (ImplicationLink $q $r)
-                    (ImplicationLink $p $r))))
-
-; Disjunctive Syllogism (Left)
-(= (rb) (: DisjunctiveSyllogism
-                (-> (OrLink $p $q) (NotLink $p) $q)))
-
-; Disjunctive Syllogism (Right)
-(= (rb) (: DisjunctiveSyllogism
-                (-> (OrLink $p $q) (NotLink $q) $p)))
-
-; Conjunction Introduction
-(= (rb) (: ConjunctionIntroduction
-                (-> $p $q (AndLink $p $q))))
-
-; Conjunction Elimination (Left)
-(= (rb) (: ConjunctionEliminationLeft
-                (-> (AndLink $p $q) $p)))
-
-; Conjunction Elimination (Right)
-(= (rb) (: ConjunctionEliminationRight
-                (-> (AndLink $p $q) $q)))
-
-; Disjunction Introduction
-(= (rb) (: DisjunctionIntroduction
-                (-> $p $q (OrLink $p $q))))
