@@ -42,10 +42,14 @@ class MeTTaHandler:
             f.write(kb_str)
                                                                              
     def load_kb_from_file(self):
-        with open(self.file, 'r') as f:                                       
-            kb_content = "(" + f.read() + ")"
-        self.metta.run("!(match &self (= (kb) $n) (remove-atom &self (= (kb) $n)))")
-        self.metta.run(f'(= (kb) (superpose {kb_content}))')                             
+        import os
+        if os.path.exists(self.file):
+            with open(self.file, 'r') as f:                                       
+                kb_content = "(" + f.read() + ")"
+            self.metta.run("!(match &self (= (kb) $n) (remove-atom &self (= (kb) $n)))")
+            self.metta.run(f'(= (kb) (superpose {kb_content}))')
+        else:
+            print(f"Warning: File {self.file} does not exist. No KB loaded.")
 
     def append_to_file(self, elem: str):
         with open(self.file, 'a') as f:
