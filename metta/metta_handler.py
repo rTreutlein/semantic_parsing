@@ -5,12 +5,14 @@ import json
 from typing import List
                                                                              
 class MeTTaHandler:                                                          
-    def __init__(self):                                                      
+    def __init__(self, file: str):                                                      
         self.metta = MeTTa()                                                 
+        self.file = file
         self.run_metta_from_file('metta/Num.metta')                          
         self.run_metta_from_file('metta/Intersection.metta')                 
         self.run_metta_from_file('metta/sythesize.metta')                    
         self.run_metta_from_file('metta/rules_pln.metta')                    
+
                                                                              
     def run_metta_from_file(self, file_path):                                
         with open(file_path, 'r') as file:                                   
@@ -26,29 +28,36 @@ class MeTTaHandler:
         self.metta.run(f'(= (kb) (: {identifier} {atom}))')                  
         res = self.metta.run('!(fc kb rb)')                                  
         out = [str(elem.get_children()[2]) for elem in res[0]]               
+        self.append_to_file(f"(: {identifier} {atom})")
+        [self.append_to_file(str(elem)) for elem in res[0]]
         return out
                                                                              
-    def run(self, atom: str) -> List[str]:                                                     
-        res = self.metta.run(atom)                                           
-        return [str(r) for r in res]                                                           
+    def run(self, atom: str):
+        return self.metta.run(atom)                                           
                                                                              
-    def store_kb_to_file(self, filename: str):                                    
+    def store_kb_to_file(self):
         kb_content = self.metta.run('!(collapse (kb))')                                  
-        with open(filename, 'w') as f:                                       
-            json.dump(str(kb_content[0][0]), f)                                    
+        kb_str = str(kb_content[0][0])[1:-1]
+        with open(self.file, 'w') as f:                                       
+            f.write(kb_str)
                                                                              
-    def load_kb_from_file(self, filename: str):                                   
-        with open(filename, 'r') as f:                                       
-            kb_content = json.load(f)                                        
+    def load_kb_from_file(self):
+        with open(self.file, 'r') as f:                                       
+            kb_content = "(" + f.read() + ")"
+        self.metta.run("!(match &self (= (kb) $n) (remove-atom &self (= (kb) $n)))")
         self.metta.run(f'(= (kb) (superpose {kb_content}))')                             
+
+    def append_to_file(self, elem: str):
+        with open(self.file, 'a') as f:
+            f.write(elem)
                                                                              
 if __name__ == "__main__":                                                   
-    handler = MeTTaHandler()                                                 
+    handler = MeTTaHandler('kb_backup.json')                                                 
     # Example usage                                                          
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode take_care_of) (PredicateNode last_longer))')                               
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode last_longer) (AndLink (PredicateNode requires_less_frequent_replacement) (PredicateNode requires_less_frequent_maintenance) ) )')
     print(result)                                                            
                                                                              
     # Example of storing and loading KB                                      
-    handler.store_kb_to_file('kb_backup.json')                               
-    handler.load_kb_from_file('kb_backup.json')
+    handler.load_kb_from_file()
+    print(handler.run("!(kb)"))
