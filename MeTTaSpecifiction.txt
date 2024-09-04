@@ -1,0 +1,149 @@
+
+MeTTa Specification:
+
+1. Atoms:
+   - Symbol: Represent concepts (e.g., A, f, known?)
+   - Expression: Encapsulate other atoms (e.g., (f A), (implies (human Socrates) (mortal Socrates))
+   - Variable: Start with $ (e.g., $x, $my-argument)
+   - Grounded: Represent sub-symbolic data (e.g., operations, values)
+
+2. Syntax:
+   - Scheme-like syntax for expressions
+   - Special symbols: = (equality), : (type declaration), -> (type restriction)
+   Example: (= (is-positive $x) (> $x 0))
+   ! (is-positive 5)  ; Output: True
+
+3. Evaluation:
+   - Expressions are evaluated based on defined equalities
+   - Nondeterministic results are possible
+   Example: 
+     (= (coin-flip) heads)
+     (= (coin-flip) tails)
+     ! (coin-flip)  ; Output: heads or tails (nondeterministic)
+
+4. Pattern Matching:
+   - Core operation for querying and manipulation
+   - Use 'match' function: (match &self pattern output)
+   Example: 
+     (Parent Tom Bob)
+     ! (match &self (Parent $x $y) ($x is parent of $y))
+     ; Output: (Tom is parent of Bob)
+
+5. Types:
+   - Optional typing system
+   - Metatypes: Atom, Symbol, Expression, Variable, Grounded
+   Example: 
+     (: is-even (-> Number Bool))
+     (= (is-even $x) (== 0 (% $x 2)))
+     ! (is-even 4)  ; Output: True
+
+6. Functions:
+   - Defined using equalities
+   - Support higher-order functions and recursion
+   Example:
+     (= (map $f ()) ())
+     (= (map $f (:: $x $xs)) (:: ($f $x) (map $f $xs)))
+     ! (map (lambda ($x) (* $x 2)) (:: 1 (:: 2 (:: 3 ()))))
+     ; Output: (:: 2 (:: 4 (:: 6 ())))
+
+7. Control Flow:
+   - if: (if condition then-expr else-expr)
+     Example: 
+       (= (abs $x) (if (< $x 0) (- 0 $x) $x))
+       ! (abs -5)  ; Output: 5
+   
+   - case: (case value ((pattern1 result1) (pattern2 result2) ...))
+     Example: 
+       (= (describe-number $n)
+          (case $n
+            ((0 "Zero")
+             ((> $n 0) "Positive")
+             ($_ "Negative"))))
+       ! (describe-number -3)  ; Output: "Negative"
+
+   - let: (let pattern value body)
+     Example: 
+       ! (let $x (+ 2 3) (* $x 2))  ; Output: 10
+
+   - let*: (let* ((var1 val1) (var2 val2) ...) body)
+     Example: 
+       ! (let* (($x 5) ($y (* $x 2))) (+ $x $y))  ; Output: 15
+
+8. Space Operations:
+   - add-atom: (add-atom &self atom)
+     Example: 
+       ! (add-atom &self (Concept A))  ; Output: ()
+
+   - remove-atom: (remove-atom &self atom)
+     Example: 
+       ! (remove-atom &self (Concept A))  ; Output: ()
+
+   - new-space: (new-space)
+     Example: 
+       ! (= (my-space) (new-space))  ; Output: ())
+
+9. Stdlib Functions (continued):
+   - println!: (println! expr)
+     Example: 
+       ! (println! "Hello, World!")  ; Output: Hello, World!
+                                     ; Returns: ()
+
+   - trace!: (trace! message expr)
+     Example: 
+       ! (trace! "Calculating factorial" (factorial 5))
+       ; Output: Calculating factorial
+       ; Returns: 120
+
+   - assertEqual: (assertEqual expr1 expr2)
+     Example: 
+       ! (assertEqual + 2 2) 4)  ; Output: ()
+       ! (assertEqual (+ 2 2) 5)  ; Output: Error: Assertion failed
+
+   - superpose: (superpose (val1 val2 ...))
+     Example: 
+       ! (superpose (1 2 3))  ; Output: [1, 2, 3]
+
+   - collapse: (collapse expr)
+     Example: 
+       ! (collapse (superpose (1 2 3)))  ; Output: [(1 2 3)]
+
+   - car-atom: (car-atom expr)
+     Example: 
+       ! (car-atom (1 2 3))  ; Output: 1
+
+   - cdr-atom: (cdr-atom expr)
+     Example: 
+       ! (cdr-atom (1 2 3))  ; Output: (2 3)
+
+   - cons-atom: (cons-atom head tail)
+     Example: 
+       ! (cons-atom 1 (2 3))  ; Output: (1 2 3)
+
+10. Binding:
+    - bind!: (bind! token value)
+      Used to associate a token with a value for the rest of the program
+      usuall used to associate a token with a space
+      Example:
+        ! (bind! &myconst 42)
+        ! &myconst  ; Output: 42
+
+11. Imports:
+    - import!: (import! token module-name)
+      Used to import modules and bind them to a token
+      Example:
+        ! (import! &math math_module)
+        ! (&math::sqrt 16)  ; Output: 4
+
+12. Grounded Functions:
+    - Arithmetic: +, -, *, /, %
+      Example: ! (+ 2 3)  ; Output: 5
+
+    - Comparison: <, >, <=, >=, ==
+      Example: ! (< 2 3)  ; Output: True
+
+    - Logical: and, or, not
+      Example: ! (and True False)  ; Output: False(
+
+There is no such thing as an sequential construct or . (dot) operator.
+Use only the functions and operators defined in these MeTTa Specification.
+Everything else must be implemented yourself.
