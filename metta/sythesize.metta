@@ -33,8 +33,6 @@
 ;; tuples.
 (: synthesize (-> $a (-> $kt) (-> $s $rt) $s Nat $a))
 ;; Nullary rule (axiom)
-(= (synthesize $query $kb $rb S Z)
-   (let $query ($kb) $query))
 (= (synthesize $query $kb $rb Z $depth)
    (let $query ($kb) $query))
 ;; Unary rule
@@ -51,9 +49,18 @@
           ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb Z $k)))
      $query))
 
+;; Define ad-atom-nodup, that adds an atom only if it is not already
+;; in the atomspace
+(: add-atom-nodup (-> $st Atom Atom ()))
+(= (add-atom-nodup $kb $atom $a2)
+   (case (let $atom ($kb) $atom)
+     (($atom Empty)
+      ($_ (add-atom &self $a2)))))
+
+
 (= (fc $kb $rb)
     (let* (($out (synthesize (: $term $type) $kb $rb S (S Z)))
-           ;;($_ (add-atom &self (= ($kb) $out)))
+           ($dummy (add-atom-nodup $kb $out (= ($kb) $out)))
           )
     $out
 ))

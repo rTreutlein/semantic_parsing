@@ -15,18 +15,12 @@ def extract_logic(response):
         return match.group(1).strip()
     return None
 
-def process_file(file_path, process_sentence_func, output_file, skip_lines=0, limit_lines=None):
+def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=None):
     with open(file_path, 'r') as file:
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
-        for i, line in enumerate(lines[:end]):
-            result = process_sentence_func(line.strip(), i)
-            if result is None:
-                break
-            with open(output_file, "a") as out_file:
-                out_file.write(f"{result}\n")
-            print(f"last idx: {i}")
-            print("--------------------------------------------------------------------------------")
+        for i, line in enumerate(lines[skip_lines:end]):
+            process_sentence_func(line.strip(), i)
 
 def create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5):
     completion = client.chat.completions.create(

@@ -1,7 +1,7 @@
 from hyperon import MeTTa
 import random
 import string
-import json
+import os
 from typing import List
                                                                              
 class MeTTaHandler:                                                          
@@ -42,7 +42,6 @@ class MeTTaHandler:
             f.write(kb_str)
                                                                              
     def load_kb_from_file(self):
-        import os
         if os.path.exists(self.file):
             with open(self.file, 'r') as f:                                       
                 kb_content = "(" + f.read() + ")"
@@ -57,6 +56,9 @@ class MeTTaHandler:
                                                                              
 if __name__ == "__main__":                                                   
     handler = MeTTaHandler('kb_backup.json')                                                 
+    with open('kb_backup.json', 'w') as f:
+        f.write("")
+
     # Example usage                                                          
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode take_care_of) (PredicateNode last_longer))')                               
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode last_longer) (AndLink (PredicateNode requires_less_frequent_replacement) (PredicateNode requires_less_frequent_maintenance) ) )')
@@ -64,4 +66,13 @@ if __name__ == "__main__":
                                                                              
     # Example of storing and loading KB                                      
     handler.load_kb_from_file()
+    print("kb:")
+    print(handler.run("!(kb)"))
+    print("fc1:")
+    print(handler.run('!(fc kb rb)'))
+    print("kb:")
+    print(handler.run("!(kb)"))
+    print("fc2:")
+    print(handler.run('!(fc kb rb)'))
+    print("kb:")
     print(handler.run("!(kb)"))

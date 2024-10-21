@@ -9,4 +9,3 @@
 (= (rb Z) (: DisjunctionIntroduction (-> $p $q (OrLink $p $q))))
 (= (rb Z) (: DisjunctionIntroductionLeft (-> $p (OrLink $p $q))))
 (= (rb Z) (: DisjunctionIntroductionRight (-> $q (OrLink $p $q))))
-
