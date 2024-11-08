@@ -23,15 +23,18 @@ def check_predicate_logic(pred_logic: str, fix_function=None) -> str|None:
     return metta
 
 
-def HumanCheck(pln : str, sentence: str) -> str:
+def HumanCheck(pln : str, sentence: str, is_precondition: bool = False) -> str:
+    prefix = "Precondition" if is_precondition else "Statement"
     while True:
-        user_input = input("Is this conversion correct? (y/n): ").lower()
+        print(f"\nChecking {prefix}:")
+        print(pln)
+        user_input = input(f"Is this {prefix.lower()} correct? (y/n): ").lower()
         if user_input == 'y':
             break
         elif user_input == 'n':
             # Create a temporary file with the sentence as reference and the LLM output
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as temp_file:
-                temp_file.write(f"# Sentence: {sentence}\n{pln}")
+                temp_file.write(f"# Sentence: {sentence}\n# {prefix}:\n{pln}")
                 temp_file_path = temp_file.name
 
             # Open the default text editor for the user to make changes
@@ -41,7 +44,7 @@ def HumanCheck(pln : str, sentence: str) -> str:
             # Read the edited content
             with open(temp_file_path, 'r') as temp_file:
                 lines = temp_file.readlines()
-                pln = ''.join(lines[1:]).strip()  # Exclude the first line (sentence reference)
+                pln = ''.join(lines[2:]).strip()  # Exclude the first two lines (sentence reference and prefix)
 
             # Remove the temporary file
             os.unlink(temp_file_path)

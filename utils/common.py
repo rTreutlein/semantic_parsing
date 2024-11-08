@@ -11,9 +11,40 @@ client = OpenAI(
 
 def extract_logic(response):
     match = re.search(r'```(.*?)```', response, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return None
+    if not match:
+        return None
+        
+    content = match.group(1).strip()
+    
+    # Split into preconditions and statement sections
+    preconditions = []
+    statement = None
+    
+    # Parse the content looking for Preconditions: and Statement: sections
+    sections = content.split('\n')
+    current_section = None
+    
+    for line in sections:
+        line = line.strip()
+        if line.lower().startswith('preconditions:'):
+            current_section = 'preconditions'
+            continue
+        elif line.lower().startswith('statement:'):
+            current_section = 'statement'
+            continue
+        
+        if line and current_section == 'preconditions':
+            preconditions.append(line)
+        elif line and current_section == 'statement':
+            statement = line
+    
+    if statement is None:
+        return None
+        
+    return {
+        "preconditions": preconditions,
+        "statement": statement
+    }
 
 def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=None):
     with open(file_path, 'r') as file:

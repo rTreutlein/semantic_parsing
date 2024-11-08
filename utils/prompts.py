@@ -114,37 +114,50 @@ Now, please provide a natural language explanation for the given PLN statement:
 def nl2pln(sentence, similar):
     similar = '\n'.join(similar)
     return f"""
-You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format. Here is the sentence:
+You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format, including necessary preconditions. Here is the sentence:
 
 <sentence>
 {sentence}
 </sentence>
 
-Your goal is to convert this sentence into OpenCog PLN notation. Follow these guidelines:
+Your goal is to convert this sentence into OpenCog PLN notation and identify any necessary preconditions. Follow these guidelines:
 
 1. Use simple English names for concepts and relationships.
 2. Use the appropriate OpenCog PLN syntax, including InheritanceLink, EvaluationLink, and ConceptNode.
 3. Break down complex concepts into simpler components using multiple links when necessary.
-4. Consider the logical structure and relationships within the sentence carefully.
+4. Consider what must be true for this sentence to make sense, and include these as preconditions.
 5. Use VariableNodes when appropriate, naming them $X, $Y, $Z, etc.
-6. Don't inlucde a TruthValue
+6. Don't include a TruthValue
 
-Provide your final output enclosed within triple backticks (```). The output should be in valid OpenCog PLN format without any surrounding text.
+Provide your output enclosed within triple backticks (```). The output should have two sections:
+- Preconditions: List any PLN statements that must be true for the main statement to make sense
+- Statement: The main PLN representation of the sentence
 
-Here's an example to guide you:
+Here's an example:
 
-Input: "Dogs are mammals that can bark."
+Input: "The dog chased the cat in the garden"
 
 Output:
 ```
-(InheritanceLink
+Preconditions:
+(ExistsLink 
     (ConceptNode "Dog")
-    (ConceptNode "Mammal")
+)
+(ExistsLink 
+    (ConceptNode "Cat")
+)
+(ExistsLink 
+    (ConceptNode "Garden")
 )
 
+Statement:
 (EvaluationLink
-    (PredicateNode "can_bark")
-    (ConceptNode "Dog")
+    (PredicateNode "chase_in")
+    (ListLink
+        (ConceptNode "Dog")
+        (ConceptNode "Cat")
+        (ConceptNode "Garden")
+    )
 )
 ```
 

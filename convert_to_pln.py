@@ -16,12 +16,20 @@ def convert_logic(input_text, prompt_func, similar_examples):
     print("--------------------------------------------------------------------------------")
     print("LLM output:")
     print(txt)
-    logic = extract_logic(txt)
+    logic_data = extract_logic(txt)
 
-    if logic == None:
+    if logic_data is None:
         raise RuntimeError("No output from LLM")
 
-    return HumanCheck(logic,input_text)
+    # Validate both preconditions and main statement
+    validated_preconditions = [HumanCheck(precond, input_text, is_precondition=True) 
+                             for precond in logic_data["preconditions"]]
+    validated_statement = HumanCheck(logic_data["statement"], input_text, is_precondition=False)
+    
+    return {
+        "preconditions": validated_preconditions,
+        "statement": validated_statement
+    }
 
 def run_forward_chaining(pln):
     fc_results = metta_handler.add_atom_and_run_fc(pln)
@@ -34,31 +42,39 @@ def process_forward_chaining_results(fc_results, pln, similar_examples):
     store_fc_results(fc_results, english_results)
     return pln, fc_results, english_results
 
-def store_results(rag, sentence, pln):
+def store_results(rag, sentence, pln_data):
     rag.store_embedding({
         "sentence": sentence,
-        "pln": pln
+        "pln": pln_data["statement"],
+        "preconditions": pln_data["preconditions"]
     })
 
 def store_fc_results(fc_results, english_results):
     for fc_result, english_result in zip(fc_results, english_results):
         rag.store_embedding({
             "sentence": english_result,
-            "pln": fc_result
+            "pln": fc_result,
+            "preconditions": []  # Forward chaining results don't have preconditions
         })
 
 def process_sentence(line, rag):
     similar = rag.search_similar(line, limit=5)
-    similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}" for item in similar if 'sentence' in item and 'pln' in item]
+    similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}\nPreconditions: {item.get('preconditions', [])}" 
+                       for item in similar if 'sentence' in item and 'pln' in item]
 
     print(f"Processing line: {line}")
-    pln = convert_logic(line, nl2pln, similar_examples)
-
-    store_results(rag, line, pln)
-
-    fc_results = run_forward_chaining(pln)
+    pln_data = convert_logic(line, nl2pln, similar_examples)
+    
+    # Add preconditions to MeTTa KB first
+    for precondition in pln_data["preconditions"]:
+        metta_handler.add_atom_and_run_fc(precondition)
+    
+    # Then add and process the main statement
+    store_results(rag, line, pln_data)
+    
+    fc_results = run_forward_chaining(pln_data["statement"])
     if fc_results:
-        process_forward_chaining_results(fc_results, pln, similar_examples)
+        process_forward_chaining_results(fc_results, pln_data, similar_examples)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
