@@ -66,7 +66,7 @@ def process_sentence(line, rag):
     
     # Add preconditions to MeTTa KB first
     for precondition in pln_data["preconditions"]:
-        metta_handler.add_atom_and_run_fc(precondition)
+        metta_handler.add_to_context(precondition)
     
     # Then add and process the main statement
     store_results(rag, line, pln_data)
