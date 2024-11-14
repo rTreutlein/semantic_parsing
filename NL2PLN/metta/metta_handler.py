@@ -8,10 +8,11 @@ class MeTTaHandler:
     def __init__(self, file: str):                                                      
         self.metta = MeTTa()                                                 
         self.file = file
-        self.run_metta_from_file('Num.metta')                          
-        self.run_metta_from_file('Intersection.metta')                 
-        self.run_metta_from_file('sythesize.metta')                    
-        self.run_metta_from_file('rules_pln.metta')                    
+        self.run_metta_from_file('metta/Num.metta')                          
+        self.run_metta_from_file('metta/Intersection.metta')                 
+        self.run_metta_from_file('metta/sythesize.metta')                    
+        self.run_metta_from_file('metta/rules_pln.metta')                    
+        self.metta.run("!(bind! &context (new-space))")
 
                                                                              
     def run_metta_from_file(self, file_path):                                
@@ -40,7 +41,7 @@ class MeTTaHandler:
             The conflicting atom string if a conflict was found
         """
         exp = self.metta.parse_single(atom)
-        inctx = self.metta.run("!(match &context (: " + exp.get_children()[1] + " $a) $a)")
+        inctx = self.metta.run("!(match &context (: " + str(exp.get_children()[1]) + " $a) $a)")
         
         if len(inctx[0]) == 0:
             self.metta.run("!(add-atom &context " + atom + ")")
