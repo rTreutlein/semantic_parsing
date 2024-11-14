@@ -21,15 +21,14 @@ def convert_logic(input_text, prompt_func, similar_examples):
     if logic_data is None:
         raise RuntimeError("No output from LLM")
 
-    # Validate both preconditions and main statement
-    validated_preconditions = [HumanCheck(precond, input_text, is_precondition=True) 
-                             for precond in logic_data["preconditions"]]
-    validated_statement = HumanCheck(logic_data["statement"], input_text, is_precondition=False)
+    # Validate the entire output at once
+    validated_data = HumanCheck(txt, input_text)
+    logic_data = extract_logic(validated_data)
     
-    return {
-        "preconditions": validated_preconditions,
-        "statement": validated_statement
-    }
+    if logic_data is None:
+        raise RuntimeError("No output from validation")
+        
+    return logic_data
 
 def run_forward_chaining(pln):
     fc_results = metta_handler.add_atom_and_run_fc(pln)
