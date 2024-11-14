@@ -8,10 +8,10 @@ class MeTTaHandler:
     def __init__(self, file: str):                                                      
         self.metta = MeTTa()                                                 
         self.file = file
-        self.run_metta_from_file('metta/Num.metta')                          
-        self.run_metta_from_file('metta/Intersection.metta')                 
-        self.run_metta_from_file('metta/sythesize.metta')                    
-        self.run_metta_from_file('metta/rules_pln.metta')                    
+        self.run_metta_from_file('Num.metta')                          
+        self.run_metta_from_file('Intersection.metta')                 
+        self.run_metta_from_file('sythesize.metta')                    
+        self.run_metta_from_file('rules_pln.metta')                    
 
                                                                              
     def run_metta_from_file(self, file_path):                                
@@ -31,9 +31,20 @@ class MeTTaHandler:
         self.append_to_file(f"(: {identifier} {atom})")
         [self.append_to_file(str(elem)) for elem in res[0]]
         return out
-                                                                             
+
+    def add_to_context(self, atom: str):
+        exp = self.metta.parse_single(atom)
+        inctx = self.metta.run("!(match &context (: " + exp.get_children()[1] + "$a) $a")
+        if (len(inctx[0]) == 0):
+            self.metta.run("!(add-atom &context " + atom + ")")
+        if exp.get_children()[2] == inctx:
+            return
+        else:
+            return "conclicc"
+
+        
     def run(self, atom: str):
-        return self.metta.run(atom)                                           
+        return self.metta.run(atom)
                                                                              
     def store_kb_to_file(self):
         kb_content = self.metta.run('!(collapse (kb))')                                  
@@ -53,11 +64,15 @@ class MeTTaHandler:
     def append_to_file(self, elem: str):
         with open(self.file, 'a') as f:
             f.write(elem)
+
                                                                              
 if __name__ == "__main__":                                                   
     handler = MeTTaHandler('kb_backup.json')                                                 
     with open('kb_backup.json', 'w') as f:
         f.write("")
+
+    inctx = handler.run("!(match &self (: $a) $a)")
+    print(len(inctx[0]))
 
     # Example usage                                                          
     result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode take_care_of) (PredicateNode last_longer))')                               
