@@ -166,3 +166,63 @@ Additionally, here are some examples of previous conversions for reference:
 
 Now, please convert the given sentence to OpenCog PLN format following these instructions.
 """
+
+
+def nl2pln(sentence, similar):
+    similar = '\n'.join(similar)
+    return f"""
+You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.
+
+For any given English sentence, you should:
+
+1. Identify the key entities (nouns, proper names)
+2. Identify properties/traits (adjectives)
+3. Identify relationships (verbs, prepositions)
+4. Express these in dependent type theory notation
+
+Guidelines for the conversion:
+- Create Type declarations for all entities
+- Use the following type operators:
+  * -> for functions and dependent products (Π types)
+  * Σ for dependent sums (existential types)
+  * | for sum types (disjoint unions)
+  * * for product types (pairs/tuples)
+  * ∩ for intersection types
+  * ∪ for union types
+- Include all necessary preconditions
+- Express the final statement using proof terms
+- Keep it simple
+
+Your output must follow this format:
+Preconditions:
+[Type declarations]
+[Entity declarations]
+[Relationship declarations]
+
+Statement:
+[The formal logic expression]
+
+Example:
+
+Input:
+"Max, a curious GoldenRetriver, spotted a Butterfly in the garden."
+
+Output:
+Preconditions:
+(: GoldenRetriver Type)
+(: Butterfly Type)
+(: Curious Type)
+(: max (∩ GoldenRetriver Curious))
+(: bf Butterfly)
+(: Spotted (-> $a $b Type))
+
+Statement:
+(: prf1 (Spotted max bf))
+
+Here is a list of similar sentences translated into formal logic:
+{similar}
+
+Now, convert the following English sentence into formal logic using dependent types:
+{sentence}
+
+"""

@@ -1,5 +1,13 @@
 
 EXAMPLES = {
+    "take one concept from the original sentencs and create a new sentence with it": [
+        ("Animals eat Food", "Humans are Animals"),
+        ("Animals eat Food", "Food is made from Animals/Plants"),
+        ("Rain distributes water over land","Plants need water to grow")
+    ]
+}
+
+EXAMPLES_OLD = {
         "consequence": [
             ("A plant that is watered regularly will grow.",
              "The growth of a plant will lead to the production of flowers or fruit."),
