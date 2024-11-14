@@ -76,28 +76,31 @@ class MeTTaHandler:
             f.write(elem)
 
                                                                              
-if __name__ == "__main__":                                                   
-    handler = MeTTaHandler('kb_backup.json')                                                 
+if __name__ == "__main__":
+    handler = MeTTaHandler('kb_backup.json')
     with open('kb_backup.json', 'w') as f:
         f.write("")
 
-    inctx = handler.run("!(match &self (: $a) $a)")
-    print(len(inctx[0]))
-
-    # Example usage                                                          
-    result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode take_care_of) (PredicateNode last_longer))')                               
-    result = handler.add_atom_and_run_fc('(ImplicationLink (PredicateNode last_longer) (AndLink (PredicateNode requires_less_frequent_replacement) (PredicateNode requires_less_frequent_maintenance) ) )')
-    print(result)                                                            
-                                                                             
-    # Example of storing and loading KB                                      
-    handler.load_kb_from_file()
-    print("kb:")
-    print(handler.run("!(kb)"))
-    print("fc1:")
-    print(handler.run('!(fc kb rb)'))
-    print("kb:")
-    print(handler.run("!(kb)"))
-    print("fc2:")
-    print(handler.run('!(fc kb rb)'))
-    print("kb:")
-    print(handler.run("!(kb)"))
+    print("\nTesting add_to_context:")
+    
+    # Test 1: Adding a new atom (should succeed)
+    atom1 = "(: test1 (ImplicationLink (PredicateNode A) (PredicateNode B)))"
+    result = handler.add_to_context(atom1)
+    print(f"Adding {atom1}")
+    print(f"Result: {result}")  # Should print None
+    
+    # Test 2: Adding the same atom again (should succeed as it's identical)
+    print(f"\nAdding same atom again: {atom1}")
+    result = handler.add_to_context(atom1)
+    print(f"Result: {result}")  # Should print None
+    
+    # Test 3: Adding conflicting atom (should return existing atom)
+    atom2 = "(: test1 (ImplicationLink (PredicateNode A) (PredicateNode C)))"
+    print(f"\nAdding conflicting atom: {atom2}")
+    result = handler.add_to_context(atom2)
+    print(f"Result: {result}")  # Should print the existing atom
+    
+    # Verify final context state
+    print("\nFinal context state:")
+    context = handler.run("!(match &context (: $a $b) $b)")
+    print(context[0])
