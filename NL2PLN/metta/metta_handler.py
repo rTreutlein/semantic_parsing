@@ -32,15 +32,25 @@ class MeTTaHandler:
         [self.append_to_file(str(elem)) for elem in res[0]]
         return out
 
-    def add_to_context(self, atom: str):
+    def add_to_context(self, atom: str) -> str | None:
+        """Add atom to context if no conflict exists.
+        
+        Returns:
+            None if atom was added successfully
+            The conflicting atom string if a conflict was found
+        """
         exp = self.metta.parse_single(atom)
-        inctx = self.metta.run("!(match &context (: " + exp.get_children()[1] + "$a) $a")
-        if (len(inctx[0]) == 0):
+        inctx = self.metta.run("!(match &context (: " + exp.get_children()[1] + " $a) $a)")
+        
+        if len(inctx[0]) == 0:
             self.metta.run("!(add-atom &context " + atom + ")")
-        if exp.get_children()[2] == inctx:
-            return
+            return None
+            
+        existing_atom = str(inctx[0][0])
+        if str(exp.get_children()[2]) == existing_atom:
+            return None
         else:
-            return "conclicc"
+            return existing_atom
 
         
     def run(self, atom: str):
