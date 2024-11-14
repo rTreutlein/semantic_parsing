@@ -66,7 +66,10 @@ def process_sentence(line, rag):
     
     # Add preconditions to MeTTa KB first
     for precondition in pln_data["preconditions"]:
-        metta_handler.add_to_context(precondition)
+        conflict = metta_handler.add_to_context(precondition)
+        if isinstance(conflict, str):
+            print(f"ERROR: Conflict detected! Precondition {precondition} conflicts with existing atom: {conflict}")
+            return
     
     # Then add and process the main statement
     store_results(rag, line, pln_data)
