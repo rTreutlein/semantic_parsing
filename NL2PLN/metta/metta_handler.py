@@ -3,15 +3,16 @@ import random
 import string
 import os
 from typing import List
-                                                                             
+
 class MeTTaHandler:                                                          
-    def __init__(self, file: str):                                                      
-        self.metta = MeTTa()                                                 
+    def __init__(self, file: str):
+        self.metta = MeTTa()
         self.file = file
-        self.run_metta_from_file('metta/Num.metta')                          
-        self.run_metta_from_file('metta/Intersection.metta')                 
-        self.run_metta_from_file('metta/sythesize.metta')                    
-        self.run_metta_from_file('metta/rules_pln.metta')                    
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.run_metta_from_file(os.path.join(script_dir, 'Num.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'Intersection.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'sythesize.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'rules_pln.metta'))
         self.metta.run("!(bind! &context (new-space))")
 
                                                                              
