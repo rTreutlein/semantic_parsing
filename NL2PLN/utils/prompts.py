@@ -111,7 +111,7 @@ Additionally, here are some examples of previous conversions for reference:
 Now, please provide a natural language explanation for the given PLN statement:
 """
 
-def nl2pln(sentence, similar):
+def nl2pln_old(sentence, similar):
     similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format, including necessary preconditions. Here is the sentence:
@@ -192,12 +192,15 @@ Guidelines for the conversion:
 - Include all necessary preconditions
 - Express the final statement using proof terms
 - Keep it simple
+- The results should be surounded by ``` and ```
+
+There is only one Base type namly (: Object Type) everythign else is a n-ary predicate.
+i.e. (: Human (-> Object Type))
 
 Your output must follow this format:
 Preconditions:
 [Type declarations]
 [Entity declarations]
-[Relationship declarations]
 
 Statement:
 [The formal logic expression]
@@ -208,16 +211,41 @@ Input:
 "Max, a curious GoldenRetriver, spotted a Butterfly in the garden."
 
 Output:
+...Thoughts...
+```
 Preconditions:
-(: GoldenRetriver Type)
-(: Butterfly Type)
-(: Curious Type)
-(: max (∩ GoldenRetriver Curious))
-(: bf Butterfly)
-(: Spotted (-> $a $b Type))
+(: GoldenRetriver (-> Object Type))
+(: Butterfly (-> Object Type))
+(: Curious (-> Object Type))
+(: Spotted (-> Object Object Type))
+
+(: max Object)
+(: maxGoldenRetriver (GoldenRetriver max))
+(: maxCurious (Curious max))
+(: bf Object)
+(: bfButterfly (Butterfly bf))
 
 Statement:
 (: prf1 (Spotted max bf))
+```
+
+For performatives there exist the constants of authorSpeaker and readerListener.
+Example:
+Input:
+Hi!
+Output:
+...Thoughts...
+```
+Preconditions:
+(: Greeting (-> Object Type))
+(: Expressed (-> Object Object Type))
+
+(: "Hi!" Object)
+(: hiGreeting (Greeting "Hi!"))
+
+Statement:
+(: authorSpeakerExpressedHi (Expressed authorSpeaker "Hi!"))
+```
 
 Here is a list of similar sentences translated into formal logic:
 {similar}
