@@ -63,6 +63,8 @@ def process_sentence(line, rag) -> bool:
 
     print(f"Processing line: {line}")
     pln_data = convert_logic(line, nl2pln, similar_examples)
+    if pln_data == "Performative":
+        return True
     
     # Add type definitions to MeTTa KB first
     for type_def in pln_data["type_definitions"]:
