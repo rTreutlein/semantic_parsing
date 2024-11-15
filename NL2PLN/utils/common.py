@@ -51,7 +51,8 @@ def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=Non
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end]):
-            process_sentence_func(line.strip(), i)
+            if not process_sentence_func(line.strip(), i):
+                return
 
 def create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5):
     completion = client.chat.completions.create(

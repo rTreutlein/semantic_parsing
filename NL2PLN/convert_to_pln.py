@@ -56,7 +56,7 @@ def store_fc_results(fc_results, english_results):
             "preconditions": []  # Forward chaining results don't have preconditions
         })
 
-def process_sentence(line, rag):
+def process_sentence(line, rag) -> bool:
     similar = rag.search_similar(line, limit=5)
     similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}\nPreconditions: {item.get('preconditions', [])}" 
                        for item in similar if 'sentence' in item and 'pln' in item]
@@ -69,7 +69,7 @@ def process_sentence(line, rag):
         conflict = metta_handler.add_to_context(precondition)
         if isinstance(conflict, str):
             print(f"ERROR: Conflict detected! Precondition {precondition} conflicts with existing atom: {conflict}")
-            return
+            return False
     
     # Then add and process the main statement
     store_results(rag, line, pln_data)
@@ -77,6 +77,7 @@ def process_sentence(line, rag):
     fc_results = run_forward_chaining(pln_data["statement"])
     if fc_results:
         process_forward_chaining_results(fc_results, pln_data, similar_examples)
+    return True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
