@@ -198,12 +198,11 @@ There is only one Base type namly (: Object Type) everythign else is a n-ary pre
 i.e. (: Human (-> Object Type))
 
 Your output must follow this format:
-Preconditions:
-[Type declarations]
-[Entity declarations]
+Type Definitions:
+[Type declarations for predicates and relationships]
 
-Statement:
-[The formal logic expression]
+Statements:
+[Entity declarations and logical expressions]
 
 Example:
 
@@ -213,19 +212,18 @@ Input:
 Output:
 ...Thoughts...
 ```
-Preconditions:
+Type Definitions:
 (: GoldenRetriver (-> Object Type))
 (: Butterfly (-> Object Type))
 (: Curious (-> Object Type))
 (: Spotted (-> Object Object Type))
 
+Statements:
 (: max Object)
 (: maxGoldenRetriver (GoldenRetriver max))
 (: maxCurious (Curious max))
 (: bf Object)
 (: bfButterfly (Butterfly bf))
-
-Statement:
 (: prf1 (Spotted max bf))
 ```
 
@@ -236,14 +234,13 @@ Hi!
 Output:
 ...Thoughts...
 ```
-Preconditions:
+Type Definitions:
 (: Greeting (-> Object Type))
 (: Expressed (-> Object Object Type))
 
+Statements:
 (: "Hi!" Object)
 (: hiGreeting (Greeting "Hi!"))
-
-Statement:
 (: authorSpeakerExpressedHi (Expressed authorSpeaker "Hi!"))
 ```
 
