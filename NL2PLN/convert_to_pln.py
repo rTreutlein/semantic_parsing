@@ -58,7 +58,7 @@ def store_fc_results(fc_results, english_results):
 
 def process_sentence(line, rag) -> bool:
     similar = rag.search_similar(line, limit=5)
-    similar_examples = [f"Sentence: {item['sentence']}\nType Definitions: {item.get('type_definitions', [])}\nStatements: {item.get('statements', [])}" 
+    similar_examples = [f"Sentence: {item['sentence']}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
                        for item in similar if 'sentence' in item]
 
     print(f"Processing line: {line}")
