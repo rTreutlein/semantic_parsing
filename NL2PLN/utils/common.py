@@ -16,34 +16,35 @@ def extract_logic(response):
         
     content = match.group(1).strip()
     
-    # Split into preconditions and statement sections
-    preconditions = []
-    statement = None
+    # Split into type definitions and statements sections
+    type_definitions = []
+    statements = []
     
-    # Parse the content looking for Preconditions: and Statement: sections
+    # Parse the content looking for Type Definitions: and Statements: sections
     sections = content.split('\n')
     current_section = None
     
     for line in sections:
         line = line.strip()
-        if line.lower().startswith('preconditions:'):
-            current_section = 'preconditions'
+        if line.lower().startswith('type definitions:'):
+            current_section = 'type_definitions'
             continue
-        elif line.lower().startswith('statement:'):
-            current_section = 'statement'
+        elif line.lower().startswith('statements:'):
+            current_section = 'statements'
             continue
         
-        if line and current_section == 'preconditions':
-            preconditions.append(line)
-        elif line and current_section == 'statement':
-            statement = line
+        if line:
+            if current_section == 'type_definitions':
+                type_definitions.append(line)
+            elif current_section == 'statements':
+                statements.append(line)
     
-    if statement is None:
+    if not statements:
         return None
         
     return {
-        "preconditions": preconditions,
-        "statement": statement
+        "type_definitions": type_definitions,
+        "statements": statements
     }
 
 def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=None):

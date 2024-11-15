@@ -44,8 +44,8 @@ def process_forward_chaining_results(fc_results, pln, similar_examples):
 def store_results(rag, sentence, pln_data):
     rag.store_embedding({
         "sentence": sentence,
-        "pln": pln_data["statement"],
-        "preconditions": pln_data["preconditions"]
+        "type_definitions": pln_data["type_definitions"],
+        "statements": pln_data["statements"]
     })
 
 def store_fc_results(fc_results, english_results):
@@ -58,23 +58,28 @@ def store_fc_results(fc_results, english_results):
 
 def process_sentence(line, rag) -> bool:
     similar = rag.search_similar(line, limit=5)
-    similar_examples = [f"Sentence: {item['sentence']}\nPLN: {item['pln']}\nPreconditions: {item.get('preconditions', [])}" 
-                       for item in similar if 'sentence' in item and 'pln' in item]
+    similar_examples = [f"Sentence: {item['sentence']}\nType Definitions: {item.get('type_definitions', [])}\nStatements: {item.get('statements', [])}" 
+                       for item in similar if 'sentence' in item]
 
     print(f"Processing line: {line}")
     pln_data = convert_logic(line, nl2pln, similar_examples)
     
-    # Add preconditions to MeTTa KB first
-    for precondition in pln_data["preconditions"]:
-        conflict = metta_handler.add_to_context(precondition)
+    # Add type definitions to MeTTa KB first
+    for type_def in pln_data["type_definitions"]:
+        conflict = metta_handler.add_to_context(type_def)
         if isinstance(conflict, str):
-            print(f"ERROR: Conflict detected! Precondition {precondition} conflicts with existing atom: {conflict}")
+            print(f"ERROR: Conflict detected! Type definition {type_def} conflicts with existing atom: {conflict}")
             return False
     
-    # Then add and process the main statement
+    # Then add and process all statements
     store_results(rag, line, pln_data)
     
-    fc_results = run_forward_chaining(pln_data["statement"])
+    # Run forward chaining on each statement
+    fc_results = []
+    for statement in pln_data["statements"]:
+        fc_result = run_forward_chaining(statement)
+        if fc_result:
+            fc_results.extend(fc_result)
     if fc_results:
         process_forward_chaining_results(fc_results, pln_data, similar_examples)
     return True
