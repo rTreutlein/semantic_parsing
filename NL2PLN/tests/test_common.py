@@ -1,5 +1,5 @@
 import pytest
-from utils.common import extract_logic, parse_lisp_statement
+from NL2PLN.utils.common import extract_logic, parse_lisp_statement
 
 def test_parse_lisp_statement():
     # Test single line statement

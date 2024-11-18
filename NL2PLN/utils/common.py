@@ -1,7 +1,7 @@
 from openai import OpenAI
 import os
 import re
-from utils.ragclass import RAG
+from NL2PLN.utils.ragclass import RAG
 
 def parse_lisp_statement(lines):
     """Parse multi-line Lisp-like statements and clean up trailing content after final parenthesis"""
