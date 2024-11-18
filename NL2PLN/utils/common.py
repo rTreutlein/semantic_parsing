@@ -86,6 +86,8 @@ def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=Non
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
         for i, line in enumerate(lines[skip_lines:end]):
+            if not line.strip():
+                continue
             if not process_sentence_func(line.strip(), i):
                 return
 
@@ -96,6 +98,5 @@ def create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temper
         messages=[{"role": "user", "content": prompt}],
     )
     if not completion.choices:
-        print(completion)
         raise Exception("OpenAI API returned no choices")
     return completion.choices[0].message.content
