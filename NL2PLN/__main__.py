@@ -1,10 +1,10 @@
 import argparse
-from utils.common import process_file, create_openai_completion, extract_logic
-from utils.prompts import nl2pln, pln2nl
-from metta.metta_handler import MeTTaHandler
-from utils.checker import HumanCheck
-from utils.ragclass import RAG
 import os
+from NL2PLN.utils.common import process_file, create_openai_completion, extract_logic
+from NL2PLN.utils.prompts import nl2pln, pln2nl
+from NL2PLN.metta.metta_handler import MeTTaHandler
+from NL2PLN.utils.checker import HumanCheck
+from NL2PLN.utils.ragclass import RAG
 
 
 def convert_logic(input_text, prompt_func, similar_examples):
@@ -30,15 +30,15 @@ def convert_logic(input_text, prompt_func, similar_examples):
         
     return logic_data
 
-def run_forward_chaining(pln):
+def run_forward_chaining(metta_handler, pln):
     fc_results = metta_handler.add_atom_and_run_fc(pln)
     print(f"Forward chaining results: {fc_results}")
     return fc_results
 
-def process_forward_chaining_results(fc_results, pln, similar_examples):
+def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
     english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
     print(f"Forward chaining results in English: {english_results}")
-    store_fc_results(fc_results, english_results)
+    store_fc_results(rag, fc_results, english_results)
     return pln, fc_results, english_results
 
 def store_results(rag, sentence, pln_data):
@@ -48,7 +48,7 @@ def store_results(rag, sentence, pln_data):
         "statements": pln_data["statements"]
     })
 
-def store_fc_results(fc_results, english_results):
+def store_fc_results(rag, fc_results, english_results):
     for fc_result, english_result in zip(fc_results, english_results):
         rag.store_embedding({
             "sentence": english_result,
@@ -56,7 +56,7 @@ def store_fc_results(fc_results, english_results):
             "preconditions": []  # Forward chaining results don't have preconditions
         })
 
-def process_sentence(line, rag) -> bool:
+def process_sentence(line, rag, metta_handler) -> bool:
     similar = rag.search_similar(line, limit=5)
     similar_examples = [f"Sentence: {item['sentence']}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
                        for item in similar if 'sentence' in item]
@@ -79,14 +79,14 @@ def process_sentence(line, rag) -> bool:
     # Run forward chaining on each statement
     fc_results = []
     for statement in pln_data["statements"]:
-        fc_result = run_forward_chaining(statement)
+        fc_result = run_forward_chaining(metta_handler, statement)
         if fc_result:
             fc_results.extend(fc_result)
     if fc_results:
-        process_forward_chaining_results(fc_results, pln_data, similar_examples)
+        process_forward_chaining_results(rag, fc_results, pln_data, similar_examples)
     return True
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
     parser.add_argument("file_path", help="Path to the input file")
     parser.add_argument("--skip", type=int, default=0, help="Number of lines to skip at the beginning of the file")
@@ -99,10 +99,13 @@ if __name__ == "__main__":
     print(metta_handler.run("!(kb)"))
 
     collection_name = os.path.splitext(os.path.basename(args.file_path))[0]
-    rag=RAG(collection_name=f"{collection_name}_pln")
+    rag = RAG(collection_name=f"{collection_name}_pln")
 
     def process_sentence_wrapper(line, index):
         print(f"Current Index: {index}")
-        return process_sentence(line, rag)
+        return process_sentence(line, rag, metta_handler)
 
     process_file(args.file_path, process_sentence_wrapper, args.skip, args.limit)
+
+if __name__ == "__main__":
+    main()
