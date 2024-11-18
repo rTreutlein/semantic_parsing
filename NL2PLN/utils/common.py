@@ -13,8 +13,11 @@ def extract_logic(response):
     match = re.search(r'```(.*?)```', response, re.DOTALL)
     if not match:
         return None
-        
+
     content = match.group(1).strip()
+
+    if content.lower().startswith('performative'):
+        return "Performative"
     
     # Split into type definitions and statements sections
     type_definitions = []
