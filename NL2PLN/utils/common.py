@@ -3,6 +3,33 @@ import os
 import re
 from utils.ragclass import RAG
 
+def parse_lisp_statement(lines):
+    """Parse multi-line Lisp-like statements and clean up trailing content after final parenthesis"""
+    result = []
+    current_statement = None
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        if current_statement is None:
+            current_statement = line
+        else:
+            current_statement = current_statement + ' ' + line
+            
+        if current_statement.count('(') <= current_statement.count(')'):
+            # Find the last closing parenthesis and trim anything after it
+            last_paren_idx = current_statement.rindex(')')
+            current_statement = current_statement[:last_paren_idx + 1]
+            result.append(current_statement)
+            current_statement = None
+            
+    if current_statement is not None:
+        result.append(current_statement)
+        
+    return result
+
 # gets API Key from environment variable OPENAI_API_KEY
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
@@ -40,20 +67,18 @@ def extract_logic(response):
             if current_section == 'type_definitions':
                 type_definitions.append(line)
             elif current_section == 'statements':
-                # Handle multi-line statements by tracking parentheses
-                if not statements or statements[-1].count('(') == statements[-1].count(')'):
-                    # Start new statement if previous one is complete or no statements yet
-                    statements.append(line)
-                else:
-                    # Continue previous statement if parentheses don't match
-                    statements[-1] = statements[-1] + ' ' + line
+                statements.append(line)
     
     if not statements:
         return None
+    
+    # Parse both sections using the Lisp statement parser
+    parsed_types = parse_lisp_statement(type_definitions)
+    parsed_statements = parse_lisp_statement(statements)
         
     return {
-        "type_definitions": type_definitions,
-        "statements": statements
+        "type_definitions": parsed_types,
+        "statements": parsed_statements
     }
 
 def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=None):
