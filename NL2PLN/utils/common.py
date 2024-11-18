@@ -40,7 +40,13 @@ def extract_logic(response):
             if current_section == 'type_definitions':
                 type_definitions.append(line)
             elif current_section == 'statements':
-                statements.append(line)
+                # Handle multi-line statements by tracking parentheses
+                if not statements or statements[-1].count('(') == statements[-1].count(')'):
+                    # Start new statement if previous one is complete or no statements yet
+                    statements.append(line)
+                else:
+                    # Continue previous statement if parentheses don't match
+                    statements[-1] = statements[-1] + ' ' + line
     
     if not statements:
         return None
