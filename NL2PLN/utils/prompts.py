@@ -1,5 +1,5 @@
 
-def make_explicit(sentence, similar):
+def make_explicit(sentence: str, similar: list[str]) -> str:
     similar = '\n'.join(similar)
     return f"""
 You are tasked with making all implicit information in a sentence explicit. Here is the sentence:
@@ -23,7 +23,7 @@ Here are some examples of previous conversions for reference:
 Now, please rewrite the given sentence, making all implicit information explicit.
 """
 
-def nl2pl(sentence, similar):
+def nl2pl(sentence: str, similar: list[str]) -> str:
     similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to first-order predicate logic. Here is the sentence:
@@ -65,7 +65,7 @@ Predicate Logic: (∃ $x Band($x)) -> (∃ $y ∃ $z (Person($y) ∧ Play($y,$z)
 Now, please convert the given sentence to first-order predicate logic following these instructions.
 """
      
-def fix_predicatelogic(line, original_pred_logic, error_message, similar):
+def fix_predicatelogic(line: str, original_pred_logic: str, error_message: str, similar: list[str]) -> str:
     similar = '\n'.join(similar)
     prompt = (
         "Fix the following predicate logic error that happened when converting the Sentence:\n"
@@ -80,7 +80,7 @@ def fix_predicatelogic(line, original_pred_logic, error_message, similar):
     )
     return prompt
 
-def pln2nl(pln, similar_examples):
+def pln2nl(pln: str, similar_examples: list[str]) -> str:
     similar = '\n'.join(similar_examples)
     return f"""
 You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Logic Networks) statements into natural language. Your task is to convert the following PLN statement into clear, concise English:
@@ -111,7 +111,7 @@ Additionally, here are some examples of previous conversions for reference:
 Now, please provide a natural language explanation for the given PLN statement:
 """
 
-def nl2pln_old(sentence, similar):
+def nl2pln_old(sentence: str, similar: list[str]) -> str:
     similar = '\n'.join(similar)
     return f"""
 You are tasked with converting a sentence to OpenCog PLN (Probabilistic Logic Networks) format, including necessary preconditions. Here is the sentence:
@@ -168,7 +168,7 @@ Now, please convert the given sentence to OpenCog PLN format following these ins
 """
 
 
-def nl2pln(sentence, similar):
+def nl2pln(sentence: str, similar: list[str]) -> str:
     similar = '\n'.join(similar)
     return f"""
 You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.
@@ -249,3 +249,4 @@ Now, convert the following English sentence into formal logic using dependent ty
 {sentence}
 
 """
+from typing import List

@@ -1,7 +1,8 @@
+from typing import List
 import pytest
 from NL2PLN.utils.common import extract_logic, parse_lisp_statement
 
-def test_parse_lisp_statement():
+def test_parse_lisp_statement() -> None:
     # Test single line statement
     lines = ["(+ 1 2)"]
     assert parse_lisp_statement(lines) == ["(+ 1 2)"]
@@ -14,7 +15,7 @@ def test_parse_lisp_statement():
     lines = ["(+ 1 2) ; comment"]
     assert parse_lisp_statement(lines) == ["(+ 1 2)"]
 
-def test_extract_logic():
+def test_extract_logic() -> None:
     # Test basic extraction
     response = """```
 From Context:

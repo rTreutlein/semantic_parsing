@@ -1,9 +1,10 @@
+from typing import Callable, Optional
 from openai import OpenAI
 import os
 import re
 from NL2PLN.utils.ragclass import RAG
 
-def parse_lisp_statement(lines):
+def parse_lisp_statement(lines: list[str]) -> list[str]:
     """Parse multi-line Lisp-like statements and clean up trailing content after final parenthesis"""
     result = []
     current_statement = None
@@ -36,7 +37,7 @@ client = OpenAI(
   api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
-def extract_logic(response):
+def extract_logic(response: str) -> dict[str, list[str]] | str | None:
     match = re.search(r'```(.*?)```', response, re.DOTALL)
     if not match:
         return None
@@ -89,7 +90,7 @@ def extract_logic(response):
         "statements": parsed_statements
     }
 
-def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=None):
+def process_file(file_path: str, process_sentence_func: callable, skip_lines: int = 0, limit_lines: int | None = None) -> None:
     with open(file_path, 'r') as file:
         lines = file.readlines()
         end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
@@ -99,7 +100,7 @@ def process_file(file_path, process_sentence_func, skip_lines=0, limit_lines=Non
             if not process_sentence_func(line.strip(), i):
                 return
 
-def create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5):
+def create_openai_completion(prompt: str, model: str = "anthropic/claude-3.5-sonnet", temperature: float = 0.5) -> str:
     completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
