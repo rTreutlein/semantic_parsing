@@ -227,25 +227,20 @@ Statements:
 (: prf1 (Spotted max bf))
 ```
 
-For performatives there exist the constants of authorSpeaker and readerListener.
-Example:
-Input:
-Hi!
-Output:
-...Thoughts...
+For performatives ant other expressions without logical mean just output:
 ```
-Type Definitions:
-(: Greeting (-> Object Type))
-(: Expressed (-> Object Object Type))
-
-Statements:
-(: "Hi!" Object)
-(: hiGreeting (Greeting "Hi!"))
-(: authorSpeakerExpressedHi (Expressed authorSpeaker "Hi!"))
+Performative
 ```
 
-Here is a list of similar sentences translated into formal logic:
+In the context we always have the following objects:
+(: authorSpeaker Object)
+(: readerLister Object)
+(: placeTime Object)
+
+Here is a list of similar sentences that have already been translated and placed into the context:
 {similar}
+
+If the following sentence talks about objects already mentioned in the context don't create duplicates.
 
 Now, convert the following English sentence into formal logic using dependent types:
 {sentence}
