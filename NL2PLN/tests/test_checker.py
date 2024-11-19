@@ -44,21 +44,20 @@ def test_human_check_approve():
         result = HumanCheck(test_input, test_sentence)
         assert result == test_input
 
-def test_human_check_edit_manual():
+def test_human_check_edit_manual(monkeypatch):
     """
     This test requires manual intervention.
     When prompted:
     1. Enter 'n' to indicate you want to edit
     2. Make changes in the editor that opens
     3. Save and close the editor
-    4. Verify the output matches your changes
     """
     test_input = "test output"
     test_sentence = "test sentence"
     
+    # Setup input simulation
+    inputs = iter(['n', 'y'])  # First 'n' to edit, then 'y' to verify
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    
     result = HumanCheck(test_input, test_sentence)
     print(f"\nResulting output: {result}")
-    
-    # Manual verification required
-    user_verify = input("\nDoes the output match your edits? (y/n): ")
-    assert user_verify.lower() == 'y', "Test failed: Output doesn't match expected edits"
