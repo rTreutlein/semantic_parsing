@@ -44,6 +44,7 @@ def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
 def store_results(rag, sentence, pln_data):
     rag.store_embedding({
         "sentence": sentence,
+        "from_context": pln_data["from_context"],
         "type_definitions": pln_data["type_definitions"],
         "statements": pln_data["statements"]
     })
