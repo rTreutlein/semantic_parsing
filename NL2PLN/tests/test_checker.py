@@ -44,15 +44,21 @@ def test_human_check_approve():
         result = HumanCheck(test_input, test_sentence)
         assert result == test_input
 
-@pytest.mark.skip(reason="This test requires manual intervention")
-def test_human_check_edit():
+def test_human_check_edit_manual():
+    """
+    This test requires manual intervention.
+    When prompted:
+    1. Enter 'n' to indicate you want to edit
+    2. Make changes in the editor that opens
+    3. Save and close the editor
+    4. Verify the output matches your changes
+    """
     test_input = "test output"
     test_sentence = "test sentence"
-    edited_content = "edited output"
     
-    with patch('builtins.input', return_value='n'), \
-         patch('tempfile.NamedTemporaryFile', mock_open(read_data=f"# Sentence: {test_sentence}\n{edited_content}")), \
-         patch('subprocess.call'), \
-         patch('os.unlink'):
-        result = HumanCheck(test_input, test_sentence)
-        assert result == test_input  # Note: In real usage, this would be the edited content
+    result = HumanCheck(test_input, test_sentence)
+    print(f"\nResulting output: {result}")
+    
+    # Manual verification required
+    user_verify = input("\nDoes the output match your edits? (y/n): ")
+    assert user_verify.lower() == 'y', "Test failed: Output doesn't match expected edits"
