@@ -46,17 +46,21 @@ def extract_logic(response):
     if content.lower().startswith('performative'):
         return "Performative"
     
-    # Split into type definitions and statements sections
+    # Split into sections
+    from_context = []
     type_definitions = []
     statements = []
     
-    # Parse the content looking for Type Definitions: and Statements: sections
+    # Parse the content looking for sections
     sections = content.split('\n')
     current_section = None
     
     for line in sections:
         line = line.strip()
-        if line.lower().startswith('type definitions:'):
+        if line.lower().startswith('from context:'):
+            current_section = 'from_context'
+            continue
+        elif line.lower().startswith('type definitions:'):
             current_section = 'type_definitions'
             continue
         elif line.lower().startswith('statements:'):
@@ -64,7 +68,9 @@ def extract_logic(response):
             continue
         
         if line:
-            if current_section == 'type_definitions':
+            if current_section == 'from_context':
+                from_context.append(line)
+            elif current_section == 'type_definitions':
                 type_definitions.append(line)
             elif current_section == 'statements':
                 statements.append(line)
@@ -72,11 +78,13 @@ def extract_logic(response):
     if not statements:
         return None
     
-    # Parse both sections using the Lisp statement parser
+    # Parse all sections using the Lisp statement parser
+    parsed_context = parse_lisp_statement(from_context)
     parsed_types = parse_lisp_statement(type_definitions)
     parsed_statements = parse_lisp_statement(statements)
         
     return {
+        "from_context": parsed_context,
         "type_definitions": parsed_types,
         "statements": parsed_statements
     }

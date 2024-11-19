@@ -198,6 +198,9 @@ There is only one Base type namly (: Object Type) everythign else is a n-ary pre
 i.e. (: Human (-> Object Type))
 
 Your output must follow this format:
+From Context:
+[Declarations and expressions that already exist in the context]
+
 Type Definitions:
 [Type declarations for predicates and relationships]
 

@@ -17,6 +17,9 @@ def test_parse_lisp_statement():
 def test_extract_logic():
     # Test basic extraction
     response = """```
+From Context:
+(: n Int)
+
 Type Definitions:
 (: factorial (-> Int Int))
 
@@ -28,6 +31,7 @@ Statements:
 ```"""
     result = extract_logic(response)
     assert result is not None
+    assert result["from_context"] == ["(: n Int)"]
     assert result["type_definitions"] == ["(: factorial (-> Int Int))"]
     assert result["statements"] == ["(define (factorial n) (if (= n 0) 1 (* n (factorial (- n 1)))))"]
 
