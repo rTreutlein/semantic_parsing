@@ -7,8 +7,8 @@ from NL2PLN.utils.checker import HumanCheck
 from NL2PLN.utils.ragclass import RAG
 
 
-def convert_logic(input_text, prompt_func, similar_examples):
-    prompt = prompt_func(input_text, similar_examples)
+def convert_logic(input_text, prompt_func, similar_examples, previous_sentences=None):
+    prompt = prompt_func(input_text, similar_examples, previous_sentences or [])
     print("--------------------------------------------------------------------------------")
     print(f"Prompt: {prompt}")
     
@@ -57,13 +57,14 @@ def store_fc_results(rag, fc_results, english_results):
             "preconditions": []  # Forward chaining results don't have preconditions
         })
 
-def process_sentence(line, rag, metta_handler) -> bool:
+def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
     similar = rag.search_similar(line, limit=5)
+    previous_sentences = previous_sentences or []
     similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
                        for item in similar if 'sentence' in item]
 
     print(f"Processing line: {line}")
-    pln_data = convert_logic(line, nl2pln, similar_examples)
+    pln_data = convert_logic(line, nl2pln, similar_examples, previous_sentences)
     if pln_data == "Performative":
         return True
     
@@ -102,9 +103,13 @@ def main():
     collection_name = os.path.splitext(os.path.basename(args.file_path))[0]
     rag = RAG(collection_name=f"{collection_name}_pln")
 
+    previous_sentences = []
     def process_sentence_wrapper(line, index):
         print(f"Current Index: {index}")
-        return process_sentence(line, rag, metta_handler)
+        result = process_sentence(line, rag, metta_handler, previous_sentences)
+        if result:
+            previous_sentences.append(line)
+        return result
 
     process_file(args.file_path, process_sentence_wrapper, args.skip, args.limit)
 
