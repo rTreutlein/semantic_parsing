@@ -100,23 +100,15 @@ def process_file(file_path: str, process_sentence_func: callable, skip_lines: in
             if not process_sentence_func(line.strip(), i):
                 return
 
-def create_openai_completion(messages: list, model: str = "claude-3-sonnet-20240229", temperature: float = 0.5) -> str:
+def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonnet-20241022") -> str:
     # Convert message format for Anthropic
-    api_messages = []
-    for msg_group in messages:
-        for msg in msg_group:
-            if isinstance(msg, dict):
-                if msg.get("role") == "user":
-                    api_messages.append({"role": "user", "content": msg["content"]})
-                elif "text" in msg:
-                    api_messages.append({"role": "assistant", "content": msg["text"]})
 
-    # Create message with Anthropic's client
-    completion = client.messages.create(
+    response = client.beta.prompt_caching.messages.create(
         model=model,
-        temperature=temperature,
-        messages=api_messages,
-        headers={"anthropic-beta": "prompt-caching-2024-07-31"}
+        max_tokens=1024,
+        system=system_msg,
+        messages=user_msg,
     )
-    
-    return completion.content[0].text
+    print(response)
+
+    return response.content[0].text
