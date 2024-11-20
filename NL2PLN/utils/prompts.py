@@ -336,16 +336,20 @@ Statements:
 ```
 
 7. Union Types (∪):
-"The audience consists of adults and children"
+"A programmer's skills can include both programming and design abilities"
 ```
 Type Definitions:
-(: Audience (-> Object Type))
-(: Adult (-> Object Type))
-(: Child (-> Object Type))
+(: Programmer (-> Object Type))
+(: ProgrammingSkill (-> Object Type))
+(: DesignSkill (-> Object Type))
+(: HasSkills (-> Object Object Type))
 
 Statements:
-(: audience Object)
-(: prf1 (-> (Audience x) (∪ (Adult x) (Child x))))
+(: john Object)
+(: skills Object)
+(: prf1 (Programmer john))
+(: prf2 (HasSkills john skills))
+(: prf3 (∪ (ProgrammingSkill skills) (DesignSkill skills)))
 ```
 
 For performatives and other expressions without logical meaning just output:
