@@ -180,25 +180,33 @@ For any given English sentence, you should:
 2. Identify properties/traits (adjectives)
 3. Identify relationships (verbs, prepositions)
 4. Express these in dependent type theory notation
+5. Resolve any references to previously mentioned entities
 
 Guidelines for the conversion:
 - Create Type declarations for all entities
 - Use the following type operators:
   * -> for functions and dependent products (Π types)
-  * Σ for dependent sums (existential types)
+  * Σ for dependent sums (existential types) - use for existential quantification
   * | for sum types (disjoint unions)
   * * for product types (pairs/tuples)
   * ∩ for intersection types
   * ∪ for union types
-- For question you can use a Variable $var (always start with a $)
+- For questions use a Variable $var (always start with a $)
   * Where is X => (Location X $loc)
+- For quantifiers:
+  * Universal ("all", "every"): Use dependent product (->)
+  * Existential ("some", "a"): Use dependent sum (Σ)
+- For temporal relationships:
+  * Use TimePoint type and Before/After/During predicates
+- For anaphora resolution:
+  * Check previous sentences for referenced entities
+  * Reuse entity identifiers from previous context
+  * Link pronouns to most recently mentioned matching entity
 - Include all necessary preconditions
 - Express the final statement using proof terms
-- Keep it simple
-- Convert all information in the sentence but nothing else
-- The results should be surounded by ``` and ```
+- Keep it simple and convert only explicit information
 
-There is only one Base type namly (: Object Type) everythign else is a n-ary predicate.
+There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
 
 Your output must follow this format:
@@ -211,13 +219,10 @@ Type Definitions:
 Statements:
 [Entity declarations and logical expressions]
 
-Example:
+Examples:
 
-Input:
+1. Simple Statement:
 "Max, a curious GoldenRetriver, spotted a Butterfly in the garden."
-
-Output:
-...Thoughts...
 ```
 From Context:
 
@@ -226,17 +231,81 @@ Type Definitions:
 (: Butterfly (-> Object Type))
 (: Curious (-> Object Type))
 (: Spotted (-> Object Object Type))
+(: Garden (-> Object Type))
+(: In (-> Object Object Type))
 
 Statements:
 (: max Object)
+(: garden Object)
 (: maxGoldenRetriver (GoldenRetriver max))
 (: maxCurious (Curious max))
+(: gardenIsGarden (Garden garden))
 (: bf Object)
 (: bfButterfly (Butterfly bf))
 (: prf1 (Spotted max bf))
+(: prf2 (In bf garden))
 ```
 
-For performatives ant other expressions without logical mean just output:
+2. Anaphora Resolution:
+Previous: "John went to the store"
+Current: "He bought a book"
+```
+From Context:
+(: john Object)
+(: store Object)
+(: WentTo (-> Object Object Type))
+(: prf1 (WentTo john store))
+
+Type Definitions:
+(: Book (-> Object Type))
+(: Bought (-> Object Object Type))
+
+Statements:
+(: book Object)
+(: bookIsBook (Book book))
+(: prf2 (Bought john book))
+```
+
+3. Quantifiers:
+"All dogs chase some cat"
+```
+Type Definitions:
+(: Dog (-> Object Type))
+(: Cat (-> Object Type))
+(: Chase (-> Object Object Type))
+
+Statements:
+(: prf1 (-> (Σ ((x Object)) (Dog x))
+           (Σ ((y Object)) (∧ (Cat y)
+                             (Chase x y)))))
+```
+
+4. Temporal Relations:
+"Before going home, John finished work"
+```
+Type Definitions:
+(: TimePoint (-> Object Type))
+(: Before (-> Object Object Type))
+(: Home (-> Object Type))
+(: GoTo (-> Object Object Type))
+(: Work (-> Object Type))
+(: Finish (-> Object Object Type))
+
+Statements:
+(: t1 Object)
+(: t2 Object)
+(: t1IsTime (TimePoint t1))
+(: t2IsTime (TimePoint t2))
+(: home Object)
+(: homeIsHome (Home home))
+(: work Object)
+(: workIsWork (Work work))
+(: prf1 (Before t1 t2))
+(: prf2 (GoTo john home t1))
+(: prf3 (Finish john work t2))
+```
+
+For performatives and other expressions without logical meaning just output:
 ```
 Performative
 ```
