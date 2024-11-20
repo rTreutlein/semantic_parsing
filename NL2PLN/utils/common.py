@@ -1,8 +1,13 @@
 from typing import Callable, Optional
-from openai import OpenAI
+import anthropic
 import os
 import re
 from NL2PLN.utils.ragclass import RAG
+
+# Initialize Anthropic client
+client = anthropic.Anthropic(
+    api_key=os.getenv("ANTHROPIC_API_KEY"),
+)
 
 def parse_lisp_statement(lines: list[str]) -> list[str]:
     """Parse multi-line Lisp-like statements and clean up trailing content after final parenthesis"""
@@ -31,11 +36,6 @@ def parse_lisp_statement(lines: list[str]) -> list[str]:
         
     return result
 
-# gets API Key from environment variable OPENAI_API_KEY
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key=os.getenv("OPENROUTER_API_KEY"),
-)
 
 def extract_logic(response: str) -> dict[str, list[str]] | str | None:
     match = re.search(r'```(.*?)```', response, re.DOTALL)
@@ -100,28 +100,23 @@ def process_file(file_path: str, process_sentence_func: callable, skip_lines: in
             if not process_sentence_func(line.strip(), i):
                 return
 
-def create_openai_completion(messages: list, model: str = "anthropic/claude-3.5-sonnet", temperature: float = 0.5) -> str:
-    headers = {
-        "anthropic-beta": "prompt-caching-2024-07-31"
-    }
-    
-    # Flatten messages into the format expected by the API
+def create_openai_completion(messages: list, model: str = "claude-3-sonnet-20240229", temperature: float = 0.5) -> str:
+    # Convert message format for Anthropic
     api_messages = []
     for msg_group in messages:
         for msg in msg_group:
             if isinstance(msg, dict):
-                if "role" in msg:
-                    api_messages.append(msg)
-                else:
-                    api_messages.append({"role": "system", "content": msg.get("text", ""), 
-                                       "cache_control": msg.get("cache_control", {})})
-    
-    completion = client.chat.completions.create(
+                if msg.get("role") == "user":
+                    api_messages.append({"role": "user", "content": msg["content"]})
+                elif "text" in msg:
+                    api_messages.append({"role": "assistant", "content": msg["text"]})
+
+    # Create message with Anthropic's client
+    completion = client.messages.create(
         model=model,
         temperature=temperature,
         messages=api_messages,
-        extra_headers=headers
+        headers={"anthropic-beta": "prompt-caching-2024-07-31"}
     )
-    if not completion.choices:
-        raise Exception("OpenAI API returned no choices")
-    return completion.choices[0].message.content
+    
+    return completion.content[0].text
