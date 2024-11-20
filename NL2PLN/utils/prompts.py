@@ -311,6 +311,43 @@ Statements:
 (: prf5 (AtTime finishing t2))
 ```
 
+5. Sum Types (|):
+"A pet is either a cat or a dog"
+```
+Type Definitions:
+(: Pet (-> Object Type))
+(: Cat (-> Object Type))
+(: Dog (-> Object Type))
+
+Statements:
+(: prf1 (-> (Pet x) (| (Cat x) (Dog x))))
+```
+
+6. Intersection Types (∩):
+"John is both a student and an athlete"
+```
+Type Definitions:
+(: Student (-> Object Type))
+(: Athlete (-> Object Type))
+
+Statements:
+(: john Object)
+(: prf1 (∩ (Student john) (Athlete john)))
+```
+
+7. Union Types (∪):
+"The audience consists of adults and children"
+```
+Type Definitions:
+(: Audience (-> Object Type))
+(: Adult (-> Object Type))
+(: Child (-> Object Type))
+
+Statements:
+(: audience Object)
+(: prf1 (-> (Audience x) (∪ (Adult x) (Child x))))
+```
+
 For performatives and other expressions without logical meaning just output:
 ```
 Performative
