@@ -2,6 +2,8 @@ from typing import Callable, Optional
 import anthropic
 import os
 import re
+import tempfile
+import shutil
 from NL2PLN.utils.ragclass import RAG
 
 # Initialize Anthropic client
@@ -91,14 +93,33 @@ def extract_logic(response: str) -> dict[str, list[str]] | str | None:
     }
 
 def process_file(file_path: str, process_sentence_func: callable, skip_lines: int = 0, limit_lines: int | None = None) -> None:
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
-        for i, line in enumerate(lines[skip_lines:end]):
-            if not line.strip():
-                continue
-            if not process_sentence_func(line.strip(), i):
-                return
+    # Create a temporary file
+    temp_fd, temp_path = tempfile.mkstemp(text=True)
+    os.close(temp_fd)
+    
+    try:
+        # Copy original content to temp file
+        shutil.copyfile(file_path, temp_path)
+        
+        with open(temp_path, 'r') as file:
+            lines = file.readlines()
+            end = len(lines) if limit_lines is None else min(skip_lines + limit_lines, len(lines))
+            
+            for i, line in enumerate(lines[skip_lines:end]):
+                if not line.strip():
+                    continue
+                    
+                if not process_sentence_func(line.strip(), i):
+                    break
+                
+                # Remove processed line from temp file
+                with open(temp_path, 'w') as temp_file:
+                    temp_file.writelines(lines[i+skip_lines+1:])
+    
+    finally:
+        # Clean up temporary file
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonnet-20241022") -> str:
     # Convert message format for Anthropic
