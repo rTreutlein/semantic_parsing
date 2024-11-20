@@ -1,6 +1,6 @@
 
-def make_explicit(sentence: str, similar: list[str]) -> str:
-    similar = '\n'.join(similar)
+def make_explicit(sentence: str, similar_lst: list[str]) -> str:
+    similar = '\n'.join(similar_lst)
     return f"""
 You are tasked with making all implicit information in a sentence explicit. Here is the sentence:
 
@@ -23,8 +23,8 @@ Here are some examples of previous conversions for reference:
 Now, please rewrite the given sentence, making all implicit information explicit.
 """
 
-def nl2pl(sentence: str, similar: list[str]) -> str:
-    similar = '\n'.join(similar)
+def nl2pl(sentence: str, similar_lst: list[str]) -> str:
+    similar = '\n'.join(similar_lst)
     return f"""
 You are tasked with converting a sentence to first-order predicate logic. Here is the sentence:
 
@@ -168,8 +168,9 @@ Now, please convert the given sentence to OpenCog PLN format following these ins
 """
 
 
-def nl2pln(sentence: str, similar: list[str]) -> str:
-    similar = '\n'.join(similar)
+def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]) -> str:
+    similar = '\n'.join(similar_lst)
+    previous = '\n'.join(previous_lst)
     return f"""
 You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.
 
@@ -189,9 +190,12 @@ Guidelines for the conversion:
   * * for product types (pairs/tuples)
   * ∩ for intersection types
   * ∪ for union types
+- For question you can use a Variable $var (always start with a $)
+  * Where is X => (Location X $loc)
 - Include all necessary preconditions
 - Express the final statement using proof terms
 - Keep it simple
+- Convert all information in the sentence but nothing else
 - The results should be surounded by ``` and ```
 
 There is only one Base type namly (: Object Type) everythign else is a n-ary predicate.
@@ -215,6 +219,8 @@ Input:
 Output:
 ...Thoughts...
 ```
+From Context:
+
 Type Definitions:
 (: GoldenRetriver (-> Object Type))
 (: Butterfly (-> Object Type))
@@ -245,8 +251,10 @@ Here is a list of similar sentences that have already been translated and placed
 
 If the following sentence talks about objects already mentioned in the context don't create duplicates.
 
+And here are the sentences that have come before so you can resolve anaphora:
+{previous}
+
 Now, convert the following English sentence into formal logic using dependent types:
 {sentence}
 
 """
-from typing import List
