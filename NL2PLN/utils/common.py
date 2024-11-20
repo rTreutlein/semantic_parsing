@@ -2,6 +2,7 @@ from typing import Callable, Optional
 import anthropic
 import os
 import re
+import time
 import tempfile
 import shutil
 from NL2PLN.utils.ragclass import RAG
@@ -121,15 +122,27 @@ def process_file(file_path: str, process_sentence_func: callable, skip_lines: in
         if os.path.exists(temp_path):
             os.unlink(temp_path)
 
-def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonnet-20241022") -> str:
+def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonnet-20241022", max_retries: int = 3) -> str:
     # Convert message format for Anthropic
+    retry_count = 0
+    base_delay = 1  # Start with 1 second delay
 
-    response = client.beta.prompt_caching.messages.create(
-        model=model,
-        max_tokens=1024,
-        system=system_msg,
-        messages=user_msg,
-    )
-    print(response)
+    while True:
+        try:
+            response = client.beta.prompt_caching.messages.create(
+                model=model,
+                max_tokens=1024,
+                system=system_msg,
+                messages=user_msg,
+            )
+            print(response)
+            return response.content[0].text
 
-    return response.content[0].text
+        except anthropic.APIStatusError as e:
+            if e.status_code == 529 and retry_count < max_retries:  # Overloaded error
+                retry_count += 1
+                delay = base_delay * (2 ** (retry_count - 1))  # Exponential backoff
+                print(f"API overloaded. Retrying in {delay} seconds... (Attempt {retry_count}/{max_retries})")
+                time.sleep(delay)
+                continue
+            raise  # Re-raise the exception if we're out of retries or it's a different error
