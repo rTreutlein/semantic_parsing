@@ -100,11 +100,27 @@ def process_file(file_path: str, process_sentence_func: callable, skip_lines: in
             if not process_sentence_func(line.strip(), i):
                 return
 
-def create_openai_completion(prompt: str, model: str = "anthropic/claude-3.5-sonnet", temperature: float = 0.5) -> str:
+def create_openai_completion(messages: list, model: str = "anthropic/claude-3.5-sonnet", temperature: float = 0.5) -> str:
+    headers = {
+        "anthropic-beta": "prompt-caching-2024-07-31"
+    }
+    
+    # Flatten messages into the format expected by the API
+    api_messages = []
+    for msg_group in messages:
+        for msg in msg_group:
+            if isinstance(msg, dict):
+                if "role" in msg:
+                    api_messages.append(msg)
+                else:
+                    api_messages.append({"role": "system", "content": msg.get("text", ""), 
+                                       "cache_control": msg.get("cache_control", {})})
+    
     completion = client.chat.completions.create(
         model=model,
         temperature=temperature,
-        messages=[{"role": "user", "content": prompt}],
+        messages=api_messages,
+        extra_headers=headers
     )
     if not completion.choices:
         raise Exception("OpenAI API returned no choices")

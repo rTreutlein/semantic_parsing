@@ -8,11 +8,12 @@ from NL2PLN.utils.ragclass import RAG
 
 
 def convert_logic(input_text, prompt_func, similar_examples, previous_sentences=None):
-    prompt = prompt_func(input_text, similar_examples, previous_sentences or [])
+    system_msg, user_msg = prompt_func(input_text, similar_examples, previous_sentences or [])
     print("--------------------------------------------------------------------------------")
-    print(f"Prompt: {prompt}")
+    print(f"System Message: {system_msg}")
+    print(f"User Message: {user_msg}")
     
-    txt = create_openai_completion(prompt, model="anthropic/claude-3.5-sonnet", temperature=0.5)
+    txt = create_openai_completion([system_msg, user_msg], model="anthropic/claude-3.5-sonnet", temperature=0.5)
     print("--------------------------------------------------------------------------------")
     print("LLM output:")
     print(txt)
