@@ -193,11 +193,11 @@ Guidelines for the conversion:
   * ∪ for union types
 - For questions use a Variable $var (always start with a $)
   * Where is X => (Location X $loc)
+  * How is X relateed to Y => ($rel X Y)
 - For quantifiers:
   * Universal ("all", "every"): Use dependent product (->)
-  * Existential ("some", "a"): Use dependent sum (Σ)
-- For temporal relationships:
-  * Use TimePoint type and Before/After/During predicates
+  * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
+                               If not, use dependent sum (Σ)
 - For anaphora resolution:
   * Check previous sentences for referenced entities
   * Reuse entity identifiers from previous context
@@ -252,9 +252,6 @@ Current: "He bought a book"
 ```
 From Context:
 (: john Object)
-(: store Object)
-(: WentTo (-> Object Object Type))
-(: prf1 (WentTo john store))
 
 Type Definitions:
 (: Book (-> Object Type))
@@ -275,9 +272,9 @@ Type Definitions:
 (: Chase (-> Object Object Type))
 
 Statements:
-(: prf1 (-> (Σ ((x Object)) (Dog x))
-           (Σ ((y Object)) (∧ (Cat y)
-                             (Chase x y)))))
+(: prf1 (-> (Dog x)
+           (Σ (: $y Object) (∧ (Cat $y)
+                               (Chase x $y)))))
 ```
 
 4. Temporal Relations:
