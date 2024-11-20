@@ -230,7 +230,7 @@ Type Definitions:
 (: GoldenRetriver (-> Object Type))
 (: Butterfly (-> Object Type))
 (: Curious (-> Object Type))
-(: Spotted (-> Object Object Type))
+(: Spotted (-> Object Object Object Type))
 (: Garden (-> Object Type))
 (: In (-> Object Object Type))
 
@@ -242,7 +242,8 @@ Statements:
 (: gardenIsGarden (Garden garden))
 (: bf Object)
 (: bfButterfly (Butterfly bf))
-(: prf1 (Spotted max bf))
+(: spot Object)
+(: prf1 (Spotted spot max bf))
 (: prf2 (In bf garden))
 ```
 
@@ -255,12 +256,13 @@ From Context:
 
 Type Definitions:
 (: Book (-> Object Type))
-(: Bought (-> Object Object Type))
+(: Bought (-> Object Object Object Type))
 
 Statements:
 (: book Object)
 (: bookIsBook (Book book))
-(: prf2 (Bought john book))
+(: purchase Object)
+(: prf2 (Bought purchase john book))
 ```
 
 3. Quantifiers:
@@ -269,12 +271,15 @@ Statements:
 Type Definitions:
 (: Dog (-> Object Type))
 (: Cat (-> Object Type))
-(: Chase (-> Object Object Type))
+(: Chase (-> Object Object Object Type))
+(: AtTime (-> Object Object Type))
 
 Statements:
 (: prf1 (-> (Dog x)
-           (Σ (: $y Object) (∧ (Cat $y)
-                               (Chase x $y)))))
+           (Σ (: $y Object) 
+              (Σ (: $c Object) 
+                 (∧ (Cat $y)
+                    (Chase $c x $y))))))
 ```
 
 4. Temporal Relations:
@@ -284,9 +289,9 @@ Type Definitions:
 (: TimePoint (-> Object Type))
 (: Before (-> Object Object Type))
 (: Home (-> Object Type))
-(: GoTo (-> Object Object Type))
+(: GoTo (-> Object Object Object Type))
 (: Work (-> Object Type))
-(: Finish (-> Object Object Type))
+(: Finish (-> Object Object Object Type))
 
 Statements:
 (: t1 Object)
@@ -298,8 +303,12 @@ Statements:
 (: work Object)
 (: workIsWork (Work work))
 (: prf1 (Before t1 t2))
-(: prf2 (GoTo john home t1))
-(: prf3 (Finish john work t2))
+(: going Object)
+(: finishing Object)
+(: prf2 (GoTo going john home))
+(: prf3 (AtTime going t1))
+(: prf4 (Finish finishing john work))
+(: prf5 (AtTime finishing t2))
 ```
 
 For performatives and other expressions without logical meaning just output:
