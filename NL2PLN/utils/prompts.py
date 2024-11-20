@@ -168,11 +168,28 @@ Now, please convert the given sentence to OpenCog PLN format following these ins
 """
 
 
-def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]) -> str:
+def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str], cache_control: bool = True) -> str:
+    """Convert natural language to PLN with optional prompt caching support.
+    
+    Args:
+        sentence: The sentence to convert
+        similar_lst: List of similar examples
+        previous_lst: List of previous context
+        cache_control: Whether to enable prompt caching (default True)
+    """
     similar = '\n'.join(similar_lst)
     previous = '\n'.join(previous_lst)
-    return f"""
-You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.
+    
+    # Structure for prompt caching
+    system_msg = {
+        "role": "system",
+        "content": "You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.",
+        "cache_control": cache_control
+    }
+    
+    guidelines_msg = {
+        "role": "system", 
+        "content": """
 
 For any given English sentence, you should:
 
@@ -180,7 +197,13 @@ For any given English sentence, you should:
 2. Identify properties/traits (adjectives)
 3. Identify relationships (verbs, prepositions)
 4. Express these in dependent type theory notation
-5. Resolve any references to previously mentioned entities
+5. Resolve any references to previously mentioned entities""",
+        "cache_control": cache_control
+    }
+    
+    examples_msg = {
+        "role": "system",
+        "content": f"""
 
 Guidelines for the conversion:
 - Create Type declarations for all entities
@@ -372,5 +395,14 @@ And here are the sentences that have come before so you can resolve anaphora:
 
 Now, convert the following English sentence into formal logic using dependent types:
 {sentence}
-
-"""
+""",
+        "cache_control": False  # Don't cache the variable part
+    }
+    
+    # Combine messages
+    messages = [system_msg, guidelines_msg, examples_msg]
+    
+    # Return formatted content
+    return {
+        "messages": messages
+    }
