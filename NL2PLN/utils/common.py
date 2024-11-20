@@ -18,7 +18,7 @@ def parse_lisp_statement(lines: list[str]) -> list[str]:
     
     for line in lines:
         line = line.strip()
-        if not line:
+        if not line or not line.startswith('('):
             continue
             
         if current_statement is None:
