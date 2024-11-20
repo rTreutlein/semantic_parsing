@@ -277,8 +277,8 @@ Type Definitions:
 Statements:
 (: prf1 (-> (Dog x)
            (Σ (: $y Object) 
-              (Σ (: $c Object) 
-                 (∧ (Cat $y)
+              (* (Cat $y)
+                 (Σ (: $c Object) 
                     (Chase $c x $y))))))
 ```
 
