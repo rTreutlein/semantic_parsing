@@ -106,9 +106,11 @@ def main():
     previous_sentences = []
     def process_sentence_wrapper(line, index):
         print(f"Current Index: {index}")
-        result = process_sentence(line, rag, metta_handler, previous_sentences)
+        result = process_sentence(line, rag, metta_handler, previous_sentences[-10:] if previous_sentences else [])
         if result:
             previous_sentences.append(line)
+            if len(previous_sentences) > 10:
+                previous_sentences.pop(0)
         return result
 
     process_file(args.file_path, process_sentence_wrapper, args.skip, args.limit)
