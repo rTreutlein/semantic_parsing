@@ -1,6 +1,6 @@
 import argparse
-from NL2PLN.utils.common import create_openai_completion, extract_logic
-from NL2PLN.__main__ import convert_logic
+from NL2PLN.utils.common import create_openai_completion
+from NL2PLN.utils.query_utils import is_question, convert_logic_simple
 from NL2PLN.utils.prompts import nl2pln, pln2nl
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.ragclass import RAG
@@ -43,7 +43,7 @@ class KBShell(cmd.Cmd):
     def process_input(self, user_input: str):
         try:
             similar_examples = self.get_similar_examples(user_input)
-            pln_data = convert_logic(user_input, nl2pln, similar_examples)
+            pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
             
             if pln_data == "Performative":
                 print("This is a performative statement, not a query or statement.")
@@ -64,7 +64,7 @@ class KBShell(cmd.Cmd):
                 if fc_results:
                     print("\nInferred results:")
                     for result in fc_results:
-                        english = convert_logic(result, pln2nl, similar_examples)
+                        english = convert_logic_simple(result, pln2nl, similar_examples)
                         print(f"- {english}")
                 else:
                     print("No new inferences made.")
