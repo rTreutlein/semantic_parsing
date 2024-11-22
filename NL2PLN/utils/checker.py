@@ -27,7 +27,7 @@ def HumanCheck(model_output : str, sentence: str) -> str:
     while True:
         user_input = input(f"Is this output correct? (y/n): ").lower()
         if user_input == 'y':
-            break
+            return model_output
         elif user_input == 'n':
             # Create a temporary file with the sentence as reference and the LLM output
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as temp_file:
@@ -48,9 +48,7 @@ def HumanCheck(model_output : str, sentence: str) -> str:
 
             print("--------------------------------------------------------------------------------")
             print(f"Updated OpenCog PLN: {human_out}")
-            break
+            return human_out
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
-
-    return model_output
 
