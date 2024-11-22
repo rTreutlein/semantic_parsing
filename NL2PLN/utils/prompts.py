@@ -168,7 +168,7 @@ Now, please convert the given sentence to OpenCog PLN format following these ins
 """
 
 
-def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str], cache_control: bool = True) -> str:
+def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]):
     """Convert natural language to PLN with optional prompt caching support.
     
     Args:
@@ -181,15 +181,10 @@ def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str], cache
     previous = '\n'.join(previous_lst)
     
     # Structure for prompt caching
-    system_msg = {
-        "role": "system",
-        "content": "You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.",
-        "cache_control": cache_control
-    }
-    
-    guidelines_msg = {
-        "role": "system", 
-        "content": """
+    system_msg = [{
+        "type": "text",
+        "text": """
+You are an expert in natural language understanding and dependent type theory. Your task is to convert English sentences into formal logic using dependent types.
 
 For any given English sentence, you should:
 
@@ -197,13 +192,7 @@ For any given English sentence, you should:
 2. Identify properties/traits (adjectives)
 3. Identify relationships (verbs, prepositions)
 4. Express these in dependent type theory notation
-5. Resolve any references to previously mentioned entities""",
-        "cache_control": cache_control
-    }
-    
-    examples_msg = {
-        "role": "system",
-        "content": f"""
+5. Resolve any references to previously mentioned entities
 
 Guidelines for the conversion:
 - Create Type declarations for all entities
@@ -384,7 +373,13 @@ In the context we always have the following objects:
 (: authorSpeaker Object)
 (: readerLister Object)
 (: placeTime Object)
+""",
+            "cache_control": {"type": "ephemeral"}  # Don't cache the variable part
+    }]
 
+    user_msg = [{
+        "role": "user",
+        "content": f"""
 Here is a list of similar sentences that have already been translated and placed into the context:
 {similar}
 
@@ -396,13 +391,7 @@ And here are the sentences that have come before so you can resolve anaphora:
 Now, convert the following English sentence into formal logic using dependent types:
 {sentence}
 """,
-        "cache_control": False  # Don't cache the variable part
-    }
-    
-    # Combine messages
-    messages = [system_msg, guidelines_msg, examples_msg]
+}]
     
     # Return formatted content
-    return {
-        "messages": messages
-    }
+    return system_msg , user_msg
