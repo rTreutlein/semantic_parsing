@@ -1,32 +1,82 @@
 def pln2nl(pln: str, similar_examples: list[str]) -> str:
     similar = '\n'.join(similar_examples)
     return f"""
-You are an AI assistant specialized in translating OpenCog PLN (Probabilistic Logic Networks) statements into natural language. Your task is to convert the following PLN statement into clear, concise English:
+You are an expert in dependent type theory and natural language generation. Your task is to convert formal logic expressions using dependent types into clear, natural English sentences.
+
+For any given formal logic expression, you should:
+
+1. Identify the main type declarations and their relationships
+2. Recognize entity declarations and their properties
+3. Understand the logical connectives and their implications
+4. Convert complex type expressions into natural language
+5. Maintain the precise meaning while making it accessible
+
+Guidelines for the conversion:
+- Convert type declarations into natural descriptions of categories/concepts
+- Translate relationships while preserving their directionality
+- Handle quantifiers appropriately:
+  * Dependent products (->) become universal quantifiers ("all", "every")
+  * Dependent sums (Σ) become existential quantifiers ("some", "exists")
+  * Product types (*) become conjunctions ("and")
+  * Sum types (|) become disjunctions ("or")
+  * Intersection types (∩) become "both"
+  * Union types (∪) become "either/or" or inclusive "or"
+- Preserve temporal relationships and conditions
+- Express complex relationships in simple, clear language
+- Maintain logical precision while using natural phrasing
+
+Your output must be enclosed in triple backticks (```).
+The output should be a single, clear English sentence that captures the complete meaning.
+
+Here are some examples:
+
+1. Simple Type Declaration:
+Input:
+(: Dog (-> Object Type))
+(: max Object)
+(: isdog (Dog max))
+```Max is a dog```
+
+2. Relationship with Properties:
+Input:
+(: Chase (-> Object Object Object Type))
+(: Dog (-> Object Type))
+(: Cat (-> Object Type))
+(: chase Object)
+(: dog Object)
+(: cat Object)
+(: prf1 (Chase chase dog cat))
+```The dog is chasing the cat```
+
+3. Universal Quantification:
+Input:
+(: prf1 (-> (Dog x) (Mammal x)))
+```All dogs are mammals```
+
+4. Existential Quantification:
+Input:
+(: prf1 (Σ (: x Object) (* (Dog x) (Happy x))))
+```There exists a dog that is happy```
+
+5. Complex Relationships:
+Input:
+(: Before (-> Object Object Type))
+(: t1 Object)
+(: t2 Object)
+(: GoTo (-> Object Object Object Type))
+(: prf1 (Before t1 t2))
+(: going Object)
+(: prf2 (GoTo going john home))
+```John went home before something else happened```
+
+Now, please convert this formal logic expression into natural language:
 
 <pln>
 {pln}
 </pln>
 
-Please provide a natural language explanation of what this PLN statement means. Make sure your explanation is easy to understand for someone who isn't familiar with PLN syntax. Focus on conveying the meaning and implications of the statement.
-
-Provide your final output enclosed within triple backticks (```). It should be a single sentence that is comprehensible without any of the surrounding text.
-
-Here's an example to guide you:
-
-Input PLN:
-(InheritanceLink
-    (ConceptNode "Dog")
-    (ConceptNode "Mammal")
-)
-
-Output:
-This statement indicates that all dogs belong to the broader category of mammals, sharing characteristics common to all mammals.
-```Dogs are mammals```
-
-Additionally, here are some examples of previous conversions for reference:
+For reference, here are some previous conversions:
 {similar}
-
-Now, please provide a natural language explanation for the given PLN statement:
 """
 
 def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]):
