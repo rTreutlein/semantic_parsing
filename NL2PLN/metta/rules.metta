@@ -1,43 +1,25 @@
 
-!(add-atom &kb (: ModusPonens
-                (-> (→ $p $q)           ; Premise 1
-                    (-> $p              ; Premise 2
-                        $q))))          ; Conclusion
 
-; Hypothetical Syllogism
-!(add-atom &kb (: HypotheticalSyllogism
-                (-> (→ $p $q)           ; Premise 1
-                    (-> (→ $q $r)       ; Premise 2
-                        (→ $p $r)))))   ; Conclusion
+!(add-atom &kb
+           (: MkΣ
+              (-> (: $p (-> (: $_ $a) Type)) ; Premise 1.  We
+                                             ;   need to use (: $_ $a)
+                                             ;   as opposed to just $a
+                                             ;   to be fully consistent with
+                                             ;   The (: PROOF PREMISE)
+                                             ;   notation, till it becomes
+                                             ;   optional.
+                  (-> (: $x $a)              ; Premise 2
+                      (-> (: $prf ($p $x))   ; Premise 3
+                          (Σ (: $x $a) ($p $x))))))); Conclusion(
 
-; Disjunctive Syllogism
-!(add-atom &kb (: DisjunctiveSyllogism
-                (-> (∨ $p $q)           ; Premise 1
-                    (-> (¬ $p)          ; Premise 2
-                        $q))))          ; Conclusion
+!(add-atom &kb (: fst (-> (: $prf (Σ (: $elem $type) $body)) $type)))
+!(add-atom &kb (: snd (-> (: $prf (Σ (: (fst $prf) $_) $body)) $body)))
 
-; Conjunction Introduction
-!(add-atom &kb (: ConjunctionIntroduction
-                (-> $p                  ; Premise 1
-                    (-> $q              ; Premise 2
-                        (∧ $p $q)))))   ; Conclusion
+!(add-atom &kb (: MkProduct (-> (: $a $at) (-> (: $b $bt) (* $at $bt)))))
 
-; Conjunction Elimination (Left and Right)
-!(add-atom &kb (: ConjunctionEliminationLeft
-                (-> (∧ $p $q)           ; Premise
-                    $p)))               ; Conclusion
+!(add-atom &kb (: fst (-> (* $a $b) $a)))
+!(add-atom &kb (: snd (-> (* $a $b) $b)))
 
-!(add-atom &kb (: ConjunctionEliminationRight
-                (-> (∧ $p $q)           ; Premise
-                    $q)))               ; Conclusion
-
-; Disjunction Introduction (Left and Right)
-!(add-atom &kb (: DisjunctionIntroductionLeft
-                (-> $p                  ; Premise
-                    (∨ $p $q))))        ; Conclusion
-
-!(add-atom &kb (: DisjunctionIntroductionRight
-                (-> $q                  ; Premise
-                    (∨ $p $q))))        ; Conclusion
-
-
+!(add-atom &kb (: MkSum (-> (: $a $at) (+ $at $var))))
+!(add-atom &kb (: MkSum (-> (: $a $at) (+ $var $at))))

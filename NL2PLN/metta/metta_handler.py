@@ -28,11 +28,14 @@ class MeTTaHandler:
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         identifier = self.generate_random_identifier()                       
         self.metta.run(f'(= (kb) (: {identifier} {atom}))')                  
-        res = self.metta.run('!(fc kb rb)')                                  
+        res = self.metta.run('!(fc kb)')                                  
         out = [str(elem.get_children()[2]) for elem in res[0]]               
         self.append_to_file(f"(: {identifier} {atom})")
         [self.append_to_file(str(elem)) for elem in res[0]]
         return out
+
+    def bc(self, atom: str) -> List[str]:
+        return self.metta.run('!(bc &kb ' + atom + ')')
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.
