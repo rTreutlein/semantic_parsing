@@ -14,6 +14,7 @@ class KBShell(cmd.Cmd):
 
     def __init__(self, kb_file: str, collection_name: str):
         super().__init__()
+        self.debug = False
         self.metta_handler = MeTTaHandler(kb_file)
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
@@ -30,6 +31,11 @@ class KBShell(cmd.Cmd):
         """Exit the shell"""
         return True
 
+    def do_debug(self, arg):
+        """Toggle debug mode"""
+        self.debug = not self.debug
+        print(f"Debug mode: {'on' if self.debug else 'off'}")
+
     def get_similar_examples(self, input_text):
         similar = self.rag.search_similar(input_text, limit=5)
         return [
@@ -43,7 +49,14 @@ class KBShell(cmd.Cmd):
     def process_input(self, user_input: str):
         try:
             similar_examples = self.get_similar_examples(user_input)
+            if self.debug:
+                print("\nSimilar examples found:")
+                for i, example in enumerate(similar_examples, 1):
+                    print(f"\nExample {i}:\n{example}")
+            
             pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
+            if self.debug:
+                print(f"\nConverted PLN data: {pln_data}")
             
             if pln_data == "Performative":
                 print("This is a performative statement, not a query or statement.")
