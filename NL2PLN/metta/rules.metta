@@ -18,8 +18,8 @@
 
 !(add-atom &kb (: MkProduct (-> (: $a $at) (-> (: $b $bt) (* $at $bt)))))
 
-!(add-atom &kb (: fst (-> (* $a $b) $a)))
-!(add-atom &kb (: snd (-> (* $a $b) $b)))
+!(add-atom &kb (: fst (-> (: $prf (* $a $b)) $a)))
+!(add-atom &kb (: snd (-> (: $prf (* $a $b)) $b)))
 
-!(add-atom &kb (: MkSum (-> (: $a $at) (+ $at $var))))
-!(add-atom &kb (: MkSum (-> (: $a $at) (+ $var $at))))
+!(add-atom &kb (: MkSumLeft (-> (: $a $at) (+ $at $bt))))
+!(add-atom &kb (: MkSumRight (-> (: $b $bt) (+ $at $bt))))

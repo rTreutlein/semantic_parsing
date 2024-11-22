@@ -9,10 +9,8 @@ class MeTTaHandler:
         self.metta = MeTTa()
         self.file = file
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.run_metta_from_file(os.path.join(script_dir, 'Num.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'Intersection.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'sythesize.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'rules_pln.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
         self.metta.run("!(bind! &context (new-space))")
 
                                                                              

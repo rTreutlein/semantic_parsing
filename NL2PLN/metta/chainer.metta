@@ -1,4 +1,4 @@
-
+;; Define Nat
 (: Nat Type)
 (: Z Nat)
 (: S (-> Nat Nat))
@@ -14,80 +14,40 @@
 (= (fromNat Z) 0)
 (= (fromNat (S $k)) (+ 1 (fromNat $k)))
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;
+;; Backward chainer ;;
+;;;;;;;;;;;;;;;;;;;;;;
 (: bc (-> $a                            ; Knowledge base space
-          $b                            ; Query
           Nat                           ; Maximum depth
-          $b))                          ; Result
-;; Base case
-(= (bc $kb (: $prf $ccln) $_) (match $kb (: $prf $ccln) (: $prf $ccln)))
-;; Recursive step
-(= (bc $kb (: ($prfabs $prfarg) $ccln) (S $k))
-   (let* (((: $prfabs (-> $prms $ccln)) (bc $kb (: $prfabs (-> $prms $ccln)) $k))
-          ((: $prfarg $prms) (bc $kb (: $prfarg $prms) $k)))
-     (: ($prfabs $prfarg) $ccln)))
+          $q                            ; Query
+          $r))                          ; Result
 
-(: fc (-> $a                            ; Knowledge base space
-          $b                            ; Source
-          Nat                           ; Maximum depth
-          $b))                          ; Conclusion
-;; Base case
-(= (fc $kb (: $prf $prms) $_) (: $prf $prms))
-;; Recursive step
-(= (fc $kb (: $prfarg $prms) (S $k))
-   (let (: $prfabs (-> $prms $ccln)) (bc $kb (: $prfabs (-> $prms $ccln)) $k)
-     (fc $kb (: ($prfabs $prfarg) $ccln) $k)))
-(= (fc $kb (: $prfabs (-> $prms $ccln)) (S $k))
-    (let (: $prfarg $prms) (bc $kb (: $prfarg $prms) $k)
-     (fc $kb (: ($prfabs $prfarg) $ccln) $k)))
+;; Base cases
 
+;; Match the knowledge base
+(= (bc $kb $_ (: $prf $thrm))
+   (match $kb (: $prf $thrm) (: $prf $thrm)))
 
-(= (clean $a)
-    (case (trace! $a $a)
-     (
-      ((: $prf (-> $c $d)) (empty))
-      ($_ $a)
-     )
-    )
-)
+; Recursive steps
+(= (bc $kb (S $k) (: ($prfabs $prfarg) $thrm))
+   (let* (((: $prfabs (-> (: $prfarg $prms) $thrm))
+           (bc $kb $k (: $prfabs (-> (: $prfarg $prms) $thrm))))
+          ((: $prfarg $prms)
+           (bc $kb $k (: $prfarg $prms))))
+     (: ($prfabs $prfarg) $thrm)))
 
-(= (map $f $xs)
-   (if (== $xs ()) ()
-   (let* (($head (car-atom $xs))
-          ($tail (cdr-atom $xs))
-          ($mapped-head ($f $head))
-          ($mapped-tail (map $f $tail)))
-     ())))
-
-(= (clean_fc $kb $query $n)
-   (let $fc_result (fc $kb $query $n)
-     (clean $fc_result)
-   )
-)
-
-(= (test 0) (: p (-> a b)))
-(= (test 0) (: p c))
-(= (test 0) (: p b))
-
-;!(bind! &kb (new-space))
-;
-;!(bind! &kb2 (new-space))
-;!(add-atom &kb2 (: bc (ImplicationLink (PredicateNode b) (PredicateNode c))))
-;!(add-atom &kb2 (: ab (ImplicationLink (PredicateNode a) (PredicateNode b))))
-;!(add-atom &kb2 (: ModusPonens
-;                (-> (ImplicationLink $p $q)
-;                    (-> $p
-;                    $q))))
-;
-;; Hypothetical Syllogism
-;!(add-atom &kb2 (: HypotheticalSyllogism
-;                (-> (ImplicationLink $p $q)
-;                    (-> (ImplicationLink $q $r)
-;                        (ImplicationLink $p $r)))))
-;
-;!(fc &kb2 (: ab (ImplicationLink (PredicateNode a) (PredicateNode b))) (fromNumber 2))
-;!(clean_fc &kb2 (: ab (ImplicationLink (PredicateNode a) (PredicateNode b))) (fromNumber 2))
+;; Define ad-atom-nodup, that adds an atom only if it is not already
+;; in the atomspace
+(: add-atom-nodup (-> $st Atom ()))
+(= (add-atom-nodup $space $atom)
+   (case (match $space $atom $atom)
+     (($atom ())
+      (%void% (add-atom $sample $atom)))))
 
 
-!(clean (test 0))
+(= (fc $kb)
+    (let* (($out (bc $kb (S Z) (: $term $type)))
+           ($dummy (add-atom-nodup $kb $out))
+          )
+    $out
+))
