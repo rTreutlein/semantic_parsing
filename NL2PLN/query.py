@@ -23,7 +23,7 @@ class KBShell(cmd.Cmd):
     def default(self, line: str):
         """Handle any input that isn't a specific command"""
         if line.lower() == 'exit':
-            return True
+            return
         self.process_input(line)
 
     def do_exit(self, arg):
@@ -77,7 +77,7 @@ def main():
     parser.add_argument("kb_file", help="Path to the knowledge base file (.metta)")
     args = parser.parse_args()
 
-    collection_name = os.path.splitext(os.path.basename(args.kb_file))[0]
+    collection_name = os.path.splitext(os.path.splitext(os.path.basename(args.kb_file))[0])[0]
     KBShell(args.kb_file, f"{collection_name}_pln").cmdloop()
 
 if __name__ == "__main__":
