@@ -11,7 +11,6 @@ class MeTTaHandler:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
-        self.metta.run("!(bind! &context (new-space))")
 
                                                                              
     def run_metta_from_file(self, file_path):                                
@@ -25,15 +24,15 @@ class MeTTaHandler:
                                                                              
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         identifier = self.generate_random_identifier()                       
-        self.metta.run(f'(= (kb) (: {identifier} {atom}))')                  
-        res = self.metta.run('!(fc kb)')                                  
+        self.metta.run(f'!(add-atom &kb {atom})')                  
+        res = self.metta.run('!(fc &kb)')
         out = [str(elem.get_children()[2]) for elem in res[0]]               
         self.append_to_file(f"(: {identifier} {atom})")
         [self.append_to_file(str(elem)) for elem in res[0]]
         return out
 
     def bc(self, atom: str) -> List[str]:
-        return self.metta.run('!(bc &kb ' + atom + ')')
+        return self.metta.run('!(bc &kb (S (S (S Z))) ' + atom + ')')
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.
@@ -43,10 +42,10 @@ class MeTTaHandler:
             The conflicting atom string if a conflict was found
         """
         exp = self.metta.parse_single(atom)
-        inctx = self.metta.run("!(match &context (: " + str(exp.get_children()[1]) + " $a) $a)")
+        inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")
         
         if len(inctx[0]) == 0:
-            self.metta.run("!(add-atom &context " + atom + ")")
+            self.metta.run("!(add-atom &kb " + atom + ")")
             return None
             
         existing_atom = str(inctx[0][0])
