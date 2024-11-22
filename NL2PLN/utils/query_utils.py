@@ -18,9 +18,6 @@ def convert_logic_simple(input_text, prompt_func, similar_examples, previous_sen
     """
     system_msg, user_msg = prompt_func(input_text, similar_examples, previous_sentences or [])
     txt = create_openai_completion(system_msg, user_msg)
-    print("--------------------------------------------------------------------------------")
-    print("LLM output:")
-    print(txt)
     
     logic_data = extract_logic(txt)
     if logic_data is None:
