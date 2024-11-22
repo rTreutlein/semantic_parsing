@@ -52,8 +52,8 @@ def test_human_check_edit_manual(monkeypatch):
     2. Make changes in the editor that opens
     3. Save and close the editor
     """
-    test_input = "test output"
-    test_sentence = "test sentence"
+    test_input = "test input"
+    test_sentence = "change test input to test output"
     
     # Setup input simulation
     inputs = iter(['n', 'y'])  # First 'n' to edit, then 'y' to verify
@@ -61,3 +61,4 @@ def test_human_check_edit_manual(monkeypatch):
     
     result = HumanCheck(test_input, test_sentence)
     print(f"\nResulting output: {result}")
+    assert result == "test output"
