@@ -83,23 +83,32 @@ if __name__ == "__main__":
     with open('kb_backup.json', 'w') as f:
         f.write("")
 
+    print("\nTesting add_atom_and_run_fc:")
+    
+    # Test 1: Adding a new atom and running forward chaining
+    atom1 = "(ImplicationLink (PredicateNode A) (PredicateNode B))"
+    print(f"Adding atom and running fc: {atom1}")
+    result = handler.add_atom_and_run_fc(atom1)
+    print(f"Forward chaining results: {result}")
+
+    # Test 2: Adding another atom to trigger more inferences
+    atom2 = "(ImplicationLink (PredicateNode B) (PredicateNode C))"
+    print(f"\nAdding second atom: {atom2}")
+    result = handler.add_atom_and_run_fc(atom2)
+    print(f"Forward chaining results: {result}")
+
     print("\nTesting add_to_context:")
     
     # Test 1: Adding a new atom (should succeed)
-    atom1 = "(: test1 (ImplicationLink (PredicateNode A) (PredicateNode B)))"
-    result = handler.add_to_context(atom1)
-    print(f"Adding {atom1}")
+    atom3 = "(: test1 (ImplicationLink (PredicateNode X) (PredicateNode Y)))"
+    result = handler.add_to_context(atom3)
+    print(f"Adding {atom3}")
     print(f"Result: {result}")  # Should print None
     
-    # Test 2: Adding the same atom again (should succeed as it's identical)
-    print(f"\nAdding same atom again: {atom1}")
-    result = handler.add_to_context(atom1)
-    print(f"Result: {result}")  # Should print None
-    
-    # Test 3: Adding conflicting atom (should return existing atom)
-    atom2 = "(: test1 (ImplicationLink (PredicateNode A) (PredicateNode C)))"
-    print(f"\nAdding conflicting atom: {atom2}")
-    result = handler.add_to_context(atom2)
+    # Test 2: Adding conflicting atom (should return existing atom)
+    atom4 = "(: test1 (ImplicationLink (PredicateNode X) (PredicateNode Z)))"
+    print(f"\nAdding conflicting atom: {atom4}")
+    result = handler.add_to_context(atom4)
     print(f"Result: {result}")  # Should print the existing atom
     
     # Verify final context state
