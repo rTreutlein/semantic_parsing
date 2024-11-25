@@ -1,6 +1,16 @@
-def pln2nl(pln: str, similar_examples: list[str], previous_sentences: list[str]) -> str:
+def pln2nl(pln: str, similar_examples: list[str], previous_sentences: list[str]):
+    """Convert PLN to natural language with prompt structure.
+    
+    Args:
+        pln: The PLN expression to convert
+        similar_examples: List of similar examples
+        previous_sentences: List of previous context
+    """
     similar = '\n'.join(similar_examples)
-    return f"""
+    
+    system_msg = [{
+        "type": "text",
+        "text": """
 You are an expert in dependent type theory and natural language generation. Your task is to convert formal logic expressions using dependent types into clear, natural English sentences.
 
 For any given formal logic expression, you should:
@@ -27,8 +37,13 @@ Guidelines for the conversion:
 
 Your output must be enclosed in triple backticks (```).
 The output should be a single, clear English sentence that captures the complete meaning.
+""",
+        "cache_control": {"type": "ephemeral"}
+    }]
 
-Here are some examples:
+    user_msg = [{
+        "role": "user", 
+        "content": f"""Here are some examples of PLN to natural language conversion:
 
 1. Simple Type Declaration:
 Input:
@@ -69,15 +84,18 @@ Input:
 (: prf2 (GoTo going john home))
 ```John went home before something else happened```
 
+For reference, here are some previous conversions:
+{similar}
+
 Now, please convert this formal logic expression into natural language:
 
 <pln>
 {pln}
 </pln>
-
-For reference, here are some previous conversions:
-{similar}
 """
+    }]
+    
+    return system_msg, user_msg
 
 def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]):
     """Convert natural language to PLN with optional prompt caching support.
