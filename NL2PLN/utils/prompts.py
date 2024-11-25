@@ -1,4 +1,4 @@
-def pln2nl(pln: str, similar_examples: list[str]) -> str:
+def pln2nl(pln: str, similar_examples: list[str], previous_sentences: list[str]) -> str:
     similar = '\n'.join(similar_examples)
     return f"""
 You are an expert in dependent type theory and natural language generation. Your task is to convert formal logic expressions using dependent types into clear, natural English sentences.
