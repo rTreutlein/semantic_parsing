@@ -1,4 +1,5 @@
 import json
+import argparse
 from typing import Optional, List, Dict, Any
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
@@ -92,3 +93,44 @@ def populate_collection(
             collection_name=collection_name,
             points=point_structs
         )
+
+def main():
+    parser = argparse.ArgumentParser(description='Qdrant collection backup and restore utility')
+    subparsers = parser.add_subparsers(dest='command', help='Commands')
+
+    # Dump command
+    dump_parser = subparsers.add_parser('dump', help='Dump collection to file')
+    dump_parser.add_argument('collection', help='Collection name')
+    dump_parser.add_argument('output', help='Output file path')
+    dump_parser.add_argument('--limit', type=int, help='Maximum number of points to retrieve')
+    dump_parser.add_argument('--url', default='localhost:6334', help='Qdrant server URL')
+
+    # Populate command
+    populate_parser = subparsers.add_parser('populate', help='Populate collection from file')
+    populate_parser.add_argument('collection', help='Collection name')
+    populate_parser.add_argument('input', help='Input file path')
+    populate_parser.add_argument('--url', default='localhost:6334', help='Qdrant server URL')
+    populate_parser.add_argument('--batch-size', type=int, default=100, help='Batch size for inserts')
+
+    args = parser.parse_args()
+
+    if args.command == 'dump':
+        dump_collection(
+            collection_name=args.collection,
+            output_file=args.output,
+            limit=args.limit,
+            qdrant_url=args.url
+        )
+        print(f"Collection '{args.collection}' dumped to {args.output}")
+    
+    elif args.command == 'populate':
+        populate_collection(
+            collection_name=args.collection,
+            input_file=args.input,
+            qdrant_url=args.url,
+            batch_size=args.batch_size
+        )
+        print(f"Collection '{args.collection}' populated from {args.input}")
+
+if __name__ == '__main__':
+    main()
