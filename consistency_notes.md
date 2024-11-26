@@ -18,8 +18,28 @@
 - Need clear rules for when to use each
 - Consider if all are necessary or if some could be combined
 
+## Mental/Emotional State Patterns
+- Inconsistent representation between unary predicates and relations
+- Examples:
+  - (Happy feeling) as unary predicate
+  - (Feels feelrel authorSpeaker feeling) as relation
+  - (Love loving authorSpeaker english) as relation
+- Consider standardizing on one approach
+
+## Quantity Representations
+- Explicit counting: (NumberOfSharers sharing 4)
+- Implicit counting: creating separate objects/statements
+- Need consistent approach for representing quantities
+- Consider when to use explicit count vs. separate statements
+
+## Query Patterns
+- Inconsistent use of existential variables
+- Variable naming conventions vary ($prf vs other names)
+- Some queries use complex patterns with (*...), others direct
+- Need standardized approach for question representation
+
 ## To Be Investigated
 - Continue analyzing for more consistency issues
-- Look for patterns in how quantities are expressed
-- Check consistency of emotional/mental state representations
 - Review handling of possessives
+- Check consistency of verb tense representations
+- Analyze patterns in compound statements
