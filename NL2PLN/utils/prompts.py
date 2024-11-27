@@ -37,13 +37,7 @@ Guidelines for the conversion:
 
 Your output must be enclosed in triple backticks (```).
 The output should be a single, clear English sentence that captures the complete meaning.
-""",
-        "cache_control": {"type": "ephemeral"}
-    }]
-
-    user_msg = [{
-        "role": "user", 
-        "content": f"""Here are some examples of PLN to natural language conversion:
+Here are some examples of PLN to natural language conversion:
 
 1. Simple Type Declaration:
 Input:
@@ -83,6 +77,13 @@ Input:
 (: going Object)
 (: prf2 (GoTo going john home))
 ```John went home before something else happened```
+""",
+        "cache_control": {"type": "ephemeral"}
+    }]
+
+    user_msg = [{
+        "role": "user",
+        "content": f"""
 
 For reference, here are some previous conversions:
 {similar}
@@ -130,11 +131,10 @@ Guidelines for the conversion:
   * Σ for dependent sums (existential types) - use for existential quantification
   * | for sum types (disjoint unions)
   * * for product types (pairs/tuples)
-  * ∩ for intersection types
-  * ∪ for union types
 - For questions use a Variable $var (always start with a $)
-  * Where is X => (Location X $loc)
-  * How is X relateed to Y => ($rel X Y)
+  * Where is X => (: $prf (Location X $loc))
+  * How is X relateed to Y => (: $prf ($rel X Y))
+  * Don't introduce (: $var Object) as this would match all things that are objects
 - For quantifiers:
   * Universal ("all", "every"): Use dependent product (->)
   * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
@@ -262,35 +262,6 @@ Type Definitions:
 
 Statements:
 (: prf1 (-> (Pet x) (| (Cat x) (Dog x))))
-```
-
-6. Intersection Types (∩):
-"John is both a student and an athlete"
-```
-Type Definitions:
-(: Student (-> Object Type))
-(: Athlete (-> Object Type))
-
-Statements:
-(: john Object)
-(: prf1 (∩ (Student john) (Athlete john)))
-```
-
-7. Union Types (∪):
-"A programmer's skills can include both programming and design abilities"
-```
-Type Definitions:
-(: Programmer (-> Object Type))
-(: ProgrammingSkill (-> Object Type))
-(: DesignSkill (-> Object Type))
-(: HasSkills (-> Object Object Type))
-
-Statements:
-(: john Object)
-(: skills Object)
-(: prf1 (Programmer john))
-(: prf2 (HasSkills john skills))
-(: prf3 (∪ (ProgrammingSkill skills) (DesignSkill skills)))
 ```
 
 For performatives and other expressions without logical meaning just output:
