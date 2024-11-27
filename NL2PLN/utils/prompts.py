@@ -264,6 +264,63 @@ Statements:
 (: prf1 (-> (Pet x) (| (Cat x) (Dog x))))
 ```
 
+6. Location Questions:
+"Where is John?"
+```
+Type Definitions:
+(: Location (-> Object Object Type))
+
+Statements:
+(: $loc Object)
+(: $prf (Location john $loc))
+```
+
+7. Relationship Questions:
+"How is Mary related to John?"
+```
+Type Definitions:
+(: RelatedTo (-> Object Object Object Type))
+
+Statements:
+(: $rel Object)
+(: $prf (RelatedTo mary john $rel))
+```
+
+8. Property Questions:
+"What color is the car?"
+```
+Type Definitions:
+(: Car (-> Object Type))
+(: Color (-> Object Object Type))
+
+Statements:
+(: car Object)
+(: carIsCar (Car car))
+(: $col Object)
+(: $prf (Color car $col))
+```
+
+9. Action Questions:
+"What did John eat?"
+```
+Type Definitions:
+(: Eat (-> Object Object Object Type))
+
+Statements:
+(: $food Object)
+(: $prf (Eat john $food placeTime))
+```
+
+10. Yes/No Questions:
+"Is John happy?"
+```
+Type Definitions:
+(: Happy (-> Object Type))
+
+Statements:
+(: $prf (| (Happy john) (not (Happy john))))
+```
+
 For performatives and other expressions without logical meaning just output:
 ```
 Performative
