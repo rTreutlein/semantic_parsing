@@ -150,7 +150,9 @@ Guidelines for the conversion:
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
 
-Your output must follow this format:
+Your output must follow one of these formats:
+
+For statements:
 From Context:
 [Declarations and expressions that already exist in the context]
 
@@ -159,6 +161,16 @@ Type Definitions:
 
 Statements:
 [Entity declarations and logical expressions]
+
+For questions:
+From Context:
+[Declarations and expressions that already exist in the context]
+
+Type Definitions:
+[Type declarations for predicates and relationships]
+
+Question:
+[Single expression representing what we want to resolve]
 
 Examples:
 
@@ -270,19 +282,19 @@ Statements:
 Type Definitions:
 (: Location (-> Object Object Object Type))
 
-Statements:
+Question:
 (: $prf (Location $relobj john $loc))
 ```
 
 7. Relationship Questions:
 "How is Mary related to John?"
 ```
-Statements:
+Question:
 (: $prf ($rel $relobj mary john))
 ```
 Note if asked how things are related or what they are to each other, don't
-introduce a RealtedTo or similar relationship. Instead ask directly for the
-relationship by putting a Variable in it's place.
+introduce a RelatedTo or similar relationship. Instead ask directly for the
+relationship by putting a Variable in its place.
 
 8. Property Questions:
 "What color is this car?"
@@ -294,23 +306,22 @@ From Context:
 Type Definitions:
 (: Color (-> Object Object Type))
 
-Statements:
-(: $prf (Color #relobj car $col))
+Question:
+(: $prf (Color $relobj car $col))
 ```
 
-Now we haven't actualy provided the context in this example but it can be assumed
+Now we haven't actually provided the context in this example but it can be assumed
 that for such a question there should exist a car in the context. 
 
 9. Complex Question:
 "Who is the occupant of the red car?"
-
 ```
 Type Definitions:
 (: Occupant (-> Object Object Object Type))
 (: Red (-> Object Type))
 
-Statements:
-(: $prf (* (Car $car) (* (Red $car) (Occupant $relojb $car $occupant))))
+Question:
+(: $prf (* (Car $car) (* (Red $car) (Occupant $relobj $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
