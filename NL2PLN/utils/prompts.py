@@ -133,8 +133,20 @@ Guidelines for the conversion:
   * * for product types (pairs/tuples)
 - For questions use a Variable $var (always start with a $)
   * Where is X => (: $prf (Location X $loc))
-  * How is X relateed to Y => (: $prf ($rel X Y))
+  * How is X related to Y => (: $prf ($rel X Y))
   * Don't introduce (: $var Object) as this would match all things that are objects
+  * For multiple questions like "Where and when did John go?", create separate questions:
+    Question:
+    (: $prf1 (Location $relobj1 john $loc))
+    (: $prf2 (Time $relobj2 john $time))
+  * For questions with multiple variables like "Who saw what?":
+    Question:
+    (: $prf (Saw $relobj $who $what))
+  * For yes/no questions like "Did John go home?", use the statement as question with variable proof:
+    Question:
+    (: $prf (GoTo going john home))
+  * The same $var always refers to the same object throughout the question/statement
+  * Use different variable names ($var1, $var2, etc) when referring to different objects
 - For quantifiers:
   * Universal ("all", "every"): Use dependent product (->)
   * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
@@ -146,6 +158,11 @@ Guidelines for the conversion:
 - Include all necessary preconditions
 - Express the final statement using proof terms
 - Keep it simple and convert only explicit information
+- Context usage rules:
+  * Reuse existing objects/entities from context instead of creating duplicates
+  * Only include directly referenced objects from context
+  * If new statement conflicts with context, output "Error: Conflicts with context because [reason]"
+  * Use context to resolve anaphora (e.g., "the car" may refer to specific car with known properties)
 
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
