@@ -268,58 +268,52 @@ Statements:
 "Where is John?"
 ```
 Type Definitions:
-(: Location (-> Object Object Type))
+(: Location (-> Object Object Object Type))
 
 Statements:
-(: $loc Object)
-(: $prf (Location john $loc))
+(: $prf (Location $relobj john $loc))
 ```
 
 7. Relationship Questions:
 "How is Mary related to John?"
 ```
-Type Definitions:
-(: RelatedTo (-> Object Object Object Type))
-
 Statements:
-(: $rel Object)
-(: $prf (RelatedTo mary john $rel))
+(: $prf ($rel $relobj mary john))
 ```
+Note if asked how things are related or what they are to each other, don't
+introduce a RealtedTo or similar relationship. Instead ask directly for the
+relationship by putting a Variable in it's place.
 
 8. Property Questions:
-"What color is the car?"
+"What color is this car?"
 ```
+From Context:
+(: car Object)
+(: carIsCar (Car car))
+
 Type Definitions:
-(: Car (-> Object Type))
 (: Color (-> Object Object Type))
 
 Statements:
-(: car Object)
-(: carIsCar (Car car))
-(: $col Object)
-(: $prf (Color car $col))
+(: $prf (Color #relobj car $col))
 ```
 
-9. Action Questions:
-"What did John eat?"
+Now we haven't actualy provided the context in this example but it can be assumed
+that for such a question there should exist a car in the context. 
+
+9. Complex Question:
+"Who is the occupant of the red car?"
+
 ```
 Type Definitions:
-(: Eat (-> Object Object Object Type))
+(: Occupant (-> Object Object Object Type))
+(: Red (-> Object Type))
 
 Statements:
-(: $food Object)
-(: $prf (Eat john $food placeTime))
+(: $prf (* (Car $car) (* (Red $car) (Occupant $relojb $car $occupant))))
 ```
 
-10. Yes/No Questions:
-"Is John happy?"
-```
-Type Definitions:
-(: Happy (-> Object Type))
-
-Statements:
-(: $prf (| (Happy john) (not (Happy john))))
-```
+In this case we are looking for something to has multiple properties so we use a Product
 
 For performatives and other expressions without logical meaning just output:
 ```
