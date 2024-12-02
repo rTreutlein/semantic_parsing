@@ -18,6 +18,7 @@ class KBShell(cmd.Cmd):
         self.metta_handler = MeTTaHandler(kb_file)
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
+        self.query_rag = RAG(collection_name=f"{collection_name}_query")
         print(f"Loaded knowledge base from {kb_file}")
         print("Type 'exit' to quit")
 
@@ -64,6 +65,13 @@ class KBShell(cmd.Cmd):
                 print("Processing as statement (forward chaining)")
                 fc_results = []
                 for statement in pln_data["statements"]:
+                    # Store the statement in query RAG
+                    self.query_rag.store_embedding({
+                        "sentence": user_input,
+                        "statements": [statement],
+                        "type_definitions": pln_data.get("type_definitions", []),
+                        "from_context": []
+                    })
                     result = self.metta_handler.add_atom_and_run_fc(statement)
                     if result:
                         fc_results.extend(result)
