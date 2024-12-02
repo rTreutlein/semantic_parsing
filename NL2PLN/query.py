@@ -38,7 +38,13 @@ class KBShell(cmd.Cmd):
         print(f"Debug mode: {'on' if self.debug else 'off'}")
 
     def get_similar_examples(self, input_text):
-        similar = self.rag.search_similar(input_text, limit=5)
+        # Get examples from both RAG databases
+        base_similar = self.rag.search_similar(input_text, limit=3)
+        query_similar = self.query_rag.search_similar(input_text, limit=2)
+        
+        # Combine results
+        similar = base_similar + query_similar
+        
         return [
             f"Sentence: {item['sentence']}\n"
             f"From Context:\n{'\n'.join(item.get('from_context', []))}\n"
