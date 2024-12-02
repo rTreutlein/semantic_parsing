@@ -48,12 +48,9 @@ class KBShell(cmd.Cmd):
 
     def process_input(self, user_input: str):
         try:
+            if self.debug: print(f"Processing input: {user_input}")
             similar_examples = self.get_similar_examples(user_input)
-            if self.debug:
-                print("\nSimilar examples found:")
-                for i, example in enumerate(similar_examples, 1):
-                    print(f"\nExample {i}:\n{example}")
-            
+            if self.debug: print(f"Similar examples:\n{similar_examples}")
             pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
             if self.debug:
                 print(f"\nConverted PLN data: {pln_data}")
@@ -62,11 +59,8 @@ class KBShell(cmd.Cmd):
                 print("This is a performative statement, not a query or statement.")
                 return
 
-            if is_question(user_input):
-                print("Processing as question (backward chaining) - Not implemented yet")
-                # TODO: Implement backward chaining once added to metta_handler
-                print("Backward chaining not implemented yet")
-            else:
+
+            if pln_data["statements"]:
                 print("Processing as statement (forward chaining)")
                 fc_results = []
                 for statement in pln_data["statements"]:
@@ -74,13 +68,19 @@ class KBShell(cmd.Cmd):
                     if result:
                         fc_results.extend(result)
                 
-                if fc_results:
+                if fc_results and self.debug:
+                    print(f"FC results: {fc_results}")
                     print("\nInferred results:")
                     for result in fc_results:
                         english = convert_logic_simple(result, pln2nl, similar_examples)
                         print(f"- {english}")
                 else:
                     print("No new inferences made.")
+
+            if pln_data["questions"]:
+                print("Processing as query (backward chaining)")
+                metta_results = self.metta_handler.bc(pln_data["questions"][0])
+                print(metta_results)
 
         except Exception as e:
             print(f"Error processing input: {str(e)}")
