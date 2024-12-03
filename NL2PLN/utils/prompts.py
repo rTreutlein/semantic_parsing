@@ -170,6 +170,13 @@ Guidelines for the conversion:
   * Don't include common-sense implications
   * Do preserve intended semantic meanings from context
   * Maintain quantifier order exactly as in the original sentence
+
+- Multiple sentence handling:
+  * Process each sentence in order of appearance
+  * Maintain context and references between sentences
+  * Create separate statements/questions for each sentence
+  * Use the context from previous sentences to resolve references in later ones
+  * For related sentences, ensure logical connections are preserved
 - Context usage rules:
   * Reuse existing objects/entities from context instead of creating duplicates
   * Only include directly referenced objects from context
@@ -357,6 +364,28 @@ Questions:
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
+
+10. Multiple Sentences:
+"John bought a car. It is red. Where is it parked?"
+```
+From Context:
+
+Type Definitions:
+(: Car (-> Object Type))
+(: Red (-> Object Type))
+(: Buy (-> Object Object Object Type))
+(: ParkedAt (-> Object Object Object Type))
+
+Statements:
+(: car Object)
+(: carIsCar (Car car))
+(: buying Object)
+(: prf1 (Buy buying john car))
+(: prf2 (Red car))
+
+Questions:
+(: $prf (ParkedAt $relobj car $location))
+```
 
 For performatives and other expressions without logical meaning just output:
 ```
