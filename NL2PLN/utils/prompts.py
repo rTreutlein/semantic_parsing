@@ -387,6 +387,26 @@ Questions:
 (: $prf (ParkedAt $relobj car $location))
 ```
 
+11. Statement followed by Question:
+"Mary gave John a book. What color is it?"
+```
+From Context:
+
+Type Definitions:
+(: Book (-> Object Type))
+(: Give (-> Object Object Object Object Type))
+(: Color (-> Object Object Object Type))
+
+Statements:
+(: book Object)
+(: bookIsBook (Book book))
+(: giving Object)
+(: prf1 (Give giving mary john book))
+
+Questions:
+(: $prf (Color $relobj book $color))
+```
+
 For performatives and other expressions without logical meaning just output:
 ```
 Performative
