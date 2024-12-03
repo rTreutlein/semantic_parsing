@@ -136,14 +136,14 @@ Guidelines for the conversion:
   * How is X related to Y => (: $prf ($rel X Y))
   * Don't introduce (: $var Object) as this would match all things that are objects
   * For multiple questions like "Where and when did John go?", create separate questions:
-    Question:
+    Questions:
     (: $prf1 (Location $relobj1 john $loc))
     (: $prf2 (Time $relobj2 john $time))
   * For questions with multiple variables like "Who saw what?":
-    Question:
+    Questions:
     (: $prf (Saw $relobj $who $what))
   * For yes/no questions like "Did John go home?", use the statement as question with variable proof:
-    Question:
+    Questions:
     (: $prf (GoTo going john home))
   * The same $var always refers to the same object throughout the question/statement
   * Use different variable names ($var1, $var2, etc) when referring to different objects
@@ -186,7 +186,7 @@ From Context:
 Type Definitions:
 [Type declarations for predicates and relationships]
 
-Question:
+Questions:
 [Single expression representing what we want to resolve]
 
 Examples:
@@ -299,14 +299,14 @@ Statements:
 Type Definitions:
 (: Location (-> Object Object Object Type))
 
-Question:
+Questions:
 (: $prf (Location $relobj john $loc))
 ```
 
 7. Relationship Questions:
 "How is Mary related to John?"
 ```
-Question:
+Questions:
 (: $prf ($rel $relobj mary john))
 ```
 Note if asked how things are related or what they are to each other, don't
@@ -323,7 +323,7 @@ From Context:
 Type Definitions:
 (: Color (-> Object Object Type))
 
-Question:
+Questions:
 (: $prf (Color $relobj car $col))
 ```
 
@@ -337,7 +337,7 @@ Type Definitions:
 (: Occupant (-> Object Object Object Type))
 (: Red (-> Object Type))
 
-Question:
+Questions:
 (: $prf (* (Car $car) (* (Red $car) (Occupant $relobj $car $occupant))))
 ```
 
