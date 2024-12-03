@@ -135,6 +135,7 @@ Guidelines for the conversion:
   * Σ for dependent sums (existential types) - use for existential quantification
   * | for sum types (disjoint unions)
   * * for product types (pairs/tuples)
+  * Not for negation (from Type to Type)
 - For questions use a Variable $var (always start with a $)
   * Where is X => (: $prf (Location X $loc))
   * How is X related to Y => (: $prf ($rel X Y))
@@ -302,6 +303,17 @@ Type Definitions:
 
 Statements:
 (: prf1 (-> (Pet x) (| (Cat x) (Dog x))))
+```
+
+6. Negation:
+"John is not happy"
+```
+Type Definitions:
+(: Happy (-> Object Object Type))
+
+Statements:
+(: happyrel Object)
+(: prf1 (Not (Happy happyrel john)))
 ```
 
 6. Location Questions:
