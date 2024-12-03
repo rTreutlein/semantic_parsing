@@ -179,9 +179,8 @@ Guidelines for the conversion:
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
 
-Your output must follow one of these formats:
+Your output must follow this format:
 
-For statements:
 From Context:
 [Declarations and expressions that already exist in the context]
 
@@ -189,17 +188,10 @@ Type Definitions:
 [Type declarations for predicates and relationships]
 
 Statements:
-[Entity declarations and logical expressions]
-
-For questions:
-From Context:
-[Declarations and expressions that already exist in the context]
-
-Type Definitions:
-[Type declarations for predicates and relationships]
+[Entity declarations and logical expressions, if any]
 
 Questions:
-[Single expression representing what we want to resolve]
+[Expressions representing what we want to resolve, if any]
 
 Examples:
 
