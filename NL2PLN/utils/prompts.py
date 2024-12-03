@@ -126,6 +126,10 @@ For any given English sentence, you should:
 
 Guidelines for the conversion:
 - Create Type declarations for all entities
+- All predicates and relationships require a relationship object:
+  * Single predicates: (Happy happyrel obj)
+  * Binary relations: (Chase chaserel obj1 obj2)
+  * Modifiers apply to relationship objects: (Very veryrel happyrel)
 - Use the following type operators:
   * -> for functions and dependent products (Π types)
   * Σ for dependent sums (existential types) - use for existential quantification
@@ -155,9 +159,16 @@ Guidelines for the conversion:
   * Check previous sentences for referenced entities
   * Reuse entity identifiers from previous context
   * Link pronouns to most recently mentioned matching entity
+  * For ambiguous references, use sum types to combine all possible referents:
+    e.g., "it went swimming" with cat/dog in context:
+    (Swimming swimrel (| (Cat catrel cat) (Dog dogrel dog)))
 - Include all necessary preconditions
 - Express the final statement using proof terms
-- Keep it simple and convert only explicit information
+- Keep it simple and convert only explicit information:
+  * Don't add implicit type hierarchies (e.g., Dog -> Animal)
+  * Don't include common-sense implications
+  * Do preserve intended semantic meanings from context
+  * Maintain quantifier order exactly as in the original sentence
 - Context usage rules:
   * Reuse existing objects/entities from context instead of creating duplicates
   * Only include directly referenced objects from context
