@@ -19,6 +19,7 @@ class KBShell(cmd.Cmd):
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
         self.query_rag = RAG(collection_name=f"{collection_name}_query")
+        self.conversation_history = []
         print(f"Loaded knowledge base from {kb_file}")
         print("Type 'exit' to quit")
 
@@ -53,8 +54,36 @@ class KBShell(cmd.Cmd):
             for item in similar if 'sentence' in item
         ]
 
+    def get_llm_response(self, user_input: str) -> str:
+        """Get response from LLM considering conversation history"""
+        messages = []
+        # Add conversation history
+        for msg in self.conversation_history:
+            messages.append({"role": "user", "content": msg["user"]})
+            if msg.get("assistant"):
+                messages.append({"role": "assistant", "content": msg["assistant"]})
+        
+        # Add current input
+        messages.append({"role": "user", "content": user_input})
+        
+        # Get LLM response
+        response = create_openai_completion(messages)
+        return response
+
     def process_input(self, user_input: str):
         try:
+            # Get LLM response first
+            print("\n=== LLM Response ===")
+            llm_response = self.get_llm_response(user_input)
+            print(llm_response)
+            
+            # Update conversation history
+            self.conversation_history.append({
+                "user": user_input,
+                "assistant": llm_response
+            })
+
+            print("\n=== System Response ===")
             if self.debug: print(f"Processing input: {user_input}")
             similar_examples = self.get_similar_examples(user_input)
             if self.debug: print(f"Similar examples:\n{similar_examples}")
