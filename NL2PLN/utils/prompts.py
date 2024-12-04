@@ -41,39 +41,45 @@ Here are some examples of PLN to natural language conversion:
 
 1. Simple Type Declaration:
 Input:
-(: Dog (-> Object Type))
+(: Dog (-> Object Object Type))
 (: max Object)
-(: isdog (Dog max))
+(: dogrel Object)
+(: isdog (Dog dogrel max))
 ```Max is a dog```
 
 2. Relationship with Properties:
 Input:
 (: Chase (-> Object Object Object Type))
-(: Dog (-> Object Type))
-(: Cat (-> Object Type))
+(: Dog (-> Object Object Type))
+(: Cat (-> Object Object Type))
 (: chase Object)
 (: dog Object)
 (: cat Object)
+(: dogrel Object)
+(: catrel Object)
+(: isDog (Dog dogrel dog))
+(: isCat (Cat catrel cat))
 (: prf1 (Chase chase dog cat))
 ```The dog is chasing the cat```
 
 3. Universal Quantification:
 Input:
-(: prf1 (-> (Dog x) (Mammal x)))
+(: prf1 (-> (Dog dogrel x) (Mammal mammalrel x)))
 ```All dogs are mammals```
 
 4. Existential Quantification:
 Input:
-(: prf1 (Σ (: x Object) (* (Dog x) (Happy x))))
+(: prf1 (Σ (: x Object) (* (Dog dogrel x) (Happy happyrel x))))
 ```There exists a dog that is happy```
 
 5. Complex Relationships:
 Input:
-(: Before (-> Object Object Type))
+(: Before (-> Object Object Object Type))
 (: t1 Object)
 (: t2 Object)
 (: GoTo (-> Object Object Object Type))
-(: prf1 (Before t1 t2))
+(: beforerel Object)
+(: prf1 (Before beforerel t1 t2))
 (: going Object)
 (: prf2 (GoTo going john home))
 ```John went home before something else happened```
@@ -298,12 +304,15 @@ Statements:
 "A pet is either a cat or a dog"
 ```
 Type Definitions:
-(: Pet (-> Object Type))
-(: Cat (-> Object Type))
-(: Dog (-> Object Type))
+(: Pet (-> Object Object Type))
+(: Cat (-> Object Object Type))
+(: Dog (-> Object Object Type))
 
 Statements:
-(: prf1 (-> (Pet x) (| (Cat x) (Dog x))))
+(: petrel Object)
+(: catrel Object)
+(: dogrel Object)
+(: prf1 (-> (Pet petrel x) (| (Cat catrel x) (Dog dogrel x))))
 ```
 
 6. Negation:
@@ -314,7 +323,8 @@ Type Definitions:
 
 Statements:
 (: happyrel Object)
-(: prf1 (Not (Happy happyrel john)))
+(: happystate Object)
+(: prf1 (Not (Happy happyrel happystate john)))
 ```
 
 6. Location Questions:
@@ -342,10 +352,11 @@ relationship by putting a Variable in its place.
 ```
 From Context:
 (: car Object)
-(: carIsCar (Car car))
+(: carrel Object)
+(: carIsCar (Car carrel car))
 
 Type Definitions:
-(: Color (-> Object Object Type))
+(: Color (-> Object Object Object Type))
 
 Questions:
 (: $prf (Color $relobj car $col))
@@ -359,10 +370,10 @@ that for such a question there should exist a car in the context.
 ```
 Type Definitions:
 (: Occupant (-> Object Object Object Type))
-(: Red (-> Object Type))
+(: Red (-> Object Object Type))
 
 Questions:
-(: $prf (* (Car $car) (* (Red $car) (Occupant $relobj $car $occupant))))
+(: $prf (* (Car carrel $car) (* (Red redrel $car) (Occupant $relobj $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
