@@ -37,6 +37,7 @@ Guidelines for the conversion:
 
 Your output must be enclosed in triple backticks (```).
 The output should be a single, clear English sentence that captures the complete meaning.
+Do not include any comments or explanations in your output.
 Here are some examples of PLN to natural language conversion:
 
 1. Simple Type Declaration:
@@ -196,7 +197,7 @@ Guidelines for the conversion:
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
 
-Your output must follow this format:
+Your output must follow this format and should not contain any comments:
 
 From Context:
 [Declarations and expressions that already exist in the context]
