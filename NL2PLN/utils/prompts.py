@@ -218,24 +218,29 @@ Examples:
 From Context:
 
 Type Definitions:
-(: GoldenRetriver (-> Object Type))
-(: Butterfly (-> Object Type))
-(: Curious (-> Object Type))
+(: GoldenRetriver (-> Object Object Type))
+(: Butterfly (-> Object Object Type))
+(: Curious (-> Object Object Type))
 (: Spotted (-> Object Object Object Type))
-(: Garden (-> Object Type))
-(: In (-> Object Object Type))
+(: Garden (-> Object Object Type))
+(: In (-> Object Object Object Type))
 
 Statements:
 (: max Object)
 (: garden Object)
-(: maxGoldenRetriver (GoldenRetriver max))
-(: maxCurious (Curious max))
-(: gardenIsGarden (Garden garden))
+(: gardenrel Object)
+(: retriverrel Object)
+(: curiousrel Object)
+(: maxGoldenRetriver (GoldenRetriver retriverrel max))
+(: maxCurious (Curious curiousrel max))
+(: gardenIsGarden (Garden gardenrel garden))
 (: bf Object)
-(: bfButterfly (Butterfly bf))
+(: butttvrel Object)
+(: bfButterfly (Butterfly butttvrel bf))
 (: spot Object)
 (: prf1 (Spotted spot max bf))
-(: prf2 (In bf garden))
+(: inrel Object)
+(: prf2 (In inrel bf garden))
 ```
 
 2. Anaphora Resolution:
@@ -246,12 +251,13 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: Book (-> Object Type))
+(: Book (-> Object Object Type))
 (: Bought (-> Object Object Object Type))
 
 Statements:
 (: book Object)
-(: bookIsBook (Book book))
+(: bookrel Object)
+(: bookIsBook (Book bookrel book))
 (: purchase Object)
 (: prf2 (Bought purchase john book))
 ```
@@ -260,40 +266,48 @@ Statements:
 "All dogs chase some cat"
 ```
 Type Definitions:
-(: Dog (-> Object Type))
-(: Cat (-> Object Type))
+(: Dog (-> Object Object Type))
+(: Cat (-> Object Object Type))
 (: Chase (-> Object Object Object Type))
-(: AtTime (-> Object Object Type))
 
 Statements:
-(: prf1 (-> (Dog x)
-           (Σ (: $y Object) 
-              (* (Cat $y)
-                 (Σ (: $c Object) 
-                    (Chase $c x $y))))))
+(: prf1 (-> (Dog $dogrle $dog)
+           (Σ (: $catrel Object) 
+              (Σ (: $cat Object) 
+                 (* (Cat $catrel $cat)
+                    (Σ (: $chaserel Object) 
+                       (Chase $chaserel $dog $cat))))))
 ```
 
 4. Temporal Relations:
 "Before going home, John finished work"
 ```
+From Context:
+(: john Object)
+
 Type Definitions:
-(: TimePoint (-> Object Type))
-(: Before (-> Object Object Type))
-(: Home (-> Object Type))
+(: TimePoint (-> Object Object Type))
+(: Before (-> Object Object Object Type))
+(: Home (-> Object Object Type))
 (: GoTo (-> Object Object Object Type))
-(: Work (-> Object Type))
+(: Work (-> Object Object Type))
 (: Finish (-> Object Object Object Type))
 
 Statements:
 (: t1 Object)
 (: t2 Object)
-(: t1IsTime (TimePoint t1))
-(: t2IsTime (TimePoint t2))
+(: tprel1 Object)
+(: tprel2 Object)
+(: t1IsTime (TimePoint tprel1 t1))
+(: t2IsTime (TimePoint tprel2 t2))
 (: home Object)
-(: homeIsHome (Home home))
+(: homerel Object)
+(: homeIsHome (Home homerel home))
 (: work Object)
-(: workIsWork (Work work))
-(: prf1 (Before t1 t2))
+(: workrel Object)
+(: workIsWork (Work workrel work))
+(: beforerel Object)
+(: prf1 (Before beforerel t1 t2))
 (: going Object)
 (: finishing Object)
 (: prf2 (GoTo going john home))
@@ -311,10 +325,7 @@ Type Definitions:
 (: Dog (-> Object Object Type))
 
 Statements:
-(: petrel Object)
-(: catrel Object)
-(: dogrel Object)
-(: prf1 (-> (Pet $petrel $x) (| (Σ (: $catrel Object) (Cat catrel $x)) (Σ (: $dogrel Object) (Dog $dogrel $x)))))
+(: prf1 (-> (Pet $petrel $x) (| (Σ (: $catrel Object) (Cat $catrel $x)) (Σ (: $dogrel Object) (Dog $dogrel $x)))))
 ```
 
 6. Negation:
@@ -385,40 +396,22 @@ In this case we are looking for something to has multiple properties so we use a
 From Context:
 
 Type Definitions:
-(: Car (-> Object Type))
-(: Red (-> Object Type))
+(: Car (-> Object Object Type))
+(: Red (-> Object Object Type))
 (: Buy (-> Object Object Object Type))
 (: ParkedAt (-> Object Object Object Type))
 
 Statements:
 (: car Object)
-(: carIsCar (Car car))
+(: carrel Object)
+(: carIsCar (Car carrel car))
 (: buying Object)
 (: prf1 (Buy buying john car))
-(: prf2 (Red car))
+(: redrel Object)
+(: prf2 (Red redrel car))
 
 Questions:
 (: $prf (ParkedAt $relobj car $location))
-```
-
-11. Statement followed by Question:
-"Mary gave John a book. What color is it?"
-```
-From Context:
-
-Type Definitions:
-(: Book (-> Object Type))
-(: Give (-> Object Object Object Object Type))
-(: Color (-> Object Object Object Type))
-
-Statements:
-(: book Object)
-(: bookIsBook (Book book))
-(: giving Object)
-(: prf1 (Give giving mary john book))
-
-Questions:
-(: $prf (Color $relobj book $color))
 ```
 
 For performatives and other expressions without logical meaning just output:
