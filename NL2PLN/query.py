@@ -124,7 +124,7 @@ class KBShell(cmd.Cmd):
                 metta_results = self.metta_handler.bc(pln_data["questions"][0])
                 if self.debug: print("metta_results:" + metta_results)
                 for result in metta_results:
-                    english = convert_logic_simple(result, pln2nl, similar_examples)
+                    english = convert_to_english(result, similar_examples)
                     print(f"- {english}")
 
 
