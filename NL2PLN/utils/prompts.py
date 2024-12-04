@@ -88,6 +88,8 @@ Input:
 For reference, here are some previous conversions:
 {similar}
 
+{"This is the answer to the question: " + user_input if user_input else ""}
+
 Now, please convert this formal logic expression into natural language:
 
 <pln>
