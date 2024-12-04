@@ -1,10 +1,9 @@
 import argparse
 from NL2PLN.utils.common import create_openai_completion
-from NL2PLN.utils.query_utils import is_question, convert_logic_simple
+from NL2PLN.utils.query_utils import convert_logic_simple
 from NL2PLN.utils.prompts import nl2pln, pln2nl
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.ragclass import RAG
-from NL2PLN.utils.query_utils import is_question
 import os
 import cmd
 
@@ -67,7 +66,7 @@ class KBShell(cmd.Cmd):
         messages.append({"role": "user", "content": user_input})
         
         # Get LLM response
-        response = create_openai_completion(messages)
+        response = create_openai_completion("",messages) #System message is empty
         return response
 
     def process_input(self, user_input: str):
@@ -123,7 +122,11 @@ class KBShell(cmd.Cmd):
             if pln_data["questions"]:
                 print("Processing as query (backward chaining)")
                 metta_results = self.metta_handler.bc(pln_data["questions"][0])
-                print(metta_results)
+                if self.debug: print("metta_results:" + metta_results)
+                for result in metta_results:
+                    english = convert_logic_simple(result, pln2nl, similar_examples)
+                    print(f"- {english}")
+
 
         except Exception as e:
             print(f"Error processing input: {str(e)}")
