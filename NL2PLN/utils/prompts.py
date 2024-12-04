@@ -64,7 +64,7 @@ Input:
 
 3. Universal Quantification:
 Input:
-(: prf1 (-> (Dog dogrel x) (Mammal mammalrel x)))
+(: prf1 (-> (Dog $dogrel x) (Σ (: $mammalrel Object) (Mammal $mammalrel x))))
 ```All dogs are mammals```
 
 4. Existential Quantification:
@@ -82,6 +82,8 @@ Input:
 (: prf1 (Before beforerel t1 t2))
 (: going Object)
 (: prf2 (GoTo going john home))
+(: timrel Object)
+(: goingatt1 (AtTime timerel going t1))
 ```John went home before something else happened```
 """,
         "cache_control": {"type": "ephemeral"}
@@ -312,7 +314,7 @@ Statements:
 (: petrel Object)
 (: catrel Object)
 (: dogrel Object)
-(: prf1 (-> (Pet petrel x) (| (Cat catrel x) (Dog dogrel x))))
+(: prf1 (-> (Pet $petrel $x) (| (Σ (: $catrel Object) (Cat catrel $x)) (Σ (: $dogrel Object) (Dog $dogrel $x)))))
 ```
 
 6. Negation:
@@ -323,8 +325,7 @@ Type Definitions:
 
 Statements:
 (: happyrel Object)
-(: happystate Object)
-(: prf1 (Not (Happy happyrel happystate john)))
+(: prf1 (Not (Happy happyrel john)))
 ```
 
 6. Location Questions:
@@ -373,7 +374,7 @@ Type Definitions:
 (: Red (-> Object Object Type))
 
 Questions:
-(: $prf (* (Car carrel $car) (* (Red redrel $car) (Occupant $relobj $car $occupant))))
+(: $prf (* (Car $carrel $car) (* (Red $redrel $car) (Occupant $relobj $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
