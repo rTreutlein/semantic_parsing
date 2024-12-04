@@ -1,4 +1,5 @@
 import argparse
+import json
 from NL2PLN.utils.common import create_openai_completion
 from NL2PLN.utils.query_utils import convert_logic_simple, convert_to_english
 from NL2PLN.utils.prompts import nl2pln, pln2nl
@@ -88,7 +89,8 @@ class KBShell(cmd.Cmd):
             if self.debug: print(f"Similar examples:\n{similar_examples}")
             pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
             if self.debug:
-                print(f"\nConverted PLN data: {pln_data}")
+                print("\nConverted PLN data:")
+                print(json.dumps(pln_data, indent=2))
             
             if pln_data == "Performative":
                 print("This is a performative statement, not a query or statement.")
