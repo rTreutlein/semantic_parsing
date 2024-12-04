@@ -1,6 +1,6 @@
 import argparse
 from NL2PLN.utils.common import create_openai_completion
-from NL2PLN.utils.query_utils import convert_logic_simple
+from NL2PLN.utils.query_utils import convert_logic_simple, convert_to_english
 from NL2PLN.utils.prompts import nl2pln, pln2nl
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.ragclass import RAG
