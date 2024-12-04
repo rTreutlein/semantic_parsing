@@ -1,4 +1,4 @@
-def pln2nl(pln: str, similar_examples: list[str], previous_sentences: list[str]):
+def pln2nl(pln: str, user_input: str, similar_examples: list[str], previous_sentences: list[str]):
     """Convert PLN to natural language with prompt structure.
     
     Args:
