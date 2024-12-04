@@ -238,7 +238,8 @@ Statements:
 (: butttvrel Object)
 (: bfButterfly (Butterfly butttvrel bf))
 (: spot Object)
-(: prf1 (Spotted spot max bf))
+(: spottedrel Object)
+(: prf1 (Spotted spottedrel max bf))
 (: inrel Object)
 (: prf2 (In inrel bf garden))
 ```
@@ -275,7 +276,7 @@ Statements:
            (Σ (: $catrel Object) 
               (Σ (: $cat Object) 
                  (* (Cat $catrel $cat)
-                    (Σ (: $chaserel Object) 
+                    (Σ (: $chaserel Object)
                        (Chase $chaserel $dog $cat))))))
 ```
 
@@ -289,6 +290,7 @@ Type Definitions:
 (: TimePoint (-> Object Object Type))
 (: Before (-> Object Object Object Type))
 (: Home (-> Object Object Type))
+(: AtTime (-> Object Object Object Type))
 (: GoTo (-> Object Object Object Type))
 (: Work (-> Object Object Type))
 (: Finish (-> Object Object Object Type))
@@ -346,7 +348,7 @@ Type Definitions:
 (: Location (-> Object Object Object Type))
 
 Questions:
-(: $prf (Location $relobj john $loc))
+(: $prf (Location $locrel john $loc))
 ```
 
 7. Relationship Questions:
@@ -371,7 +373,7 @@ Type Definitions:
 (: Color (-> Object Object Object Type))
 
 Questions:
-(: $prf (Color $relobj car $col))
+(: $prf (Color $colorrel car $col))
 ```
 
 Now we haven't actually provided the context in this example but it can be assumed
@@ -385,7 +387,7 @@ Type Definitions:
 (: Red (-> Object Object Type))
 
 Questions:
-(: $prf (* (Car $carrel $car) (* (Red $redrel $car) (Occupant $relobj $car $occupant))))
+(: $prf (* (Car $carrel $car) (* (Red $redrel $car) (Occupant $occupantrel $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
