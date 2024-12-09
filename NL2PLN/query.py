@@ -44,9 +44,15 @@ class KBShell(cmd.Cmd):
 
     def do_riddle(self, arg):
         """Run the surgeon riddle example"""
+        # First process the riddle statement
         riddle = "The surgeon who is the boys father says: 'I can't operate on him he is my son'"
-        print(f"\nProcessing riddle: {riddle}")
+        print(f"\nProcessing riddle statement: {riddle}")
         self.process_input(riddle)
+        
+        # Then process the follow-up question
+        question = "Who is the surgeon to the son?"
+        print(f"\nProcessing follow-up question: {question}")
+        self.process_input(question)
 
     def get_similar_examples(self, input_text):
         # Get examples from both RAG databases
