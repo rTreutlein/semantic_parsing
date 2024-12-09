@@ -57,6 +57,27 @@ class KBShell(cmd.Cmd):
         self.process_input(question)
         self.llm = llmtmp
 
+    def do_proof(self, arg):
+        """Run a simple proof example with family relationships"""
+        print("\n=== Family Relationship Proof Example ===")
+        
+        # Add basic facts
+        print("\nAdding facts:")
+        facts = [
+            "John is the father of Mary",
+            "Mary is the mother of Bob"
+        ]
+        for fact in facts:
+            print(f"\nProcessing: {fact}")
+            self.process_input(fact)
+        
+        # Ask about the relationship
+        question = "Who is John to Bob?"
+        print(f"\nQuerying: {question}")
+        self.debug = True  # Temporarily enable debug mode to show the proof trace
+        self.process_input(question)
+        self.debug = False
+
     def get_similar_examples(self, input_text):
         # Get examples from both RAG databases
         base_similar = self.rag.search_similar(input_text, limit=3)
