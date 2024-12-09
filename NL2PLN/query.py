@@ -15,6 +15,7 @@ class KBShell(cmd.Cmd):
     def __init__(self, kb_file: str, collection_name: str):
         super().__init__()
         self.debug = False
+        self.llm = False
         self.metta_handler = MeTTaHandler(kb_file)
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
@@ -25,8 +26,6 @@ class KBShell(cmd.Cmd):
 
     def default(self, line: str):
         """Handle any input that isn't a specific command"""
-        if line.lower() == 'exit':
-            return
         self.process_input(line)
 
     def do_exit(self, arg):
@@ -37,6 +36,11 @@ class KBShell(cmd.Cmd):
         """Toggle debug mode"""
         self.debug = not self.debug
         print(f"Debug mode: {'on' if self.debug else 'off'}")
+
+    def do_llm(self, arg):
+        """Toggle debug mode"""
+        self.llm = not self.llm
+        print(f"LLM mode: {'on' if self.llm else 'off'}")
 
     def get_similar_examples(self, input_text):
         # Get examples from both RAG databases
@@ -71,67 +75,72 @@ class KBShell(cmd.Cmd):
         return response
 
     def process_input(self, user_input: str):
-        try:
-            # Get LLM response first
+        #try:
+        # Get LLM response first
+        if (self.llm):
             print("\n=== LLM Response ===")
             llm_response = self.get_llm_response(user_input)
             print(llm_response)
-            
+        
             # Update conversation history
             self.conversation_history.append({
                 "user": user_input,
                 "assistant": llm_response
             })
+        else:
+            self.conversation_history.append({
+                "user": user_input,
+            })
 
-            print("\n=== System Response ===")
-            if self.debug: print(f"Processing input: {user_input}")
-            similar_examples = self.get_similar_examples(user_input)
-            if self.debug: print(f"Similar examples:\n{similar_examples}")
-            pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
-            if self.debug:
-                print("\nConverted PLN data:")
-                print(json.dumps(pln_data, indent=2))
+        print("\n=== System Response ===")
+        if self.debug: print(f"Processing input: {user_input}")
+        similar_examples = self.get_similar_examples(user_input)
+        if self.debug: print(f"Similar examples:\n{similar_examples}")
+        pln_data = convert_logic_simple(user_input, nl2pln, similar_examples)
+        if self.debug:
+            print("\nConverted PLN data:")
+            print(json.dumps(pln_data, indent=2))
+        
+        if pln_data == "Performative":
+            print("This is a performative statement, not a query or statement.")
+            return
+
+
+        if pln_data["statements"]:
+            print("Processing as statement (forward chaining)")
+            fc_results = []
+            # Store pln in query RAG
+            self.query_rag.store_embedding({
+                "sentence": user_input,
+                "statements": pln_data["statements"],
+                "type_definitions": pln_data.get("type_definitions", []),
+                "from_context": pln_data["from_context"],
+            })
+            for statement in pln_data["statements"]:
+                result = self.metta_handler.add_atom_and_run_fc(statement)
+                if result:
+                    fc_results.extend(result)
             
-            if pln_data == "Performative":
-                print("This is a performative statement, not a query or statement.")
-                return
-
-
-            if pln_data["statements"]:
-                print("Processing as statement (forward chaining)")
-                fc_results = []
-                # Store pln in query RAG
-                self.query_rag.store_embedding({
-                    "sentence": user_input,
-                    "statements": pln_data["statements"],
-                    "type_definitions": pln_data.get("type_definitions", []),
-                    "from_context": pln_data["from_context"],
-                })
-                for statement in pln_data["statements"]:
-                    result = self.metta_handler.add_atom_and_run_fc(statement)
-                    if result:
-                        fc_results.extend(result)
-                
-                if fc_results and self.debug:
-                    print(f"FC results: {fc_results}")
-                    print("\nInferred results:")
-                    for result in fc_results:
-                        english = convert_to_english(result, "", similar_examples)
-                        print(f"- {english}")
-                else:
-                    print("No new inferences made.")
-
-            if pln_data["questions"]:
-                print("Processing as query (backward chaining)")
-                metta_results = self.metta_handler.bc(pln_data["questions"][0])
-                if self.debug: print("metta_results:" + metta_results)
-                for result in metta_results:
-                    english = convert_to_english(result, user_input, similar_examples)
+            if fc_results and self.debug:
+                print(f"FC results: {fc_results}")
+                print("\nInferred results:")
+                for result in fc_results:
+                    english = convert_to_english(result, "", similar_examples)
                     print(f"- {english}")
+            else:
+                print("No new inferences made.")
+
+        if pln_data["questions"]:
+            print("Processing as query (backward chaining)")
+            metta_results = self.metta_handler.bc(pln_data["questions"][0])
+            if self.debug: print("metta_results:" + str(metta_results))
+            for result in metta_results:
+                english = convert_to_english(result, user_input, similar_examples)
+                print(f"- {english}")
 
 
-        except Exception as e:
-            print(f"Error processing input: {str(e)}")
+            #except Exception as e:
+            #    print(f"Error processing input: {str(e)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Interactive shell for querying the knowledge base.")
