@@ -6,10 +6,12 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from requests.exceptions import RequestException, Timeout
 
 class RAG:
-    def __init__(self, collection_name="sentences", ollama_base_url="http://192.168.178.48:11434", qdrant_url="http://docker:6333"):
+    def __init__(self, collection_name="sentences", ollama_base_url="http://192.168.178.48:11434", qdrant_url="http://docker:6333", reset_db=False):
         self.collection_name = collection_name
         self.ollama_base_url = ollama_base_url
         self.qdrant_client = QdrantClient(qdrant_url)
+        if reset_db:
+            self.delete_collection()
         self.ensure_collection()
 
     def get_embedding(self, text):
@@ -51,6 +53,16 @@ class RAG:
                 )
             ]
         )
+
+    def delete_collection(self):
+        """
+        Delete the collection if it exists.
+        """
+        try:
+            self.qdrant_client.delete_collection(self.collection_name)
+            print(f"Deleted '{self.collection_name}' collection from Qdrant")
+        except Exception as e:
+            print(f"Error deleting collection: {str(e)}")
 
     def ensure_collection(self):
         """
