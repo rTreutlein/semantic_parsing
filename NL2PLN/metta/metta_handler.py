@@ -110,6 +110,31 @@ if __name__ == "__main__":
     print(f"Result: {result}")  # Should print the existing atom
     
     # Verify final context state
-    print("\nFinal context state:")
-    context = handler.run("!(match &kb (: $a $b) $b)")
-    print(context[0])
+    print("\nTesting store_kb_to_file and load_kb_from_file:")
+    
+    # Add some test atoms to the KB
+    test_atoms = [
+        "(: test_store1 (PredicateNode Store1))",
+        "(: test_store2 (PredicateNode Store2))"
+    ]
+    for atom in test_atoms:
+        handler.add_to_context(atom)
+    
+    # Store the KB to file
+    print("Storing KB to file...")
+    handler.store_kb_to_file()
+    
+    # Create a new handler instance
+    print("Creating new handler and loading KB...")
+    new_handler = MeTTaHandler('kb_backup.json')
+    new_handler.load_kb_from_file()
+    
+    # Verify the loaded KB
+    print("\nVerifying loaded KB contents:")
+    loaded_context = new_handler.run("!(match &kb (: $a $b) $b)")
+    print("Loaded KB contents:", loaded_context[0])
+    
+    # Clean up test file
+    import os
+    if os.path.exists('kb_backup.json'):
+        os.remove('kb_backup.json')
