@@ -6,7 +6,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from requests.exceptions import RequestException, Timeout
 
 class RAG:
-    def __init__(self, collection_name="sentences", ollama_base_url="http://127.0.0.1:11434", qdrant_url="http://truenas:9333"):
+    def __init__(self, collection_name="sentences", ollama_base_url="http://192.168.178.48:11434", qdrant_url="http://docker:6333"):
         self.collection_name = collection_name
         self.ollama_base_url = ollama_base_url
         self.qdrant_client = QdrantClient(qdrant_url)
