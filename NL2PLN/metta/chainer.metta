@@ -42,12 +42,15 @@
 (= (add-atom-nodup $space $atom)
    (case (match $space $atom $atom)
      (($atom ())
-      (%void% (add-atom $sample $atom)))))
+      (Empty (add-atom $space $atom)))))
 
-
-(= (fc $kb)
-    (let* (($out (bc $kb (S Z) (: $term $type)))
+(= (fc $kb (: $prf $_))
+    (let* (($out (bc $kb (S (S Z)) (: ($prfabs $prf) $thrm)))
            ($dummy (add-atom-nodup $kb $out))
           )
     $out
 ))
+
+(= (checkVar (: $prf $_)) (== (get-metatype $prf) Variable))
+
+!(checkVar (: $prf $thrm))
