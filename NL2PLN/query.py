@@ -42,6 +42,12 @@ class KBShell(cmd.Cmd):
         self.llm = not self.llm
         print(f"LLM mode: {'on' if self.llm else 'off'}")
 
+    def do_riddle(self, arg):
+        """Run the surgeon riddle example"""
+        riddle = "The surgeon who is the boys father says: 'I can't operate on him he is my son'"
+        print(f"\nProcessing riddle: {riddle}")
+        self.process_input(riddle)
+
     def get_similar_examples(self, input_text):
         # Get examples from both RAG databases
         base_similar = self.rag.search_similar(input_text, limit=3)
