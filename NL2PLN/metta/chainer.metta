@@ -50,7 +50,3 @@
           )
     $out
 ))
-
-(= (checkVar (: $prf $_)) (== (get-metatype $prf) Variable))
-
-!(checkVar (: $prf $thrm))

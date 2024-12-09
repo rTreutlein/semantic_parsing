@@ -9,10 +9,10 @@ class MeTTaHandler:
         self.metta = MeTTa()
         self.file = file
         script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.run("!(bind! &kb (new-space))")
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
 
-                                                                             
     def run_metta_from_file(self, file_path):                                
         with open(file_path, 'r') as file:                                   
             chainerstringhere = file.read()                                  
@@ -25,7 +25,7 @@ class MeTTaHandler:
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         identifier = self.generate_random_identifier()                       
         self.metta.run(f'!(add-atom &kb {atom})')                  
-        res = self.metta.run('!(fc &kb)')
+        res = self.metta.run(f'!(fc &kb {atom})')
         out = [str(elem.get_children()[2]) for elem in res[0]]               
         self.append_to_file(f"(: {identifier} {atom})")
         [self.append_to_file(str(elem)) for elem in res[0]]
@@ -86,13 +86,13 @@ if __name__ == "__main__":
     print("\nTesting add_atom_and_run_fc:")
     
     # Test 1: Adding a new atom and running forward chaining
-    atom1 = "(ImplicationLink (PredicateNode A) (PredicateNode B))"
+    atom1 = "(: ab (-> (: $a (PredicateNode A)) (PredicateNode B)))"
     print(f"Adding atom and running fc: {atom1}")
     result = handler.add_atom_and_run_fc(atom1)
     print(f"Forward chaining results: {result}")
 
     # Test 2: Adding another atom to trigger more inferences
-    atom2 = "(ImplicationLink (PredicateNode B) (PredicateNode C))"
+    atom2 = "(: a (PredicateNode A))"
     print(f"\nAdding second atom: {atom2}")
     result = handler.add_atom_and_run_fc(atom2)
     print(f"Forward chaining results: {result}")
@@ -113,5 +113,5 @@ if __name__ == "__main__":
     
     # Verify final context state
     print("\nFinal context state:")
-    context = handler.run("!(match &context (: $a $b) $b)")
+    context = handler.run("!(match &kb (: $a $b) $b)")
     print(context[0])
