@@ -1,6 +1,6 @@
 from NL2PLN.utils.common import create_openai_completion, extract_logic
 
-def convert_to_english(pln_text, similar_examples, previous_sentences=None):
+def convert_to_english(pln_text, user_input, similar_examples, previous_sentences=None):
     """
     Convert PLN expressions to natural language English.
     
@@ -13,7 +13,7 @@ def convert_to_english(pln_text, similar_examples, previous_sentences=None):
         str: The English translation of the PLN expression
     """
     from NL2PLN.utils.prompts import pln2nl
-    system_msg, user_msg = pln2nl(pln_text, similar_examples, previous_sentences or [])
+    system_msg, user_msg = pln2nl(pln_text, user_input, similar_examples, previous_sentences or [])
     response = create_openai_completion(system_msg, user_msg)
     
     # Extract the English text from between triple backticks
