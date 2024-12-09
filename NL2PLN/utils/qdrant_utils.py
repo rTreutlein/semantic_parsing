@@ -8,7 +8,7 @@ def dump_collection(
     collection_name: str,
     output_file: str,
     limit: Optional[int] = None,
-    qdrant_url: str = "localhost:6334"
+    qdrant_url: str = "localhost:6333"
 ) -> None:
     """
     Dumps all or n elements from a Qdrant collection to a file.
@@ -58,7 +58,7 @@ def dump_collection(
 def populate_collection(
     collection_name: str,
     input_file: str,
-    qdrant_url: str = "localhost:6334",
+    qdrant_url: str = "localhost:6333",
     batch_size: int = 100
 ) -> None:
     """
@@ -103,13 +103,13 @@ def main():
     dump_parser.add_argument('collection', help='Collection name')
     dump_parser.add_argument('output', help='Output file path')
     dump_parser.add_argument('--limit', type=int, help='Maximum number of points to retrieve')
-    dump_parser.add_argument('--url', default='localhost:6334', help='Qdrant server URL')
+    dump_parser.add_argument('--url', default='localhost:6333', help='Qdrant server URL')
 
     # Populate command
     populate_parser = subparsers.add_parser('populate', help='Populate collection from file')
     populate_parser.add_argument('collection', help='Collection name')
     populate_parser.add_argument('input', help='Input file path')
-    populate_parser.add_argument('--url', default='localhost:6334', help='Qdrant server URL')
+    populate_parser.add_argument('--url', default='localhost:6333', help='Qdrant server URL')
     populate_parser.add_argument('--batch-size', type=int, default=100, help='Batch size for inserts')
 
     args = parser.parse_args()
