@@ -23,12 +23,11 @@ class MeTTaHandler:
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))                                                                   
                                                                              
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
-        identifier = self.generate_random_identifier()                       
         self.metta.run(f'!(add-atom &kb {atom})')                  
         res = self.metta.run(f'!(fc &kb {atom})')
-        out = [str(elem.get_children()[2]) for elem in res[0]]               
-        self.append_to_file(f"(: {identifier} {atom})")
-        [self.append_to_file(str(elem)) for elem in res[0]]
+        out = [str(elem) for elem in res[0]]               
+        self.append_to_file(f"{atom}")
+        [self.append_to_file(elem) for elem in out]
         return out
 
     def bc(self, atom: str) -> List[str]:
@@ -59,7 +58,7 @@ class MeTTaHandler:
         return self.metta.run(atom)
                                                                              
     def store_kb_to_file(self):
-        kb_content = self.metta.run('!(collapse (kb))')                                  
+        kb_content = self.metta.run('!(match &kb $a $a)')
         kb_str = str(kb_content[0][0])[1:-1]
         with open(self.file, 'w') as f:                                       
             f.write(kb_str)
@@ -68,8 +67,8 @@ class MeTTaHandler:
         if os.path.exists(self.file):
             with open(self.file, 'r') as f:                                       
                 kb_content = "(" + f.read() + ")"
-            self.metta.run("!(match &self (= (kb) $n) (remove-atom &self (= (kb) $n)))")
-            self.metta.run(f'(= (kb) (superpose {kb_content}))')
+                for elment in kb_content:
+                    self.metta.run(f'!(add-atom &kb {elment})')
         else:
             print(f"Warning: File {self.file} does not exist. No KB loaded.")
 
@@ -77,7 +76,6 @@ class MeTTaHandler:
         with open(self.file, 'a') as f:
             f.write(elem)
 
-                                                                             
 if __name__ == "__main__":
     handler = MeTTaHandler('kb_backup.json')
     with open('kb_backup.json', 'w') as f:
