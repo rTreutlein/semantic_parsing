@@ -54,6 +54,7 @@ def extract_logic(response: str) -> dict[str, list[str]] | str | None:
     from_context = []
     type_definitions = []
     statements = []
+    questions = []
     
     # Parse the content looking for sections
     sections = content.split('\n')
@@ -70,6 +71,9 @@ def extract_logic(response: str) -> dict[str, list[str]] | str | None:
         elif line.lower().startswith('statements:'):
             current_section = 'statements'
             continue
+        elif line.lower().startswith('questions:'):
+            current_section = 'questions'
+            continue
         
         if line:
             if current_section == 'from_context':
@@ -78,19 +82,23 @@ def extract_logic(response: str) -> dict[str, list[str]] | str | None:
                 type_definitions.append(line)
             elif current_section == 'statements':
                 statements.append(line)
+            elif current_section == 'questions':
+                questions.append(line)
     
-    if not statements:
+    if not statements and not questions:
         return None
     
     # Parse all sections using the Lisp statement parser
     parsed_context = parse_lisp_statement(from_context)
     parsed_types = parse_lisp_statement(type_definitions)
     parsed_statements = parse_lisp_statement(statements)
+    parsed_questions = parse_lisp_statement(questions)
         
     return {
         "from_context": parsed_context,
         "type_definitions": parsed_types,
-        "statements": parsed_statements
+        "statements": parsed_statements,
+        "questions": parsed_questions
     }
 
 def process_file(file_path: str, process_sentence_func: callable, skip_lines: int = 0, limit_lines: int | None = None) -> None:
@@ -135,7 +143,6 @@ def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonn
                 system=system_msg,
                 messages=user_msg,
             )
-            print(response)
             return response.content[0].text
 
         except anthropic.APIStatusError as e:
