@@ -79,6 +79,12 @@ Input:
 (: goingprf (GoTo john home))
 (: goingatt1 (AtTime going t1))
 ```John went home before something else happened```
+
+6. Proof Trace:
+Input:
+(: ((parent_of_parent_is_grandparent (father_is_parent john_father_of_mary)) (mother_is_parent mary_mother_of_bob)) (Grandparent john bob))
+```John is Bob's grandparent
+Because: John is Mary's father, and Mary is Bob's mother```
 """,
         "cache_control": {"type": "ephemeral"}
     }]
