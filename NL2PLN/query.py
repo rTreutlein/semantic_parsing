@@ -16,10 +16,11 @@ class KBShell(cmd.Cmd):
         super().__init__()
         self.debug = False
         self.llm = False
+        self.inference = False # Whether to convert inferences to natural language
         self.metta_handler = MeTTaHandler(kb_file)
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
-        self.query_rag = RAG(collection_name=f"{collection_name}_query")
+        self.query_rag = RAG(collection_name=f"{collection_name}_query", reset_db=True)
         self.conversation_history = []
         print(f"Loaded knowledge base from {kb_file}")
         print("Type 'exit' to quit")
@@ -36,6 +37,11 @@ class KBShell(cmd.Cmd):
         """Toggle debug mode"""
         self.debug = not self.debug
         print(f"Debug mode: {'on' if self.debug else 'off'}")
+
+    def do_inference(self, arg):
+        """Toggle inference mode"""
+        self.inference = not self.inference
+        print(f"Inference mode: {'on' if self.inference else 'off'}")
 
     def do_llm(self, arg):
         """Toggle debug mode"""
@@ -64,8 +70,11 @@ class KBShell(cmd.Cmd):
         # Add basic facts
         print("\nAdding facts:")
         facts = [
-            "John is the father of Mary",
-            "Mary is the mother of Bob"
+            "A mother of someone is a parent of that person.",
+            "A father of someone is a parent of that person.",
+            "John is the father of Mary.",
+            "Mary is the mother of Bob.",
+            "A parent of a parent of someone is a grandparent of that person.",
         ]
         for fact in facts:
             print(f"\nProcessing: {fact}")
@@ -74,9 +83,7 @@ class KBShell(cmd.Cmd):
         # Ask about the relationship
         question = "Who is John to Bob?"
         print(f"\nQuerying: {question}")
-        self.debug = True  # Temporarily enable debug mode to show the proof trace
         self.process_input(question)
-        self.debug = False
 
     def get_similar_examples(self, input_text):
         # Get examples from both RAG databases
@@ -157,12 +164,13 @@ class KBShell(cmd.Cmd):
                 if result:
                     fc_results.extend(result)
             
-            if fc_results and self.debug:
-                print(f"FC results: {fc_results}")
+            if self.debug: print(f"FC results: {fc_results}")
+
+            if fc_results and self.inference:
                 print("\nInferred results:")
                 for result in fc_results:
                     english = convert_to_english(result, "", similar_examples)
-                    print(f"- {english}")
+                    print(f"- {result} => {english}")
             else:
                 print("No new inferences made.")
 
@@ -171,8 +179,11 @@ class KBShell(cmd.Cmd):
             metta_results = self.metta_handler.bc(pln_data["questions"][0])
             if self.debug: print("metta_results:" + str(metta_results))
             for result in metta_results:
-                english = convert_to_english(result, user_input, similar_examples)
-                print(f"- {english}")
+                if result:
+                    english = convert_to_english(result, user_input, similar_examples)
+                    print(f"- {result} => {english}")
+                else:
+                    print("Can't prove the query.")
 
 
             #except Exception as e:
