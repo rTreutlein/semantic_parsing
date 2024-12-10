@@ -61,12 +61,12 @@ Input:
 
 3. Universal Quantification:
 Input:
-(: prf1 (-> (: $prfdog (Dog $x)) (Mammal $x)))
+(: dogIsMammal (-> (: $prfdog (Dog $x)) (Mammal $x)))
 ```All dogs are mammals```
 
 4. Existential Quantification:
 Input:
-(: prf1 (Σ (: $x Object) (* (Dog $x) (Happy $x))))
+(: happyDogExists (Σ (: $x Object) (* (Dog $x) (Happy $x))))
 ```There exists a dog that is happy```
 
 5. Complex Relationships:
@@ -75,7 +75,7 @@ Input:
 (: t1 Object)
 (: t2 Object)
 (: GoTo (-> Object Object Type))
-(: beforeprf (Before t1 t2))
+(: t1BeforeT2 (Before t1 t2))
 (: goingprf (GoTo john home))
 (: goingatt1 (AtTime going t1))
 ```John went home before something else happened```
@@ -258,10 +258,10 @@ Type Definitions:
 (: Chase (-> Object Object Type))
 
 Statements:
-(: prf1 (-> (: $prfisdog (Dog $dog))
-              (Σ (: $cat Object)
-                 (* (Cat $cat)
-                    (Chase $dog $cat)))))
+(: dogsChaseAnyCat (-> (: $prfisdog (Dog $dog))
+                       (Σ (: $cat Object)
+                          (* (Cat $cat)
+                             (Chase $dog $cat)))))
 ```
 
 4. Temporal Relations:
@@ -288,11 +288,11 @@ Statements:
 (: homeIsHome (Home home))
 (: work Object)
 (: workIsWork (Work work))
-(: prf1 (Before t1 t2))
+(: t1BeforeT2 (Before t1 t2))
 (: john_goes_home (GoTo john home))
-(: prf3 (AtTime john_goes_home t2))
+(: goingHomeTime (AtTime john_goes_home t2))
 (: john_finishes_work (Finish john work))
-(: prf5 (AtTime john_finishes_work t1))
+(: finishWorkTime (AtTime john_finishes_work t1))
 ```
 
 5. Sum Types (|):
@@ -304,7 +304,7 @@ Type Definitions:
 (: Dog (-> Object Type))
 
 Statements:
-(: prf1 (-> (: $prfispet (Pet $x)) (| (Cat $x) (Dog $x))))
+(: petIsCatOrDog (-> (: $prfispet (Pet $x)) (| (Cat $x) (Dog $x))))
 ```
 
 6. Negation:
@@ -314,7 +314,7 @@ Type Definitions:
 (: Happy (-> Object Type))
 
 Statements:
-(: prf1 (Not (Happy john)))
+(: johnNotHappy (Not (Happy john)))
 ```
 
 6. Location Questions:
