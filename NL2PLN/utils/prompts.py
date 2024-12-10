@@ -42,49 +42,42 @@ Here are some examples of PLN to natural language conversion:
 
 1. Simple Type Declaration:
 Input:
-(: Dog (-> Object Object Type))
+(: Dog (-> Object Type))
 (: max Object)
-(: dogrel Object)
-(: isdog (Dog dogrel max))
+(: isdog (Dog max))
 ```Max is a dog```
 
 2. Relationship with Properties:
 Input:
-(: Chase (-> Object Object Object Type))
-(: Dog (-> Object Object Type))
-(: Cat (-> Object Object Type))
-(: chase Object)
+(: Chase (-> Object Object Type))
+(: Dog (-> Object Type))
+(: Cat (-> Object Type))
 (: dog Object)
 (: cat Object)
-(: dogrel Object)
-(: catrel Object)
-(: isDog (Dog dogrel dog))
-(: isCat (Cat catrel cat))
-(: prf1 (Chase chase dog cat))
+(: isDog (Dog dog))
+(: isCat (Cat cat))
+(: chase (Chase dog cat))
 ```The dog is chasing the cat```
 
 3. Universal Quantification:
 Input:
-(: prf1 (-> (Dog $dogrel x) (Σ (: $mammalrel Object) (Mammal $mammalrel x))))
+(: prf1 (-> (: $prfdog (Dog $x)) (Mammal $x)))
 ```All dogs are mammals```
 
 4. Existential Quantification:
 Input:
-(: prf1 (Σ (: x Object) (* (Dog dogrel x) (Happy happyrel x))))
+(: prf1 (Σ (: $x Object) (* (Dog $x) (Happy $x))))
 ```There exists a dog that is happy```
 
 5. Complex Relationships:
 Input:
-(: Before (-> Object Object Object Type))
+(: Before (-> Object Object Type))
 (: t1 Object)
 (: t2 Object)
-(: GoTo (-> Object Object Object Type))
-(: beforerel Object)
-(: prf1 (Before beforerel t1 t2))
-(: going Object)
-(: prf2 (GoTo going john home))
-(: timrel Object)
-(: goingatt1 (AtTime timerel going t1))
+(: GoTo (-> Object Object Type))
+(: beforeprf (Before t1 t2))
+(: goingprf (GoTo john home))
+(: goingatt1 (AtTime going t1))
 ```John went home before something else happened```
 """,
         "cache_control": {"type": "ephemeral"}
@@ -98,6 +91,7 @@ For reference, here are some previous conversions:
 {similar}
 
 {"The following logic is the answer to the question: " + user_input if user_input else ""}
+{"Do not try to answer the questions only use it to help translate the pln" if user_input else ""}
 
 Now, please convert this formal logic expression into natural language:
 
@@ -137,10 +131,7 @@ For any given English sentence, you should:
 
 Guidelines for the conversion:
 - Create Type declarations for all entities
-- All predicates and relationships require a relationship object:
-  * Single predicates: (Happy happyrel obj)
-  * Binary relations: (Chase chaserel obj1 obj2)
-  * Modifiers apply to relationship objects: (Very veryrel happyrel)
+- Modifiers apply to the proof "x is very happy" => (: x Object),(: happyprf (Happy x)),(: veryprf (Very happyprf))
 - Use the following type operators:
   * -> for functions and dependent products (Π types)
   * Σ for dependent sums (existential types) - use for existential quantification
@@ -153,14 +144,14 @@ Guidelines for the conversion:
   * Don't introduce (: $var Object) as this would match all things that are objects
   * For multiple questions like "Where and when did John go?", create separate questions:
     Questions:
-    (: $prf1 (Location $relobj1 john $loc))
-    (: $prf2 (Time $relobj2 john $time))
+    (: $prf1 (Location john $loc))
+    (: $prf2 (Time john $time))
   * For questions with multiple variables like "Who saw what?":
     Questions:
-    (: $prf (Saw $relobj $who $what))
+    (: $prf (Saw $who $what))
   * For yes/no questions like "Did John go home?", use the statement as question with variable proof:
     Questions:
-    (: $prf (GoTo going john home))
+    (: $prf (GoTo john home))
   * The same $var always refers to the same object throughout the question/statement
   * Use different variable names ($var1, $var2, etc) when referring to different objects
 - For quantifiers:
@@ -173,7 +164,7 @@ Guidelines for the conversion:
   * Link pronouns to most recently mentioned matching entity
   * For ambiguous references, use sum types to combine all possible referents:
     e.g., "it went swimming" with cat/dog in context:
-    (Swimming swimrel (| (Cat catrel cat) (Dog dogrel dog)))
+    (Swimming (| cat dog))
 - Include all necessary preconditions
 - Express the final statement using proof terms
 - Keep it simple and convert only explicit information:
@@ -219,30 +210,23 @@ Examples:
 From Context:
 
 Type Definitions:
-(: GoldenRetriver (-> Object Object Type))
-(: Butterfly (-> Object Object Type))
-(: Curious (-> Object Object Type))
-(: Spotted (-> Object Object Object Type))
-(: Garden (-> Object Object Type))
-(: In (-> Object Object Object Type))
+(: GoldenRetriver (-> Object Type))
+(: Butterfly (-> Object Type))
+(: Curious (-> Object Type))
+(: Spotted (-> Object Object Type))
+(: Garden (-> Object Type))
+(: In (-> Object Object Type))
 
 Statements:
 (: max Object)
 (: garden Object)
-(: gardenrel Object)
-(: retriverrel Object)
-(: curiousrel Object)
-(: maxGoldenRetriver (GoldenRetriver retriverrel max))
-(: maxCurious (Curious curiousrel max))
-(: gardenIsGarden (Garden gardenrel garden))
+(: maxGoldenRetriver (GoldenRetriver max))
+(: maxCurious (Curious max))
+(: gardenIsGarden (Garden garden))
 (: bf Object)
-(: butttvrel Object)
-(: bfButterfly (Butterfly butttvrel bf))
-(: spot Object)
-(: spottedrel Object)
-(: prf1 (Spotted spottedrel max bf))
-(: inrel Object)
-(: prf2 (In inrel bf garden))
+(: bfButterfly (Butterfly bf))
+(: max_spotted_bf (Spotted max bf))
+(: bf_in_garden (In bf garden))
 ```
 
 2. Anaphora Resolution:
@@ -253,32 +237,28 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: Book (-> Object Object Type))
-(: Bought (-> Object Object Object Type))
+(: Book (-> Object Type))
+(: Bought (-> Object Object Type))
 
 Statements:
 (: book Object)
-(: bookrel Object)
-(: bookIsBook (Book bookrel book))
-(: purchase Object)
-(: prf2 (Bought purchase john book))
+(: bookIsBook (Book book))
+(: john_bough_book (Bought john book))
 ```
 
 3. Quantifiers:
 "All dogs chase some cat"
 ```
 Type Definitions:
-(: Dog (-> Object Object Type))
-(: Cat (-> Object Object Type))
-(: Chase (-> Object Object Object Type))
+(: Dog (-> Object Type))
+(: Cat (-> Object Type))
+(: Chase (-> Object Object Type))
 
 Statements:
-(: prf1 (-> (Dog $dogrle $dog)
-           (Σ (: $catrel Object) 
-              (Σ (: $cat Object) 
-                 (* (Cat $catrel $cat)
-                    (Σ (: $chaserel Object)
-                       (Chase $chaserel $dog $cat))))))
+(: prf1 (-> (: $prfisdog (Dog $dog))
+              (Σ (: $cat Object)
+                 (* (Cat $cat)
+                    (Chase $dog $cat)))))
 ```
 
 4. Temporal Relations:
@@ -288,75 +268,67 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: TimePoint (-> Object Object Type))
-(: Before (-> Object Object Object Type))
-(: Home (-> Object Object Type))
-(: AtTime (-> Object Object Object Type))
-(: GoTo (-> Object Object Object Type))
-(: Work (-> Object Object Type))
-(: Finish (-> Object Object Object Type))
+(: TimePoint (-> Object Type))
+(: Before (-> Object Object Type))
+(: Home (-> Object Type))
+(: AtTime (-> Object Object Type))
+(: GoTo (-> Object Object Type))
+(: Work (-> Object Type))
+(: Finish (-> Object Object Type))
 
 Statements:
 (: t1 Object)
 (: t2 Object)
-(: tprel1 Object)
-(: tprel2 Object)
-(: t1IsTime (TimePoint tprel1 t1))
-(: t2IsTime (TimePoint tprel2 t2))
+(: t1IsTime (TimePoint t1))
+(: t2IsTime (TimePoint t2))
 (: home Object)
-(: homerel Object)
-(: homeIsHome (Home homerel home))
+(: homeIsHome (Home home))
 (: work Object)
-(: workrel Object)
-(: workIsWork (Work workrel work))
-(: beforerel Object)
-(: prf1 (Before beforerel t1 t2))
-(: going Object)
-(: finishing Object)
-(: prf2 (GoTo going john home))
-(: prf3 (AtTime going t1))
-(: prf4 (Finish finishing john work))
-(: prf5 (AtTime finishing t2))
+(: workIsWork (Work work))
+(: prf1 (Before t1 t2))
+(: john_goes_home (GoTo john home))
+(: prf3 (AtTime john_goes_home t2))
+(: john_finishes_work (Finish john work))
+(: prf5 (AtTime john_finishes_work t1))
 ```
 
 5. Sum Types (|):
 "A pet is either a cat or a dog"
 ```
 Type Definitions:
-(: Pet (-> Object Object Type))
-(: Cat (-> Object Object Type))
-(: Dog (-> Object Object Type))
+(: Pet (-> Object Type))
+(: Cat (-> Object Type))
+(: Dog (-> Object Type))
 
 Statements:
-(: prf1 (-> (Pet $petrel $x) (| (Σ (: $catrel Object) (Cat $catrel $x)) (Σ (: $dogrel Object) (Dog $dogrel $x)))))
+(: prf1 (-> (: $prfispet (Pet $x)) (| (Cat $x) (Dog $x))))
 ```
 
 6. Negation:
 "John is not happy"
 ```
 Type Definitions:
-(: Happy (-> Object Object Type))
+(: Happy (-> Object Type))
 
 Statements:
-(: happyrel Object)
-(: prf1 (Not (Happy happyrel john)))
+(: prf1 (Not (Happy john)))
 ```
 
 6. Location Questions:
 "Where is John?"
 ```
 Type Definitions:
-(: Location (-> Object Object Object Type))
+(: Location (-> Object Object Type))
 
 Questions:
-(: $prf (Location $locrel john $loc))
+(: $prf (Location john $loc))
 ```
 
 7. Relationship Questions:
 "How is Mary related to John?"
 ```
 Questions:
-(: $prf ($rel $relobj mary john))
+(: $prf ($relation mary john))
 ```
 Note if asked how things are related or what they are to each other, don't
 introduce a RelatedTo or similar relationship. Instead ask directly for the
@@ -367,14 +339,13 @@ relationship by putting a Variable in its place.
 ```
 From Context:
 (: car Object)
-(: carrel Object)
-(: carIsCar (Car carrel car))
+(: carIsCar (Car car))
 
 Type Definitions:
-(: Color (-> Object Object Object Type))
+(: Color (-> Object Object Type))
 
 Questions:
-(: $prf (Color $colorrel car $col))
+(: $prf (Color car $col))
 ```
 
 Now we haven't actually provided the context in this example but it can be assumed
@@ -384,11 +355,11 @@ that for such a question there should exist a car in the context.
 "Who is the occupant of the red car?"
 ```
 Type Definitions:
-(: Occupant (-> Object Object Object Type))
-(: Red (-> Object Object Type))
+(: Occupant (-> Object Object Type))
+(: Red (-> Object Type))
 
 Questions:
-(: $prf (* (Car $carrel $car) (* (Red $redrel $car) (Occupant $occupantrel $car $occupant))))
+(: $prf (* (Car $car) (* (Red $car) (Occupant $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
@@ -399,22 +370,33 @@ In this case we are looking for something to has multiple properties so we use a
 From Context:
 
 Type Definitions:
-(: Car (-> Object Object Type))
-(: Red (-> Object Object Type))
-(: Buy (-> Object Object Object Type))
-(: ParkedAt (-> Object Object Object Type))
+(: Car (-> Object Type))
+(: Red (-> Object Type))
+(: Buy (-> Object Object Type))
+(: ParkedAt (-> Object Object Type))
 
 Statements:
 (: car Object)
-(: carrel Object)
-(: carIsCar (Car carrel car))
-(: buying Object)
-(: prf1 (Buy buying john car))
-(: redrel Object)
-(: prf2 (Red redrel car))
+(: carIsCar (Car car))
+(: john_buys_car (Buy john car))
+(: car_is_red (Red car))
 
 Questions:
-(: $prf (ParkedAt $relobj car $location))
+(: $prf (ParkedAt car $location))
+```
+
+11. Asking for an Implication:
+"Are Humans Animals?"
+
+```
+From Context:
+
+Type Definitions:
+
+Statments:
+
+Questions
+(: $prf (-> (: $prfhuman (Human $x)) (Animals $x)))
 ```
 
 For performatives and other expressions without logical meaning just output:
@@ -423,9 +405,9 @@ Performative
 ```
 
 In the context we always have the following objects:
-(: authorSpeaker Object)
-(: readerLister Object)
-(: placeTime Object)
+(: authorSpeaker Object) # The speaker or author of the statement
+(: readerLister Object) # The listener or reader of the statement
+(: placeTime Object) # The place or time of the statement
 """,
             "cache_control": {"type": "ephemeral"}  # Don't cache the variable part
     }]
