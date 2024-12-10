@@ -5,9 +5,10 @@ import os
 from typing import List
 
 class MeTTaHandler:                                                          
-    def __init__(self, file: str):
+    def __init__(self, file: str, read_only: bool = False):
         self.metta = MeTTa()
         self.file = file
+        self._read_only = read_only
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.run("!(bind! &kb (new-space))")
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
@@ -22,12 +23,17 @@ class MeTTaHandler:
     def generate_random_identifier(length=8):                                
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))                                                                   
                                                                              
+    @property
+    def read_only(self) -> bool:
+        return self._read_only
+
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         self.metta.run(f'!(add-atom &kb {atom})')                  
         res = self.metta.run(f'!(fc &kb {atom})')
         out = [str(elem) for elem in res[0]]               
-        self.append_to_file(f"{atom}")
-        [self.append_to_file(elem) for elem in out]
+        if not self.read_only:
+            self.append_to_file(f"{atom}")
+            [self.append_to_file(elem) for elem in out]
         return out
 
     def bc(self, atom: str) -> List[str]:
@@ -58,6 +64,9 @@ class MeTTaHandler:
         return self.metta.run(atom)
                                                                              
     def store_kb_to_file(self):
+        if self.read_only:
+            print("Warning: Cannot store KB in read-only mode")
+            return
         kb_content = self.metta.run('!(match &kb $a $a)')
         with open(self.file, 'w') as f:                                       
             for element in kb_content[0]:
@@ -72,6 +81,9 @@ class MeTTaHandler:
             print(f"Warning: File {self.file} does not exist. No KB loaded.")
 
     def append_to_file(self, elem: str):
+        if self.read_only:
+            print("Warning: Cannot append to file in read-only mode")
+            return
         with open(self.file, 'a') as f:
             f.write(elem)
 
