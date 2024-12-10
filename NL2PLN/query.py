@@ -17,7 +17,7 @@ class KBShell(cmd.Cmd):
         self.debug = False
         self.llm = False
         self.inference = False # Whether to convert inferences to natural language
-        self.metta_handler = MeTTaHandler(kb_file)
+        self.metta_handler = MeTTaHandler(kb_file,read_only=True)
         self.metta_handler.load_kb_from_file()
         self.rag = RAG(collection_name=collection_name)
         self.query_rag = RAG(collection_name=f"{collection_name}_query", reset_db=True)
