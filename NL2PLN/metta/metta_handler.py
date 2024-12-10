@@ -31,7 +31,7 @@ class MeTTaHandler:
         return out
 
     def bc(self, atom: str) -> List[str]:
-        return self.metta.run('!(bc &kb (S (S (S Z))) ' + atom + ')')
+        return self.metta.run('!(bc &kb (S (S Z)) ' + atom + ')')
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.
@@ -59,15 +59,14 @@ class MeTTaHandler:
                                                                              
     def store_kb_to_file(self):
         kb_content = self.metta.run('!(match &kb $a $a)')
-        kb_str = str(kb_content[0][0])[1:-1]
         with open(self.file, 'w') as f:                                       
-            f.write(kb_str)
+            for element in kb_content[0]:
+                f.write(str(element) + "\n")
                                                                              
     def load_kb_from_file(self):
         if os.path.exists(self.file):
             with open(self.file, 'r') as f:                                       
-                kb_content = "(" + f.read() + ")"
-                for elment in kb_content:
+                for elment in f:
                     self.metta.run(f'!(add-atom &kb {elment})')
         else:
             print(f"Warning: File {self.file} does not exist. No KB loaded.")
@@ -112,14 +111,6 @@ if __name__ == "__main__":
     # Verify final context state
     print("\nTesting store_kb_to_file and load_kb_from_file:")
     
-    # Add some test atoms to the KB
-    test_atoms = [
-        "(: test_store1 (PredicateNode Store1))",
-        "(: test_store2 (PredicateNode Store2))"
-    ]
-    for atom in test_atoms:
-        handler.add_to_context(atom)
-    
     # Store the KB to file
     print("Storing KB to file...")
     handler.store_kb_to_file()
@@ -131,10 +122,9 @@ if __name__ == "__main__":
     
     # Verify the loaded KB
     print("\nVerifying loaded KB contents:")
-    loaded_context = new_handler.run("!(match &kb (: $a $b) $b)")
+    loaded_context = new_handler.run("!(match &kb $a $b)")
     print("Loaded KB contents:", loaded_context[0])
     
     # Clean up test file
-    import os
     if os.path.exists('kb_backup.json'):
         os.remove('kb_backup.json')
