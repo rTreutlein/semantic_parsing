@@ -324,14 +324,14 @@ Type Definitions:
 (: Location (-> Object Object Type))
 
 Questions:
-(: $prf (Location john $loc))
+(: $john_location_prf (Location john $loc))
 ```
 
 7. Relationship Questions:
 "How is Mary related to John?"
 ```
 Questions:
-(: $prf ($relation mary john))
+(: $mary_john_relation_prf ($relation mary john))
 ```
 Note if asked how things are related or what they are to each other, don't
 introduce a RelatedTo or similar relationship. Instead ask directly for the
@@ -348,7 +348,7 @@ Type Definitions:
 (: Color (-> Object Object Type))
 
 Questions:
-(: $prf (Color car $col))
+(: $color_car_prf (Color car $col))
 ```
 
 Now we haven't actually provided the context in this example but it can be assumed
@@ -362,7 +362,7 @@ Type Definitions:
 (: Red (-> Object Type))
 
 Questions:
-(: $prf (* (Car $car) (* (Red $car) (Occupant $car $occupant))))
+(: $red_car_occupant_prf (* (Car $car) (* (Red $car) (Occupant $car $occupant))))
 ```
 
 In this case we are looking for something to has multiple properties so we use a Product
@@ -385,7 +385,7 @@ Statements:
 (: car_is_red (Red car))
 
 Questions:
-(: $prf (ParkedAt car $location))
+(: $parked_car_prf (ParkedAt car $location))
 ```
 
 11. Asking for an Implication:
@@ -399,7 +399,7 @@ Type Definitions:
 Statments:
 
 Questions
-(: $prf (-> (: $prfhuman (Human $x)) (Animals $x)))
+(: $humans_are_animals_prf (-> (: $prfhuman (Human $x)) (Animals $x)))
 ```
 
 For performatives and other expressions without logical meaning just output:
