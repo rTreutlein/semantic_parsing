@@ -138,6 +138,9 @@ Guidelines for the conversion:
   * | for sum types (disjoint unions)
   * * for product types (pairs/tuples)
   * Not for negation (from Type to Type)
+- Never introduce unnecessary Object declarations in dependent products
+  * INCORRECT: (-> (: $x Object) (-> (: $x_is_pred (Pred $x)) (Result)))
+  * CORRECT: (-> (: $x_is_pred (Pred $x)) (Result))
 - For questions use a Variable $var (always start with a $)
   * Where is X => (: $prf (Location X $loc))
   * How is X related to Y => (: $prf ($rel X Y))
