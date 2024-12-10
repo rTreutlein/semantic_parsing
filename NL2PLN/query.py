@@ -12,17 +12,21 @@ class KBShell(cmd.Cmd):
     intro = 'Welcome to the Knowledge Base shell. Type help or ? to list commands.\n'
     prompt = 'KB> '
 
-    def __init__(self, kb_file: str, collection_name: str):
+    def __init__(self, kb_file: str | None = None, collection_name: str = "default"):
         super().__init__()
         self.debug = False
         self.llm = False
         self.inference = False # Whether to convert inferences to natural language
-        self.metta_handler = MeTTaHandler(kb_file,read_only=True)
-        self.metta_handler.load_kb_from_file()
+        if kb_file:
+            self.metta_handler = MeTTaHandler(kb_file, read_only=True)
+            self.metta_handler.load_kb_from_file()
+            print(f"Loaded knowledge base from {kb_file}")
+        else:
+            self.metta_handler = MeTTaHandler("", read_only=True)
+            print("No knowledge base file specified, starting with empty KB")
         self.rag = RAG(collection_name=collection_name)
         self.query_rag = RAG(collection_name=f"{collection_name}_query", reset_db=True)
         self.conversation_history = []
-        print(f"Loaded knowledge base from {kb_file}")
         print("Type 'exit' to quit")
 
     def default(self, line: str):
@@ -191,10 +195,14 @@ class KBShell(cmd.Cmd):
 
 def main():
     parser = argparse.ArgumentParser(description="Interactive shell for querying the knowledge base.")
-    parser.add_argument("kb_file", help="Path to the knowledge base file (.metta)")
+    parser.add_argument("--kb-file", help="Path to the knowledge base file (.metta)", default=None)
     args = parser.parse_args()
 
-    collection_name = os.path.splitext(os.path.splitext(os.path.basename(args.kb_file))[0])[0]
+    if args.kb_file:
+        collection_name = os.path.splitext(os.path.splitext(os.path.basename(args.kb_file))[0])[0]
+    else:
+        collection_name = "default"
+    
     KBShell(args.kb_file, f"{collection_name}_pln").cmdloop()
 
 if __name__ == "__main__":
