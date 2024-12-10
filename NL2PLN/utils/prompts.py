@@ -34,9 +34,16 @@ Guidelines for the conversion:
 - Preserve temporal relationships and conditions
 - Express complex relationships in simple, clear language
 - Maintain logical precision while using natural phrasing
+- For proof traces:
+  * Explain the reasoning steps that led to the conclusion
+  * Convert each proof step into natural language
+  * Connect steps with words like "because", "since", "as"
+  * Present the reasoning in a clear, logical order
 
 Your output must be enclosed in triple backticks (```).
-The output should be a single, clear English sentence that captures the complete meaning.
+The output should include:
+1. A clear English sentence that captures the complete meaning
+2. If a proof trace is present, add "Because:" followed by the step-by-step reasoning
 Do not include any comments or explanations in your output.
 Here are some examples of PLN to natural language conversion:
 
