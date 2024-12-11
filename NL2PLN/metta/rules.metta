@@ -20,8 +20,8 @@
 !(add-atom &kb (: fst (-> (: $prf (* $a $b)) $a)))
 !(add-atom &kb (: snd (-> (: $prf (* $a $b)) $b)))
 
-;!(add-atom &kb (: MkSumLeft (-> (: $a $at) (+ $at $bt))))
-;!(add-atom &kb (: MkSumRight (-> (: $b $bt) (+ $at $bt))))
+!(add-atom &kb (: MkSumLeft (-> (: $a $at) (| $at $bt))))
+!(add-atom &kb (: MkSumRight (-> (: $b $bt) (| $at $bt))))
 
 !(add-atom &kb (: transitive (-> (: $ab (-> (: $x $a) $b)) 
                              (-> (: $bc (-> (: $x $b) $c)) 
