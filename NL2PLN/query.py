@@ -164,6 +164,7 @@ class KBShell(cmd.Cmd):
                 "from_context": pln_data["from_context"],
             })
             for statement in pln_data["statements"]:
+                print("Got statement: " + statement)
                 result = self.metta_handler.add_atom_and_run_fc(statement)
                 if result:
                     fc_results.extend(result)
@@ -180,12 +181,12 @@ class KBShell(cmd.Cmd):
 
         if pln_data["questions"]:
             print("Processing as query (backward chaining)")
-            metta_results = self.metta_handler.bc(pln_data["questions"][0])
+            metta_results = self.metta_handler.bc(pln_data["questions"][0])[0]
             if self.debug: print("metta_results:" + str(metta_results))
             for result in metta_results:
                 if result:
                     english = convert_to_english(result, user_input, similar_examples)
-                    print(f"- {result} => {english}")
+                    print(f"- {result} => {english}\n")
                 else:
                     print("Can't prove the query.")
 
