@@ -22,30 +22,62 @@
           $q                            ; Query
           $r))                          ; Result
 
-;; Base cases
-
-;; Match the knowledge base
+;; Base case
 (= (bc $kb $_ (: $prf $thrm))
    (match $kb (: $prf $thrm) (: $prf $thrm)))
 
-; Recursive steps
+; Recursive step
 (= (bc $kb (S $k) (: ($prfabs $prfarg) $thrm))
    (let* (((: $prfabs (-> (: $prfarg $prms) $thrm))
            (bc $kb $k (: $prfabs (-> (: $prfarg $prms) $thrm))))
           ((: $prfarg $prms)
            (bc $kb $k (: $prfarg $prms))))
-     (: ($prfabs $prfarg) $thrm)))
+     (unify $kb (: ($prfabs $prfarg) $thrm) (Empty) (: ($prfabs $prfarg) $thrm))))
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Forward chainer ;;
+;;;;;;;;;;;;;;;;;;;;;
+
+(: fc (-> $a                            ; Knowledge base space
+          Nat                           ; Maximum depth
+          $q                            ; Query
+          $r))                          ; Result
+
+;;Base case
+(= (fc $kb $_ (: $prf $thrm)) (: $prf $thrm))
+
+;;Recursive step
+(= (fc $kb (S $k) (: $prfarg $prms))
+    (let (: $prfabs (-> (: $prfarg $prms) $ccln)) 
+         (bc $kb $k (: $prfabs (-> (: $prfarg $prms) $ccln)))
+         (fc $kb $k (: ($prfabs $prfarg) $ccln))))
+
+(= (fc $kb (S $k) (: $prfabs (-> (: $prfarg $prms) $ccln)))
+   (let (: $prfarg $prms) 
+        (bc $kb $k (: $prfarg $prms)))
+        (fc $kb $k (: ($prfabs $prfarg) $ccln)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;; Define ad-atom-nodup, that adds an atom only if it is not already
 ;; in the atomspace
 (: add-atom-nodup (-> $st Atom ()))
 (= (add-atom-nodup $space $atom)
    (case (match $space $atom $atom)
-     (($atom ())
+     (($atom (Empty))
       (Empty (add-atom $space $atom)))))
 
-(= (fc $kb (: $prf $_))
-    (let* (($out (bc $kb (S (S Z)) (: ($prfabs $prf) $thrm)))
+(= (ddfc $kb $query)
+    (let* (($out (fc $kb (S (S Z)) $query))
+           ($dummy (add-atom-nodup $kb $out))
+          )
+    $out
+))
+
+;;deduplicatig bc
+(= (ddbc $kb $query)
+    (let* (($out (bc $kb (S (S Z)) $query))
            ($dummy (add-atom-nodup $kb $out))
           )
     $out

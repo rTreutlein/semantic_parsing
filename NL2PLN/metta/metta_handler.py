@@ -29,7 +29,7 @@ class MeTTaHandler:
 
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         self.metta.run(f'!(add-atom &kb {atom})')                  
-        res = self.metta.run(f'!(fc &kb {atom})')
+        res = self.metta.run(f'!(ddfc &kb {atom})')
         out = [str(elem) for elem in res[0]]               
         if not self.read_only:
             self.append_to_file(f"{atom}")
@@ -37,7 +37,7 @@ class MeTTaHandler:
         return out
 
     def bc(self, atom: str) -> List[str]:
-        return self.metta.run('!(bc &kb (S (S Z)) ' + atom + ')')
+        return self.metta.run('!(ddbc &kb ' + atom + ')')
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.
