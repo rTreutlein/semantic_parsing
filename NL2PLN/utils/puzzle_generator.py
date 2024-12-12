@@ -9,6 +9,7 @@ class LogicPuzzleGenerator:
 1. Write a short story that contains logical premises hidden in natural language
 2. The story should be casual and natural, not obviously a logic puzzle
 3. Split the story into Premises and Conclusion
+4. Start a new line for each Sentence
 
 Format your response as:
 Premises:
@@ -30,7 +31,7 @@ Conclusion:
         """
         response = create_openai_completion(
             system_msg=self.system_prompt,
-            user_msg="Generate a logic puzzle about everyday situations that can be solved using simple logical reasoning.",
+            user_msg=[{"role": "user", "content": "Generate a logic puzzle about everyday situations that can be solved using simple logical reasoning."}],
             model="claude-3-5-sonnet-20241022"
         )
         
