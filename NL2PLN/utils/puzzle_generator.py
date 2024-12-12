@@ -6,26 +6,17 @@ class LogicPuzzleGenerator:
     
     def __init__(self):
         self.system_prompt = """You are a logic puzzle creator. Create puzzles following these rules:
-1. Write a short story (2-3 paragraphs) that contains logical premises hidden in natural language
+1. Write a short story that contains logical premises hidden in natural language
 2. The story should be casual and natural, not obviously a logic puzzle
-3. Include 3-4 clear logical premises that can lead to a conclusion
-4. Provide the formal logical representation of each premise and the conclusion
-5. Use only simple predicates and implications
+3. Split the story into Premises and Conclusion
 
 Format your response as:
-STORY:
-[Your story here]
+Premises:
+[The beginning of the story containing the premises here]
 
-PREMISES:
-1. [First premise in natural language]
-2. [Second premise in natural language]
-...
-
-LOGICAL_FORM:
-[Premise 1 in predicate logic]
-[Premise 2 in predicate logic]
-...
-[Conclusion in predicate logic]"""
+Conclusion:
+[The conclusion of the story here]
+"""
 
     def generate_puzzle(self) -> Dict[str, str]:
         """
@@ -49,7 +40,7 @@ LOGICAL_FORM:
         current_content = []
         
         for line in response.split('\n'):
-            if line.strip() in ['STORY:', 'PREMISES:', 'LOGICAL_FORM:']:
+            if line.strip() in ['Premises:', 'Conclusion:']:
                 if current_section:
                     sections[current_section] = '\n'.join(current_content).strip()
                 current_section = line.strip()[:-1].lower()
@@ -61,28 +52,3 @@ LOGICAL_FORM:
             sections[current_section] = '\n'.join(current_content).strip()
             
         return sections
-
-    def validate_puzzle(self, puzzle: Dict[str, str]) -> bool:
-        """
-        Validates that the generated puzzle meets our requirements.
-        
-        Args:
-            puzzle: Dictionary containing story, premises, and logical form
-            
-        Returns:
-            bool: True if the puzzle is valid
-        """
-        # Basic validation checks
-        if not all(k in puzzle for k in ['story', 'premises', 'logical_form']):
-            return False
-            
-        # Story should be substantial but not too long
-        if not (50 <= len(puzzle['story'].split()) <= 200):
-            return False
-            
-        # Should have multiple premises in logical form
-        logical_statements = [s for s in puzzle['logical_form'].split('\n') if s.strip()]
-        if len(logical_statements) < 3:  # At least 2 premises + 1 conclusion
-            return False
-            
-        return True
