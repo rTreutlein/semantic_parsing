@@ -10,6 +10,7 @@ class LogicPuzzleGenerator:
 2. The story should be casual and natural, not obviously a logic puzzle
 3. Split the story into Premises and Conclusion
 4. Start a new line for each Sentence
+5. Include common sense knowledge required to solve the puzzle
 
 Format your response as:
 Premises:
@@ -17,6 +18,24 @@ Premises:
 
 Conclusion:
 [The conclusion of the story here]
+
+Common Sense Knowledge:
+[List the common sense facts needed to solve this puzzle]
+
+Here's an example:
+
+Premises:
+John always takes his umbrella when it rains.
+This morning, John left his umbrella at home.
+
+Conclusion:
+It wasn't raining this morning.
+
+Common Sense Knowledge:
+- If someone always does A when B occurs, and they didn't do A, then B didn't occur
+- Morning is a time of day
+- People can choose whether to take or leave items
+- Umbrellas are items that can be carried
 """
 
     def generate_puzzle(self) -> Dict[str, str]:
@@ -52,4 +71,6 @@ Conclusion:
         if current_section:
             sections[current_section] = '\n'.join(current_content).strip()
             
+        # Add empty string if common sense section is missing
+        sections['common_sense'] = sections.get('common sense knowledge', '')
         return sections
