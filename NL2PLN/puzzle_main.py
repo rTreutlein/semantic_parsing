@@ -109,32 +109,25 @@ def main():
         puzzle_sections = puzzle_gen.generate_puzzle()
         print(puzzle_sections)
         
+        def process_section(section_name, sentences):
+            print(f"\nProcessing {section_name}:")
+            for sentence in sentences:
+                if sentence.strip():
+                    # Remove bullet points if present for common sense section
+                    cleaned_sentence = sentence.lstrip('- ').strip() if section_name == "common sense knowledge" else sentence.strip()
+                    if cleaned_sentence:
+                        result = process_sentence(cleaned_sentence, rag, metta_handler, 
+                                               previous_sentences[-10:] if previous_sentences else [])
+                        if result:
+                            previous_sentences.append(cleaned_sentence)
+                            if len(previous_sentences) > 10:
+                                previous_sentences.pop(0)
+
         # Process common sense knowledge first
-        print("\nProcessing common sense knowledge:")
-        common_sense = puzzle_sections.get('common_sense', '').split('\n')
-        for sentence in common_sense:
-            if sentence.strip():
-                # Remove bullet points if present
-                sentence = sentence.lstrip('- ').strip()
-                if sentence:
-                    result = process_sentence(sentence, rag, metta_handler, 
-                                           previous_sentences[-10:] if previous_sentences else [])
-                    if result:
-                        previous_sentences.append(sentence)
-                        if len(previous_sentences) > 10:
-                            previous_sentences.pop(0)
+        process_section("common sense knowledge", puzzle_sections.get('common_sense', '').split('\n'))
 
         # Process premises next
-        print("\nProcessing premises:")
-        premises = puzzle_sections.get('premises', '').split('\n')
-        for sentence in premises:
-            if sentence.strip():
-                result = process_sentence(sentence, rag, metta_handler, 
-                                       previous_sentences[-10:] if previous_sentences else [])
-                if result:
-                    previous_sentences.append(sentence)
-                    if len(previous_sentences) > 10:
-                        previous_sentences.pop(0)
+        process_section("premises", puzzle_sections.get('premises', '').split('\n'))
         
         # Process conclusion using backward chaining
         print("\nProcessing conclusion:")
