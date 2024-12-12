@@ -2,7 +2,7 @@ from hyperon import MeTTa
 import random
 import string
 import os
-from typing import List
+from typing import List, Tuple
 
 class MeTTaHandler:                                                          
     def __init__(self, file: str, read_only: bool = False):
