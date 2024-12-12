@@ -107,6 +107,7 @@ def main():
     for i in range(args.num_puzzles):
         print(f"\nGenerating puzzle {i+1}/{args.num_puzzles}")
         puzzle_sections = puzzle_gen.generate_puzzle()
+        print(puzzle_sections)
         
         # Process premises first
         print("\nProcessing premises:")
