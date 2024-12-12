@@ -109,7 +109,22 @@ def main():
         puzzle_sections = puzzle_gen.generate_puzzle()
         print(puzzle_sections)
         
-        # Process premises first
+        # Process common sense knowledge first
+        print("\nProcessing common sense knowledge:")
+        common_sense = puzzle_sections.get('common_sense', '').split('\n')
+        for sentence in common_sense:
+            if sentence.strip():
+                # Remove bullet points if present
+                sentence = sentence.lstrip('- ').strip()
+                if sentence:
+                    result = process_sentence(sentence, rag, metta_handler, 
+                                           previous_sentences[-10:] if previous_sentences else [])
+                    if result:
+                        previous_sentences.append(sentence)
+                        if len(previous_sentences) > 10:
+                            previous_sentences.pop(0)
+
+        # Process premises next
         print("\nProcessing premises:")
         premises = puzzle_sections.get('premises', '').split('\n')
         for sentence in premises:
