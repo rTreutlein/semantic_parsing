@@ -89,10 +89,15 @@ def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
     parser.add_argument("--output", default="puzzle", help="Base name for output files")
     parser.add_argument("--num-puzzles", type=int, default=1, help="Number of puzzles to generate")
+    parser.add_argument("--example", action="store_true", help="Run the example puzzle")
     args = parser.parse_args()
 
     # Initialize puzzle generator
-    puzzle_gen = LogicPuzzleGenerator()
+    if args.example:
+        from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
+        puzzle_gen = ExamplePuzzleGenerator()
+    else:
+        puzzle_gen = LogicPuzzleGenerator()
     
     # Initialize MeTTa handler
     metta_handler = MeTTaHandler(f"{args.output}.metta")
