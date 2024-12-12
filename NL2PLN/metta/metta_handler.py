@@ -36,8 +36,18 @@ class MeTTaHandler:
             [self.append_to_file(elem) for elem in out]
         return out
 
-    def bc(self, atom: str) -> List[str]:
-        return self.metta.run('!(ddbc &kb ' + atom + ')')
+    def bc(self, atom: str) -> Tuple[List[str], bool]:
+        """Run backward chaining on an atom.
+        
+        Returns:
+            Tuple containing:
+            - List of intermediate steps/proofs
+            - Boolean indicating if the conclusion was proven
+        """
+        results = self.metta.run('!(ddbc &kb ' + atom + ')')
+        # If we got any results back, the conclusion was proven
+        proven = len(results[0]) > 0
+        return [str(elem) for elem in results[0]], proven
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.

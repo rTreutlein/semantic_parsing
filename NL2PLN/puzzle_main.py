@@ -106,10 +106,12 @@ def main():
     previous_sentences = []
     for i in range(args.num_puzzles):
         print(f"\nGenerating puzzle {i+1}/{args.num_puzzles}")
-        puzzle = puzzle_gen.generate_puzzle()
+        puzzle_sections = puzzle_gen.generate_puzzle()
         
-        # Process each sentence in the puzzle
-        for sentence in puzzle.split('\n'):
+        # Process premises first
+        print("\nProcessing premises:")
+        premises = puzzle_sections.get('premises', '').split('\n')
+        for sentence in premises:
             if sentence.strip():
                 result = process_sentence(sentence, rag, metta_handler, 
                                        previous_sentences[-10:] if previous_sentences else [])
@@ -117,6 +119,26 @@ def main():
                     previous_sentences.append(sentence)
                     if len(previous_sentences) > 10:
                         previous_sentences.pop(0)
+        
+        # Process conclusion using backward chaining
+        print("\nProcessing conclusion:")
+        conclusion = puzzle_sections.get('conclusion', '').strip()
+        if conclusion:
+            similar = rag.search_similar(conclusion, limit=5)
+            similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
+                              for item in similar if 'sentence' in item]
+            
+            pln_data = convert_logic(conclusion, nl2pln, similar_examples, previous_sentences)
+            if pln_data != "Performative":
+                print(f"\nAttempting to prove conclusion: {conclusion}")
+                for statement in pln_data["statements"]:
+                    proof_steps, proven = metta_handler.bc(statement)
+                    print(f"\nConclusion statement: {statement}")
+                    print(f"Proven: {proven}")
+                    if proof_steps:
+                        print("Proof steps:")
+                        for step in proof_steps:
+                            print(f"  {step}")
 
 if __name__ == "__main__":
     main()
