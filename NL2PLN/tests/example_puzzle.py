@@ -1,4 +1,4 @@
- from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator                                   
+ from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
                                                                                                   
  class ExamplePuzzleGenerator(LogicPuzzleGenerator):                                              
      def generate_puzzle(self):                                                                   
