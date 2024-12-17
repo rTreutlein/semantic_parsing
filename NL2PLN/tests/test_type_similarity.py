@@ -81,7 +81,7 @@ class TestTypeSimilarityHandler(unittest.TestCase):
 
 def main():
     """Interactive loop for testing type similarities"""
-    handler = TypeSimilarityHandler()
+    handler = TypeSimilarityHandler("testingloop")
     print("Type Similarity Interactive Tester")
     print("Enter type definitions one per line. Empty line to analyze, 'quit' to exit.")
     

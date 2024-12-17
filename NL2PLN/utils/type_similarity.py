@@ -36,11 +36,8 @@ class TypeSimilarityHandler:
             "text": (
                 "You are a logical reasoning expert. Analyze the similarities between types "
                 "and suggest logical statements that link them using dependent type theory.\n\n"
-                "Use these type operators:\n"
-                "* -> for functions and dependent products (Π types)\n"
-                "* Σ for dependent sums (existential types)\n"
-                "* | for sum types (disjoint unions)\n"
-                "* * for product types (pairs/tuples)\n"
+                "Use only these type operators:\n"
+                "* -> for functions/dependent products (Π types)\n"
                 "* Not for negation (from Type to Type)\n\n"
                 
                 "Examples of relationships:\n"
@@ -54,17 +51,15 @@ class TypeSimilarityHandler:
                 "Type 2: (: Take (-> Object Object Type))\n"
                 "Relationship: (: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))\n\n"
 
-                "3. Sum types:\n"
-                "Type 1: (: Cat (-> Object Type))\n"
-                "Type 2: (: Dog (-> Object Type))\n"
-                "Type 3: (: Pet (-> Object Type))\n"
-                "Relationship: (: PetIsCatOrDog (-> (: $p (Pet $x)) (| (Cat $x) (Dog $x))))\n\n"
-
-                "4. Product types:\n"
+                "3. Curried functions:\n"
+                "Input;"
                 "Type 1: (: Vehicle (-> Object Type))\n"
                 "Type 2: (: Red (-> Object Type))\n"
-                "Relationship: (: RedVehicle (-> Object Type))\n"
-                "Definition: (: IsRedVehicle (-> (: $x Object) (* (Vehicle $x) (Red $x))))\n\n"
+                "Type 3: (: RedVehicle (-> Object Type))\n"
+                "Output:"
+                "```"
+                "(: ToRedVehicle (-> (Vehicle $x) (-> (Red $x) (RedVehicle $x))))\n\n"
+                "```"
 
                 "Try to think of a counter example before suggesting a relationship.\n"
                 "Return only valid MeTTa statements.\n"
