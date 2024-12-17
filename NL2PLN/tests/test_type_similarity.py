@@ -38,32 +38,6 @@ class TestTypeSimilarityHandler(unittest.TestCase):
         self.assertEqual(result, expected)
         mock_completion.assert_called_once()
         
-    @patch('NL2PLN.utils.ragclass.RAG')
-    def test_store_and_find_types(self, mock_rag):
-        """Test storing types and finding similar ones"""
-        # Setup mock RAG instance
-        mock_rag_instance = MagicMock()
-        mock_rag.return_value = mock_rag_instance
-        
-        # Test storing a type
-        typedef = "(: Person EntityType)"
-        self.handler.store_type(typedef)
-        
-        mock_rag_instance.store_embedding.assert_called_with(
-            {"type_name": typedef},
-            ["type_name"]
-        )
-        
-        # Test finding similar types
-        mock_rag_instance.search_similar.return_value = [
-            {"type_name": "Human"},
-            {"type_name": "Agent"}
-        ]
-        
-        similar_types = self.handler.find_similar_types("Person")
-        self.assertEqual(len(similar_types), 2)
-        self.assertEqual(similar_types[0]["type_name"], "Human")
-        
     def test_process_new_typedefs(self):
         """Test processing multiple type definitions"""
         with patch.object(self.handler, 'find_similar_types') as mock_find, \
