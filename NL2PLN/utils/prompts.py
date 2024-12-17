@@ -1,4 +1,4 @@
-def pln2nl(pln: str, user_input: str, similar_examples: list[str], previous_sentences: list[str]):
+def pln2nl(pln: str, user_input: str, similar_examples: list[str], previous_sentences: list[str]) -> tuple[list[dict], list[dict]]:
     """Convert PLN to natural language with prompt structure.
     
     Args:
@@ -116,7 +116,7 @@ Now, please convert this formal logic expression into natural language:
     
     return system_msg, user_msg
 
-def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]):
+def nl2pln(sentence: str, similar_lst: list[str], previous_lst: list[str]) -> tuple[list[dict], list[dict]]:
     """Convert natural language to PLN with optional prompt caching support.
     
     Args:
