@@ -33,21 +33,24 @@ class TypeSimilarityHandler:
             
         system_msg = [{
             "type": "text",
-            "text": """You are a logical reasoning expert. Analyze the similarities between types
-and suggest logical statements that link them. Focus on inheritance, equivalence, and subset relationships.
-Return only valid MeTTa statements.""",
+            "text": (
+                "You are a logical reasoning expert. Analyze the similarities between types "
+                "and suggest logical statements that link them. Focus on inheritance, "
+                "equivalence, and subset relationships. Return only valid MeTTa statements."
+            ),
             "cache_control": {"type": "ephemeral"}
         }]
         
         user_msg = [{
             "role": "user",
-            "content": f"""New type: {new_type}
-Similar existing types:
-{[t['type_name'] for t in similar_types]}
-
-Generate logical statements linking these types if appropriate.
-Only generate statements if there are clear logical relationships.
-Use standard logical predicates like Inheritance, Similarity, etc."""
+            "content": (
+                f"New type: {new_type}\n"
+                f"Similar existing types:\n"
+                f"{[t['type_name'] for t in similar_types]}\n\n"
+                "Generate logical statements linking these types if appropriate. "
+                "Only generate statements if there are clear logical relationships. "
+                "Use standard logical predicates like Inheritance, Similarity, etc."
+            )
         }]
 
         response = create_openai_completion(system_msg, user_msg)
