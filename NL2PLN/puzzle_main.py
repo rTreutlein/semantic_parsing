@@ -8,6 +8,7 @@ from NL2PLN.utils.checker import HumanCheck
 from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
 from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
+from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
 def convert_logic(input_text, prompt_func, similar_examples, previous_sentences=None):
     system_msg, user_msg = prompt_func(input_text, similar_examples, previous_sentences or [])
@@ -68,13 +69,22 @@ def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
     if pln_data == "Performative":
         return True
     
-    # Add type definitions to MeTTa KB first
+    # Process type definitions first
+    type_names, linking_statements = type_handler.process_new_typedefs(pln_data["type_definitions"])
+    
+    # Add type definitions and any discovered type relationships to MeTTa KB
     for type_def in pln_data["type_definitions"]:
         conflict = metta_handler.add_to_context(type_def)
         if isinstance(conflict, str):
             print(f"ERROR: Conflict detected! Type definition {type_def} conflicts with existing atom: {conflict}")
             input("Press Enter to continue...")
             return False
+            
+    # Add any discovered type relationships
+    for linking_stmt in linking_statements:
+        conflict = metta_handler.add_to_context(linking_stmt)
+        if isinstance(conflict, str):
+            print(f"WARNING: Type relationship {linking_stmt} conflicts with existing atom: {conflict}")
     
     # Then add and process all statements
     store_results(rag, line, pln_data)
@@ -108,8 +118,9 @@ def main():
     print("Loaded kb:")
     print(metta_handler.run("!(kb)"))
 
-    # Initialize RAG
+    # Initialize RAG and TypeSimilarityHandler
     rag = RAG(collection_name=f"{args.output}_pln")
+    type_handler = TypeSimilarityHandler(collection_name=f"{args.output}_types")
 
     previous_sentences = []
     for i in range(args.num_puzzles):
