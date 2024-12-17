@@ -33,14 +33,22 @@ class RAG:
             print(f"Error occurred while getting embedding: {str(e)}")
             raise
 
-    def store_embedding(self, data):
+    def store_embedding(self, data, embedding_fields=None):
         """
         Store the embedding of a JSON object in Qdrant.
+        
+        Args:
+            data: Dictionary containing the data to store
+            embedding_fields: List of field names to use for embedding generation.
+                            Defaults to ['sentence', 'pln'] if None
         """
         if not isinstance(data, dict):
             raise ValueError("Input must be a dictionary (JSON object)")
         
-        text = data.get('sentence', '') + ' ' + data.get('pln', '')
+        if embedding_fields is None:
+            embedding_fields = ['sentence', 'pln']
+            
+        text = ' '.join(data.get(field, '') for field in embedding_fields)
         embedding = self.get_embedding(text)
         
         self.qdrant_client.upsert(
