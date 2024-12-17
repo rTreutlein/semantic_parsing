@@ -130,7 +130,12 @@ def process_file(file_path: str, process_sentence_func: callable, skip_lines: in
         if os.path.exists(temp_path):
             os.unlink(temp_path)
 
-def create_openai_completion(system_msg, user_msg, model: str = "claude-3-5-sonnet-20241022", max_retries: int = 3) -> str:
+def create_openai_completion(
+    system_msg: list[dict[str, str | dict]], 
+    user_msg: list[dict[str, str]], 
+    model: str = "claude-3-5-sonnet-20241022", 
+    max_retries: int = 3
+) -> str:
     # Convert message format for Anthropic
     retry_count = 0
     base_delay = 1  # Start with 1 second delay
