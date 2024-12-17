@@ -36,7 +36,12 @@ class TypeSimilarityHandler:
             "text": (
                 "You are a logical reasoning expert. Analyze the similarities between types "
                 "and suggest logical statements that link them. Focus on inheritance, "
-                "equivalence, and subset relationships. Return only valid MeTTa statements."
+                "equivalence, subset relationships, and action relationships.\n\n"
+                "Example of action relationship:\n"
+                "Type 1: (: LeaveSomething (-> Object Object Type))\n"
+                "Type 2: (: Take (-> Object Object Type))\n"
+                "Relationship: (: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))\n\n"
+                "Return only valid MeTTa statements."
             ),
             "cache_control": {"type": "ephemeral"}
         }]
