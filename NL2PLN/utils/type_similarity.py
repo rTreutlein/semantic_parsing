@@ -62,8 +62,11 @@ class TypeSimilarityHandler:
                 "```"
 
                 "Try to think of a counter example before suggesting a relationship.\n"
+                "Don't invent new Types use only the ones provided.\n"
+                "Only create Relations which are always true. If something is only possible ignore it.\n"
                 "Return only valid MeTTa statements.\n"
                 "The Final Output should be surrounded by triple backticks (```) and consist of one statement per line."
+                "It is fine to return nothing."
             ),
             "cache_control": {"type": "ephemeral"}
         }]
@@ -80,6 +83,8 @@ class TypeSimilarityHandler:
         }]
 
         response = create_openai_completion(system_msg, user_msg)
+
+        print(response)
         
         # Extract content between triple backticks
         if '```' in response:

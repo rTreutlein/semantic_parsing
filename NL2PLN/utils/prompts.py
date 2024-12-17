@@ -154,6 +154,7 @@ Guidelines for the conversion:
 - Never introduce unnecessary Object declarations in dependent products
   * INCORRECT: (-> (: $x Object) (-> (: $x_is_pred (Pred $x)) (Result)))
   * CORRECT: (-> (: $x_is_pred (Pred $x)) (Result))
+  * (Prex $x) already implies (: $x Object) so you don't need to add it.
 - For questions use a Variable $var (always start with a $)
   * Where is X => (: $prf (Location X $loc))
   * How is X related to Y => (: $prf ($rel X Y))
@@ -200,6 +201,14 @@ Guidelines for the conversion:
   * Only include directly referenced objects from context
   * If new statement conflicts with context, output "Error: Conflicts with context because [reason]"
   * Use context to resolve anaphora (e.g., "the car" may refer to specific car with known properties)
+
+- For Temporal or Spatial statments we can annotate types using the following:
+  * (: AtTime (-> Type Object Type))
+  * (: AtPlace (-> Type Object Type))
+  * (: AtTimePlace (-> Type Object Ojbect Type))
+- When comming up with the name of a type/predicate try to make sure it's not ambiguous.
+  * For example "Leave" is ambiguous because it could mean "leave a location" or "leave something in a location".
+  * So use the more expliction version of "LeaveSomething" or "LeaveLocation" instead.
 
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
@@ -415,6 +424,26 @@ Questions
 (: $humans_are_animals_prf (-> (: $prfhuman (Human $x)) (Animals $x)))
 ```
 
+12. Temporal/Spatial Example:
+"John left his umbrella this morning."
+
+```
+From Context:
+Type Definitions:
+(: LeaveSomething (-> Object Object Type))
+(: Umbrella (-> Object Type))
+(: Morning (-> Object Type))
+
+Statements:
+(: john Object)
+(: umbrella Object)
+(: umbrellaIsUmbrella (Umbrella umbrella))
+(: morning Object)
+(: morningIsMorning (Morning morning))
+(: johnLeavesUmbrella (AtTime (LeaveWith john umbrella) morning))
+```
+
+
 For performatives and other expressions without logical meaning just output:
 ```
 Performative
@@ -439,7 +468,9 @@ If the following sentence talks about objects already mentioned in the context d
 And here are the sentences that have come before so you can resolve anaphora:
 {previous}
 
-Now, convert the following English sentence into formal logic using dependent types:
+Now, convert the following English sentence into formal logic using dependent types.
+Think carefully as you do so and make sure to consider all instructions before returing the final answer.
+Input:
 {sentence}
 """,
 }]
