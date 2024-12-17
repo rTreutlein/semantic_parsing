@@ -35,13 +35,21 @@ class TypeSimilarityHandler:
             "type": "text",
             "text": (
                 "You are a logical reasoning expert. Analyze the similarities between types "
-                "and suggest logical statements that link them. Focus on inheritance, "
-                "equivalence, subset relationships, and action relationships.\n\n"
-                "Example of action relationship:\n"
+                "and suggest logical statements that link them."
+                "Examples of relationships:\n"
+
+                "Type 1: (: Apple (-> Object Type))\n"
+                "Type 2: (: Fruit (-> Object Type))\n"
+                "Relationship: (: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))\n\n"
+
                 "Type 1: (: LeaveSomething (-> Object Object Type))\n"
                 "Type 2: (: Take (-> Object Object Type))\n"
                 "Relationship: (: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))\n\n"
                 "Return only valid MeTTa statements."
+
+                "Try to think of a counter example before suggesting a relationship."
+
+                "The Final Output should be surround by triple backticks (```) and consist of one statement per line."
             ),
             "cache_control": {"type": "ephemeral"}
         }]
@@ -52,9 +60,8 @@ class TypeSimilarityHandler:
                 f"New type: {new_type}\n"
                 f"Similar existing types:\n"
                 f"{[t['type_name'] for t in similar_types]}\n\n"
-                "Generate logical statements linking these types if appropriate. "
-                "Only generate statements if there are clear logical relationships. "
-                "Use standard logical predicates like Inheritance, Similarity, etc."
+                f"Generate logical statements linking the new type: '{new_type}'"
+                "to the existing types where appropriate."
             )
         }]
 
