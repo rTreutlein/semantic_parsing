@@ -1,11 +1,13 @@
 import argparse
 import os
 from NL2PLN.utils.common import create_openai_completion, extract_logic
+from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.utils.prompts import nl2pln, pln2nl
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import HumanCheck
 from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
+from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 
 def convert_logic(input_text, prompt_func, similar_examples, previous_sentences=None):
     system_msg, user_msg = prompt_func(input_text, similar_examples, previous_sentences or [])
@@ -33,7 +35,7 @@ def run_forward_chaining(metta_handler, pln):
     return fc_results
 
 def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
-    english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
+    english_results = [convert_to_english(result, "", similar_examples) for result in fc_results]
     print(f"Forward chaining results in English: {english_results}")
     store_fc_results(rag, fc_results, english_results)
     return pln, fc_results, english_results
@@ -50,8 +52,9 @@ def store_fc_results(rag, fc_results, english_results):
     for fc_result, english_result in zip(fc_results, english_results):
         rag.store_embedding({
             "sentence": english_result,
-            "pln": fc_result,
-            "preconditions": []  # Forward chaining results don't have preconditions
+            "statements": fc_result,
+            "from_context": [],  # Forward chaining results don't have from context
+            "type_definitions": [],  # Forward chaining results don't have type definitions
         })
 
 def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
@@ -70,6 +73,7 @@ def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
         conflict = metta_handler.add_to_context(type_def)
         if isinstance(conflict, str):
             print(f"ERROR: Conflict detected! Type definition {type_def} conflicts with existing atom: {conflict}")
+            input("Press Enter to continue...")
             return False
     
     # Then add and process all statements
@@ -94,7 +98,6 @@ def main():
 
     # Initialize puzzle generator
     if args.example:
-        from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
         puzzle_gen = ExamplePuzzleGenerator()
     else:
         puzzle_gen = LogicPuzzleGenerator()
@@ -118,15 +121,12 @@ def main():
             print(f"\nProcessing {section_name}:")
             for sentence in sentences:
                 if sentence.strip():
-                    # Remove bullet points if present for common sense section
-                    cleaned_sentence = sentence.lstrip('- ').strip() if section_name == "common sense knowledge" else sentence.strip()
-                    if cleaned_sentence:
-                        result = process_sentence(cleaned_sentence, rag, metta_handler, 
-                                               previous_sentences[-10:] if previous_sentences else [])
-                        if result:
-                            previous_sentences.append(cleaned_sentence)
-                            if len(previous_sentences) > 10:
-                                previous_sentences.pop(0)
+                   result = process_sentence(sentence, rag, metta_handler, 
+                                          previous_sentences[-10:] if previous_sentences else [])
+                   if result:
+                       previous_sentences.append(sentence)
+                       if len(previous_sentences) > 10:
+                           previous_sentences.pop(0)
 
         # Process common sense knowledge first
         process_section("common sense knowledge", puzzle_sections.get('common_sense', '').split('\n'))
