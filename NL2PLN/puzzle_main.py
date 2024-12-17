@@ -58,7 +58,7 @@ def store_fc_results(rag, fc_results, english_results):
             "type_definitions": [],  # Forward chaining results don't have type definitions
         })
 
-def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
+def process_sentence(line, rag, metta_handler, type_handler, previous_sentences=None) -> bool:
     similar = rag.search_similar(line, limit=5)
     previous_sentences = previous_sentences or []
     similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
@@ -132,7 +132,7 @@ def main():
             print(f"\nProcessing {section_name}:")
             for sentence in sentences:
                 if sentence.strip():
-                   result = process_sentence(sentence, rag, metta_handler, 
+                   result = process_sentence(sentence, rag, metta_handler, type_handler,
                                           previous_sentences[-10:] if previous_sentences else [])
                    if result:
                        previous_sentences.append(sentence)
