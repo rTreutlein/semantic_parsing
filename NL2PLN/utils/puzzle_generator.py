@@ -32,10 +32,10 @@ Conclusion:
 It wasn't raining this morning.
 
 Common Sense Knowledge:
-- If someone always does A when B occurs, and they didn't do A, then B didn't occur
-- Morning is a time of day
-- People can choose whether to take or leave items
-- Umbrellas are items that can be carried
+If someone always does A when B occurs, and they didn't do A, then B didn't occur
+Morning is a time of day
+People can choose whether to take or leave items
+Umbrellas are items that can be carried
 """
 
     def generate_puzzle(self) -> Dict[str, str]:
