@@ -73,7 +73,6 @@ class TypeSimilarityHandler:
         for typedef in typedefs:
             type_name = self.extract_type_name(typedef)
             if type_name:
-                type_names.append(type_name)
                 similar_types = self.find_similar_types(type_name)
                 linking_statements = self.analyze_type_similarities(type_name, similar_types)
                 all_linking_statements.extend(linking_statements)
