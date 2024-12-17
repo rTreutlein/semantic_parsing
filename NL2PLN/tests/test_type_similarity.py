@@ -87,5 +87,23 @@ class TestTypeSimilarityHandler(unittest.TestCase):
             self.assertEqual(mock_store.call_count, 3)  # Called for all typedefs
             self.assertEqual(mock_analyze.call_count, 2)  # Called for valid typedefs only
 
+    def test_action_type_relationships(self):
+        """Test handling of related action types like LeaveSomething and Take"""
+        with patch.object(self.handler, 'find_similar_types') as mock_find, \
+             patch.object(self.handler, 'analyze_type_similarities') as mock_analyze:
+
+            # Setup mocks
+            mock_find.return_value = [{"type_name": "(: Take (-> Object Object Type))"}]
+            mock_analyze.return_value = ["(: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))"]
+
+            new_type = "(: LeaveSomething (-> Object Object Type))"
+            similar_types = self.handler.find_similar_types(new_type)
+            linking_statements = self.handler.analyze_type_similarities(new_type, similar_types)
+
+            # Verify the relationship was correctly identified
+            self.assertEqual(len(linking_statements), 1)
+            self.assertIn("LeaveSomethingToTake", linking_statements[0])
+            self.assertIn("Not", linking_statements[0])
+
 if __name__ == '__main__':
     unittest.main()
