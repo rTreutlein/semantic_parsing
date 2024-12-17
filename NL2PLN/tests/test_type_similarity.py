@@ -79,5 +79,32 @@ class TestTypeSimilarityHandler(unittest.TestCase):
             self.assertIn("LeaveSomethingToTake", linking_statements[0])
             self.assertIn("Not", linking_statements[0])
 
+def main():
+    """Interactive loop for testing type similarities"""
+    handler = TypeSimilarityHandler()
+    print("Type Similarity Interactive Tester")
+    print("Enter type definitions one per line. Empty line to analyze, 'quit' to exit.")
+    
+    while True:
+        typedefs = []
+        while True:
+            line = input("> ").strip()
+            if line.lower() == 'quit':
+                return
+            if not line:
+                break
+            typedefs.append(line)
+            
+        if typedefs:
+            print("\nAnalyzing types...")
+            linking_statements = handler.process_new_typedefs(typedefs)
+            if linking_statements:
+                print("\nFound relationships:")
+                for stmt in linking_statements:
+                    print(stmt)
+            else:
+                print("\nNo clear relationships found.")
+            print("\nEnter more types or 'quit' to exit.")
+
 if __name__ == '__main__':
-    unittest.main()
+    main()
