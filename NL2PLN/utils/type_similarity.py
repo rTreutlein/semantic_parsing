@@ -58,29 +58,25 @@ class TypeSimilarityHandler:
         # This would need proper parsing logic
         return [line.strip() for line in response.split('\n') if line.strip()]
 
-    def store_type(self, typedef: str):
+    def store_type(self, type_name: str):
         """Store a new type definition"""
-        type_name = self.extract_type_name(typedef)
-        if type_name:
-            self.rag.store_embedding({
-                "type_name": type_name,
-                "full_typedef": typedef
-            })
-        return type_name
+        self.rag.store_embedding({
+            "type_name": type_name,
+        }, ["type_name"])
 
-    def process_new_typedefs(self, typedefs: List[str]) -> Tuple[List[str], List[str]]:
+    def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
         """Process a list of new type definitions
-        Returns: (type_names, linking_statements)
+        Returns: (linking_statements)
         """
-        type_names = []
         all_linking_statements = []
         
         for typedef in typedefs:
-            type_name = self.store_type(typedef)
+            type_name = self.extract_type_name(typedef)
             if type_name:
                 type_names.append(type_name)
                 similar_types = self.find_similar_types(type_name)
                 linking_statements = self.analyze_type_similarities(type_name, similar_types)
                 all_linking_statements.extend(linking_statements)
+            self.store_type(typedef)
                 
-        return type_names, all_linking_statements
+        return all_linking_statements
