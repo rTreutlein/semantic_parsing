@@ -35,21 +35,40 @@ class TypeSimilarityHandler:
             "type": "text",
             "text": (
                 "You are a logical reasoning expert. Analyze the similarities between types "
-                "and suggest logical statements that link them."
+                "and suggest logical statements that link them using dependent type theory.\n\n"
+                "Use these type operators:\n"
+                "* -> for functions and dependent products (Π types)\n"
+                "* Σ for dependent sums (existential types)\n"
+                "* | for sum types (disjoint unions)\n"
+                "* * for product types (pairs/tuples)\n"
+                "* Not for negation (from Type to Type)\n\n"
+                
                 "Examples of relationships:\n"
-
+                "1. Simple inheritance:\n"
                 "Type 1: (: Apple (-> Object Type))\n"
                 "Type 2: (: Fruit (-> Object Type))\n"
                 "Relationship: (: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))\n\n"
 
+                "2. Action negation:\n"
                 "Type 1: (: LeaveSomething (-> Object Object Type))\n"
                 "Type 2: (: Take (-> Object Object Type))\n"
                 "Relationship: (: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))\n\n"
-                "Return only valid MeTTa statements."
 
-                "Try to think of a counter example before suggesting a relationship."
+                "3. Sum types:\n"
+                "Type 1: (: Cat (-> Object Type))\n"
+                "Type 2: (: Dog (-> Object Type))\n"
+                "Type 3: (: Pet (-> Object Type))\n"
+                "Relationship: (: PetIsCatOrDog (-> (: $p (Pet $x)) (| (Cat $x) (Dog $x))))\n\n"
 
-                "The Final Output should be surround by triple backticks (```) and consist of one statement per line."
+                "4. Product types:\n"
+                "Type 1: (: Vehicle (-> Object Type))\n"
+                "Type 2: (: Red (-> Object Type))\n"
+                "Relationship: (: RedVehicle (-> Object Type))\n"
+                "Definition: (: IsRedVehicle (-> (: $x Object) (* (Vehicle $x) (Red $x))))\n\n"
+
+                "Try to think of a counter example before suggesting a relationship.\n"
+                "Return only valid MeTTa statements.\n"
+                "The Final Output should be surrounded by triple backticks (```) and consist of one statement per line."
             ),
             "cache_control": {"type": "ephemeral"}
         }]
