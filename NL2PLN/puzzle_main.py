@@ -47,7 +47,7 @@ def store_results(rag, sentence, pln_data):
         "from_context": pln_data["from_context"],
         "type_definitions": pln_data["type_definitions"],
         "statements": pln_data["statements"]
-    })
+    }, ["sentence","statements"])
 
 def store_fc_results(rag, fc_results, english_results):
     for fc_result, english_result in zip(fc_results, english_results):
@@ -56,7 +56,7 @@ def store_fc_results(rag, fc_results, english_results):
             "statements": fc_result,
             "from_context": [],  # Forward chaining results don't have from context
             "type_definitions": [],  # Forward chaining results don't have type definitions
-        })
+        }, ["sentence","statements"])
 
 def process_sentence(line, rag, metta_handler, type_handler, previous_sentences=None) -> bool:
     similar = rag.search_similar(line, limit=5)
