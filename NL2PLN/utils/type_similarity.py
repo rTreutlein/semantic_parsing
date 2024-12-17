@@ -66,9 +66,17 @@ class TypeSimilarityHandler:
         }]
 
         response = create_openai_completion(system_msg, user_msg)
-        # Parse response to extract MeTTa statements
-        # This would need proper parsing logic
-        return [line.strip() for line in response.split('\n') if line.strip()]
+        
+        # Extract content between triple backticks
+        if '```' in response:
+            parts = response.split('```')
+            if len(parts) >= 2:
+                # Get the content between first set of backticks
+                statements = parts[1].strip().split('\n')
+                # Filter empty lines and strip whitespace
+                return [line.strip() for line in statements if line.strip()]
+        
+        return []
 
     def store_type(self, type_name: str):
         """Store a new type definition"""
