@@ -172,9 +172,16 @@ Guidelines for the conversion:
   * The same $var always refers to the same object throughout the question/statement
   * Use different variable names ($var1, $var2, etc) when referring to different objects
 - For quantifiers:
-  * Universal ("all", "every"): Use dependent product (->)
+  * Universal ("all", "every", "always"): Use dependent product (->)
+    - "Always" indicates a universal temporal quantification
+    - e.g., "John always takes his umbrella when it rains" =>
+      (-> (: $time Object) (-> (: $raining (Rain $time)) (Takes john umbrella $time)))
   * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
                                If not, use dependent sum (Σ)
+- For named objects:
+  * When objects have explicit names, add a Name relation
+  * (: Name (-> Object String Type))
+  * e.g., for person named "John": (: name_john (Name john "John"))
 - For anaphora resolution:
   * Check previous sentences for referenced entities
   * Reuse entity identifiers from previous context
@@ -329,13 +336,34 @@ Statements:
 (: petIsCatOrDog (-> (: $prfispet (Pet $x)) (| (Cat $x) (Dog $x))))
 ```
 
-6. Negation:
+6. Named Objects and Always:
+"John always takes his umbrella when it rains"
+```
+Type Definitions:
+(: Rain (-> Object Type))
+(: Takes (-> Object Object Object Type))
+(: Name (-> Object String Type))
+
+Statements:
+(: john Object)
+(: umbrella Object)
+(: name_john (Name john "John"))
+(: always_takes_umbrella 
+   (-> (: $time Object) 
+       (-> (: $raining (Rain $time)) 
+           (Takes john umbrella $time))))
+```
+
+7. Negation:
 "John is not happy"
 ```
 Type Definitions:
 (: Happy (-> Object Type))
+(: Name (-> Object String Type))
 
 Statements:
+(: john Object)
+(: name_john (Name john "John"))
 (: johnNotHappy (Not (Happy john)))
 ```
 
