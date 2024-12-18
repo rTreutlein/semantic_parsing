@@ -212,7 +212,7 @@ Guidelines for the conversion:
 - For Temporal or Spatial statments we can annotate types using the following:
   * (: AtTime (-> Type Object Type))
   * (: AtPlace (-> Type Object Type))
-  * (: AtTimePlace (-> Type Object Ojbect Type))
+  * (: AtTimePlace (-> Type Object Object Type))
 - When comming up with the name of a type/predicate try to make sure it's not ambiguous.
   * For example "Leave" is ambiguous because it could mean "leave a location" or "leave something in a location".
   * So use the more expliction version of "LeaveSomething" or "LeaveLocation" instead.
@@ -247,18 +247,16 @@ Type Definitions:
 (: Curious (-> Object Type))
 (: Spotted (-> Object Object Type))
 (: Garden (-> Object Type))
-(: In (-> Object Object Type))
 
 Statements:
 (: max Object)
-(: garden Object)
 (: maxGoldenRetriver (GoldenRetriver max))
 (: maxCurious (Curious max))
+(: garden Object)
 (: gardenIsGarden (Garden garden))
 (: bf Object)
 (: bfButterfly (Butterfly bf))
-(: max_spotted_bf (Spotted max bf))
-(: bf_in_garden (In bf garden))
+(: max_spotted_bf (AtPlace (Spotted max bf) garden))
 ```
 
 2. Anaphora Resolution:
@@ -288,9 +286,8 @@ Type Definitions:
 
 Statements:
 (: dogsChaseAnyCat (-> (: $prfisdog (Dog $dog))
-                       (Σ (: $cat Object)
                           (* (Cat $cat)
-                             (Chase $dog $cat)))))
+                             (Chase $dog $cat))))
 ```
 
 4. Temporal Relations:
@@ -300,7 +297,6 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: TimePoint (-> Object Type))
 (: Before (-> Object Object Type))
 (: Home (-> Object Type))
 (: AtTime (-> Object Object Type))
@@ -311,50 +307,31 @@ Type Definitions:
 Statements:
 (: t1 Object)
 (: t2 Object)
-(: t1IsTime (TimePoint t1))
-(: t2IsTime (TimePoint t2))
 (: home Object)
 (: homeIsHome (Home home))
 (: work Object)
 (: workIsWork (Work work))
 (: t1BeforeT2 (Before t1 t2))
-(: john_goes_home (GoTo john home))
-(: goingHomeTime (AtTime john_goes_home t2))
-(: john_finishes_work (Finish john work))
-(: finishWorkTime (AtTime john_finishes_work t1))
+(: john_goes_home_at_t2 (AtTime (GoTo john home) t2))
+(: john_finishes_work_at_t1 (AtTime (Finish john work) t1))
 ```
 
 5. Sum Types (|):
-"A pet is either a cat or a dog"
+"A an animal is in our pet shelter, then it is either a cat or a dog"
 ```
+From Context:
+(: petShelter Object)
+
 Type Definitions:
-(: Pet (-> Object Type))
+(: Animal (-> Object Type))
 (: Cat (-> Object Type))
 (: Dog (-> Object Type))
 
 Statements:
-(: petIsCatOrDog (-> (: $prfispet (Pet $x)) (| (Cat $x) (Dog $x))))
+(: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (AtPlace $x petShelter) (| (Cat $x) (Dog $x)))))
 ```
 
-6. Named Objects and Always:
-"John always takes his umbrella when it rains"
-```
-Type Definitions:
-(: Rain (-> Object Type))
-(: Takes (-> Object Object Object Type))
-(: Name (-> Object String Type))
-
-Statements:
-(: john Object)
-(: umbrella Object)
-(: name_john (Name john "John"))
-(: always_takes_umbrella 
-   (-> (: $time Object) 
-       (-> (: $raining (Rain $time)) 
-           (Takes john umbrella $time))))
-```
-
-7. Negation:
+6. Negation:
 "John is not happy"
 ```
 Type Definitions:
@@ -367,17 +344,16 @@ Statements:
 (: johnNotHappy (Not (Happy john)))
 ```
 
-6. Location Questions:
+7. Location Questions:
 "Where is John?"
 ```
 Type Definitions:
-(: Location (-> Object Object Type))
 
 Questions:
-(: $john_location_prf (Location john $loc))
+(: $john_location_prf (AtPlace john $loc))
 ```
 
-7. Relationship Questions:
+8. Relationship Questions:
 "How is Mary related to John?"
 ```
 Questions:
@@ -387,7 +363,7 @@ Note if asked how things are related or what they are to each other, don't
 introduce a RelatedTo or similar relationship. Instead ask directly for the
 relationship by putting a Variable in its place.
 
-8. Property Questions:
+9. Property Questions:
 "What color is this car?"
 ```
 From Context:
@@ -404,7 +380,7 @@ Questions:
 Now we haven't actually provided the context in this example but it can be assumed
 that for such a question there should exist a car in the context. 
 
-9. Complex Question:
+10. Complex Question:
 "Who is the occupant of the red car?"
 ```
 Type Definitions:
@@ -417,7 +393,7 @@ Questions:
 
 In this case we are looking for something to has multiple properties so we use a Product
 
-10. Multiple Sentences:
+11. Multiple Sentences:
 "John bought a car. It is red. Where is it parked?"
 ```
 From Context:
@@ -438,7 +414,7 @@ Questions:
 (: $parked_car_prf (ParkedAt car $location))
 ```
 
-11. Asking for an Implication:
+12. Asking for an Implication:
 "Are Humans Animals?"
 
 ```
@@ -452,7 +428,7 @@ Questions
 (: $humans_are_animals_prf (-> (: $prfhuman (Human $x)) (Animals $x)))
 ```
 
-12. Temporal/Spatial Example:
+13. Temporal/Spatial Example:
 "John left his umbrella this morning."
 
 ```
