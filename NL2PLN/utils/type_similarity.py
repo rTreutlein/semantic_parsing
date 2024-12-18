@@ -26,9 +26,9 @@ class TypeSimilarityHandler:
         """Find similar type names in the database"""
         return self.rag.search_similar(type_name, limit=limit)
 
-    def analyze_type_similarities(self, new_type: str, similar_types: List[Dict]) -> List[str]:
+    def analyze_type_similarities(self, new_types: List[str], similar_types: List[Dict]) -> List[str]:
         """Use LLM to analyze similarities between types and generate linking statements"""
-        if not similar_types:
+        if not new_types:
             return []
             
         system_msg = [{
@@ -74,11 +74,11 @@ class TypeSimilarityHandler:
         user_msg = [{
             "role": "user",
             "content": (
-                f"New type: {new_type}\n"
+                f"New types:\n{new_types}\n\n"
                 f"Similar existing types:\n"
                 f"{[t['type_name'] for t in similar_types]}\n\n"
-                f"Generate logical statements linking the new type: '{new_type}'"
-                "to the existing types where appropriate."
+                f"Generate logical statements linking the new types to each other and "
+                f"to the existing types where appropriate."
             )
         }]
 
@@ -109,12 +109,31 @@ class TypeSimilarityHandler:
         """
         all_linking_statements = []
         
+        # Extract all type names first
+        type_names = []
         for typedef in typedefs:
             type_name = self.extract_type_name(typedef)
             if type_name:
-                similar_types = self.find_similar_types(type_name)
-                linking_statements = self.analyze_type_similarities(type_name, similar_types)
-                all_linking_statements.extend(linking_statements)
-            self.store_type(typedef)
+                type_names.append(type_name)
+                self.store_type(typedef)
+        
+        # Find similar types for all new types together
+        all_similar_types = []
+        for type_name in type_names:
+            similar_types = self.find_similar_types(type_name)
+            all_similar_types.extend(similar_types)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_similar_types = []
+        for t in all_similar_types:
+            if t['type_name'] not in seen:
+                seen.add(t['type_name'])
+                unique_similar_types.append(t)
+        
+        # Analyze all types together
+        if type_names:
+            linking_statements = self.analyze_type_similarities(type_names, unique_similar_types)
+            all_linking_statements.extend(linking_statements)
                 
         return all_linking_statements
