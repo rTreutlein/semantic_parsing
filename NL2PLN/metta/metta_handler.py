@@ -21,7 +21,13 @@ class MeTTaHandler:
                                                                              
     @staticmethod                                                            
     def generate_random_identifier(length=8):                                
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))                                                                   
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    @staticmethod
+    def clean_variable_names(expr: str) -> str:
+        """Remove #numbers from variable names like $var#1234"""
+        import re
+        return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
                                                                              
     @property
     def read_only(self) -> bool:
@@ -30,7 +36,7 @@ class MeTTaHandler:
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
         self.metta.run(f'!(add-atom &kb {atom})')                  
         res = self.metta.run(f'!(ddfc &kb {atom})')
-        out = [str(elem) for elem in res[0]]               
+        out = [self.clean_variable_names(str(elem)) for elem in res[0]]
         if not self.read_only:
             self.append_to_file(f"{atom}")
             [self.append_to_file(elem) for elem in out]
