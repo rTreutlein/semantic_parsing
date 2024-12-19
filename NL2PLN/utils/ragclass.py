@@ -45,7 +45,7 @@ class RAG:
         if not isinstance(data, dict):
             raise ValueError("Input must be a dictionary (JSON object)")
         
-        text = ' '.join(data.get(field, '') for field in embedding_fields)
+        text = ' '.join([data.get(field, '') for field in embedding_fields])
         embedding = self.get_embedding(text)
         
         self.qdrant_client.upsert(
