@@ -282,9 +282,9 @@ Statements:
 "All dogs chase some cat"
 ```
 Type Definitions:
-(: Dog (-> Object Type))
-(: Cat (-> Object Type))
-(: Chase (-> Object Object Type))
+(: Dog (-> (: $dog Object) Type))
+(: Cat (-> (: $cat Object) Type))
+(: Chase (-> (: $chaser Object) (: $chased Object) Type))
 
 Statements:
 (: dogsChaseAnyCat (-> (: $prfisdog (Dog $dog))
@@ -299,11 +299,11 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: Before (-> Object Object Type))
-(: Home (-> Object Type))
-(: GoTo (-> Object Object Type))
-(: Work (-> Object Type))
-(: Finish (-> Object Object Type))
+(: Before (-> (: $before Object) (: $after Object) Type))
+(: Home (-> (: $home Object) Type))
+(: GoTo (-> (: $goer Object) (: $dest Object) Type))
+(: Work (-> (: $work Object) Type))
+(: Finish (-> (: $finisher Object) (: $task Object) Type))
 
 Statements:
 (: t1 Object)
