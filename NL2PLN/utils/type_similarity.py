@@ -61,7 +61,18 @@ class TypeSimilarityHandler:
                 "Output:"
                 "```"
                 "(: ToRedVehicle (-> (Vehicle $x) (-> (Red $x) (RedVehicle $x))))\n\n"
+                "```\n\n"
+
+                "4. Temporal Relations:\n"
+                "Type 1: (: LeaveLocation (-> (: $person Object) (: $location Object) Type))\n"
+                "Type 2: (: AtLocation (-> (: $person Object) (: $location Object) Type))\n"
+                "Output:"
                 "```"
+                "(: LeaveLocationNotAt (-> (: $t Object) (-> (: $l (TrueAtTime (LeaveLocation $p $loc) $t)) (Not (TrueAtTime (AtLocation $p $loc) $t)))))\n"
+                "```\n\n"
+
+                "Note: By default, all statements are assumed to be true at the current time and place.\n"
+                "Use TrueAtTime, TrueAtPlace, or TrueAtTimePlace explicitly when temporal or spatial relations matter.\n"
 
                 "Try to think of a counter example before suggesting a relationship.\n"
                 "Don't invent new Types use only the ones provided.\n"
