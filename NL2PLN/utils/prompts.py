@@ -244,11 +244,11 @@ Examples:
 From Context:
 
 Type Definitions:
-(: GoldenRetriever (-> Object Type))
-(: Butterfly (-> Object Type))
-(: Curious (-> Object Type))
-(: Spotted (-> Object Object Type))
-(: Garden (-> Object Type))
+(: GoldenRetriever (-> (: $dog Object) Type))
+(: Butterfly (-> (: $butterfly Object) Type))
+(: Curious (-> (: $curious Object) Type))
+(: Spotted (-> (: $spotter Object) (: $spotted Object) Type))
+(: Garden (-> (: $garden Object) Type))
 
 Statements:
 (: max Object)
@@ -269,8 +269,8 @@ From Context:
 (: john Object)
 
 Type Definitions:
-(: Book (-> Object Type))
-(: Bought (-> Object Object Type))
+(: Book (-> (: $book Object) Type))
+(: Bought (-> (: $buyer Object) (: $bought Object) Type))
 
 Statements:
 (: book Object)
@@ -337,8 +337,8 @@ Statements:
 "John is not happy"
 ```
 Type Definitions:
-(: Happy (-> Object Type))
-(: Name (-> Object String Type))
+(: Happy (-> (: $happy Object) Type))
+(: Name (-> (: $named Object) (: $name String) Type))
 
 Statements:
 (: john Object)
@@ -373,7 +373,7 @@ From Context:
 (: carIsCar (Car car))
 
 Type Definitions:
-(: Color (-> Object Object Type))
+(: Color (-> (: $object Object) (: $color Object) Type))
 
 Questions:
 (: $color_car_prf (Color car $col))
@@ -386,8 +386,8 @@ that for such a question there should exist a car in the context.
 "Who is the occupant of the red car?"
 ```
 Type Definitions:
-(: Occupant (-> Object Object Type))
-(: Red (-> Object Type))
+(: Occupant (-> (: $vehicle Object) (: $occupant Object) Type))
+(: Red (-> (: $object Object) Type))
 
 Questions:
 (: $red_car_occupant_prf (* (Car $car) (* (Red $car) (Occupant $car $occupant))))
@@ -401,10 +401,10 @@ In this case we are looking for something to has multiple properties so we use a
 From Context:
 
 Type Definitions:
-(: Car (-> Object Type))
-(: Red (-> Object Type))
-(: Buy (-> Object Object Type))
-(: ParkedAt (-> Object Object Type))
+(: Car (-> (: $car Object) Type))
+(: Red (-> (: $object Object) Type))
+(: Buy (-> (: $buyer Object) (: $bought Object) Type))
+(: ParkedAt (-> (: $vehicle Object) (: $location Object) Type))
 
 Statements:
 (: car Object)
@@ -436,9 +436,9 @@ Questions
 ```
 From Context:
 Type Definitions:
-(: LeaveSomething (-> Object Object Type))
-(: Umbrella (-> Object Type))
-(: Morning (-> Object Type))
+(: LeaveSomething (-> (: $person Object) (: $item Object) Type))
+(: Umbrella (-> (: $umbrella Object) Type))
+(: Morning (-> (: $time Object) Type))
 
 Statements:
 (: john Object)
