@@ -42,20 +42,22 @@ class TypeSimilarityHandler:
                 
                 "Examples of relationships:\n"
                 "1. Simple inheritance:\n"
-                "Type 1: (: Apple (-> Object Type))\n"
-                "Type 2: (: Fruit (-> Object Type))\n"
+                "Type 1: (: Apple (-> (: $apple Object) Type))\n"
+                "Type 2: (: Fruit (-> (: $fruit Object) Type))\n"
                 "Relationship: (: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))\n\n"
 
                 "2. Action negation:\n"
-                "Type 1: (: LeaveSomething (-> Object Object Type))\n"
-                "Type 2: (: Take (-> Object Object Type))\n"
-                "Relationship: (: LeaveSomethingToTake (-> (: $l (LeaveSomething $a $b)) (Not (Take $a $b))))\n\n"
+                "Type 1: (: ToLeave (-> (: $person Object) (: $location Object) Type))\n"
+                "Type 2: (: ToStay (-> (: $person Object) (: $location Object) Type))\n"
+                "Relationship: (: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToLeave $a $b))))\n\n"
+                "Relationship: (: ToStayToNotToLeave (-> (: $t (ToStaty $a $b)) (Not (ToStay $a $b))))\n\n"
+                "Note that we don't need a profe of $a or $b as it doesn't matter what they are.\n"
 
                 "3. Curried functions:\n"
                 "Input;"
-                "Type 1: (: Vehicle (-> Object Type))\n"
-                "Type 2: (: Red (-> Object Type))\n"
-                "Type 3: (: RedVehicle (-> Object Type))\n"
+                "Type 1: (: Vehicle (-> (: $vehicle Object) Type))\n"
+                "Type 2: (: Red (-> (: $redobj Object) Type))\n"
+                "Type 3: (: RedVehicle (-> (: $redvehicle Object) Type))\n"
                 "Output:"
                 "```"
                 "(: ToRedVehicle (-> (Vehicle $x) (-> (Red $x) (RedVehicle $x))))\n\n"
@@ -65,7 +67,11 @@ class TypeSimilarityHandler:
                 "Don't invent new Types use only the ones provided.\n"
                 "Only create Relations which are always true. If something is only possible ignore it.\n"
                 "Return only valid MeTTa statements.\n"
-                "The Final Output should be surrounded by triple backticks (```) and consist of one statement per line."
+                "Make sure to avoid (: $x Object) as a premise.\n"
+                "If the $x appears in a Realtion ship (Rel $x $y) then the (: $x Object) is already implied.\n"
+                "If you are considering opposites and there is a case where the colclusion doesn't apply that is fine too since it is negated.\n"
+                "The Final Output should be surrounded by triple backticks (```) and consist of one statement per line.\n"
+                "If a relationship is symmetric, make sure to include both directions.\n"
                 "It is fine to return nothing."
             ),
             "cache_control": {"type": "ephemeral"}
@@ -76,7 +82,7 @@ class TypeSimilarityHandler:
             "content": (
                 f"New types:\n{new_types}\n\n"
                 f"Similar existing types:\n"
-                f"{[t['type_name'] for t in similar_types]}\n\n"
+                f"{[t['full_type'] for t in similar_types]}\n\n"
                 f"Generate logical statements linking the new types to each other and "
                 f"to the existing types where appropriate."
             )
@@ -97,10 +103,11 @@ class TypeSimilarityHandler:
         
         return []
 
-    def store_type(self, type_name: str):
+    def store_type(self, type_name: str, full_type: str):
         """Store a new type definition"""
         self.rag.store_embedding({
             "type_name": type_name,
+            "full_type": full_type,
         }, ["type_name"])
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
@@ -115,7 +122,9 @@ class TypeSimilarityHandler:
             type_name = self.extract_type_name(typedef)
             if type_name:
                 type_names.append(type_name)
-                self.store_type(typedef)
+                self.store_type(type_name, typedef)
+
+        print(f"Extracted type names: {type_names}")
         
         # Find similar types for all new types together
         all_similar_types = []
@@ -130,6 +139,8 @@ class TypeSimilarityHandler:
             if t['type_name'] not in seen:
                 seen.add(t['type_name'])
                 unique_similar_types.append(t)
+
+        print(f"Found similar types: {unique_similar_types}")
         
         # Analyze all types together
         if type_names:
