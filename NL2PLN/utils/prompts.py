@@ -84,7 +84,7 @@ Input:
 (: GoTo (-> Object Object Type))
 (: t1BeforeT2 (Before t1 t2))
 (: goingprf (GoTo john home))
-(: goingatt1 (AtTime going t1))
+(: goingatt1 (TrueAtTime going t1))
 ```John went home before something else happened```
 
 6. Proof Trace:
@@ -159,10 +159,10 @@ Guidelines for the conversion:
   * Where is X => (: $prf (Location X $loc))
   * How is X related to Y => (: $prf ($rel X Y))
   * Don't introduce (: $var Object) as this would match all things that are objects
-  * For multiple questions like "Where and when did John go?", create separate questions:
+  * For multiple questions like "How big and old is the Lion", create separate questions:
     Questions:
-    (: $prf1 (Location john $loc))
-    (: $prf2 (Time john $time))
+    (: $prf1 (Age Lion $age))
+    (: $prf2 (Size Lion $size))
   * For questions with multiple variables like "Who saw what?":
     Questions:
     (: $prf (Saw $who $what))
@@ -175,7 +175,7 @@ Guidelines for the conversion:
   * Universal ("all", "every", "always"): Use dependent product (->)
     - "Always" indicates a universal temporal quantification
     - e.g., "John always takes his umbrella when it rains" =>
-      (-> (: $time Object) (-> (: $raining (Rain $time)) (Takes john umbrella $time)))
+      (: if_raining_john_takes_umbrella (-> (: $raining (Rain $rain)) (Takes john umbrella)))
   * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
                                If not, use dependent sum (Σ)
 - For named objects:
@@ -210,12 +210,14 @@ Guidelines for the conversion:
   * Use context to resolve anaphora (e.g., "the car" may refer to specific car with known properties)
 
 - For Temporal or Spatial statments we can annotate types using the following:
-  * (: AtTime (-> Type Object Type))
-  * (: AtPlace (-> Type Object Type))
-  * (: AtTimePlace (-> Type Object Object Type))
+  * (: TrueAtTime (-> Type Object Type))
+  * (: TrueAtPlace (-> Type Object Type))
+  * (: TrueAtTimePlace (-> Type Object Object Type))
+  * If time or place is not specified it defaults to here/now
 - When comming up with the name of a type/predicate try to make sure it's not ambiguous.
   * For example "Leave" is ambiguous because it could mean "leave a location" or "leave something in a location".
   * So use the more expliction version of "LeaveSomething" or "LeaveLocation" instead.
+  * And "Run" could mean "Runing the action" => "RunMovment" or "Running a Business" => "RunBusiness"
 
 There is only one Base type namely (: Object Type). Everything else is an n-ary predicate.
 i.e. (: Human (-> Object Type))
@@ -237,12 +239,12 @@ Questions:
 Examples:
 
 1. Simple Statement:
-"Max, a curious GoldenRetriver, spotted a Butterfly in the garden."
+"Max, a curious GoldenRetriever, spotted a Butterfly in the garden."
 ```
 From Context:
 
 Type Definitions:
-(: GoldenRetriver (-> Object Type))
+(: GoldenRetriever (-> Object Type))
 (: Butterfly (-> Object Type))
 (: Curious (-> Object Type))
 (: Spotted (-> Object Object Type))
@@ -256,7 +258,7 @@ Statements:
 (: gardenIsGarden (Garden garden))
 (: bf Object)
 (: bfButterfly (Butterfly bf))
-(: max_spotted_bf (AtPlace (Spotted max bf) garden))
+(: max_spotted_bf (TrueAtPlace (Spotted max bf) garden))
 ```
 
 2. Anaphora Resolution:
@@ -273,7 +275,7 @@ Type Definitions:
 Statements:
 (: book Object)
 (: bookIsBook (Book book))
-(: john_bough_book (Bought john book))
+(: john_bought_book (Bought john book))
 ```
 
 3. Quantifiers:
@@ -286,8 +288,8 @@ Type Definitions:
 
 Statements:
 (: dogsChaseAnyCat (-> (: $prfisdog (Dog $dog))
-                          (* (Cat $cat)
-                             (Chase $dog $cat))))
+                          (Σ (: $cat Object) (* (Cat $cat)
+                                                (Chase $dog $cat)))))
 ```
 
 4. Temporal Relations:
@@ -299,7 +301,6 @@ From Context:
 Type Definitions:
 (: Before (-> Object Object Type))
 (: Home (-> Object Type))
-(: AtTime (-> Object Object Type))
 (: GoTo (-> Object Object Type))
 (: Work (-> Object Type))
 (: Finish (-> Object Object Type))
@@ -312,8 +313,8 @@ Statements:
 (: work Object)
 (: workIsWork (Work work))
 (: t1BeforeT2 (Before t1 t2))
-(: john_goes_home_at_t2 (AtTime (GoTo john home) t2))
-(: john_finishes_work_at_t1 (AtTime (Finish john work) t1))
+(: john_goes_home_at_t2 (TrueAtTime (GoTo john home) t2))
+(: john_finishes_work_at_t1 (TrueAtTime (Finish john work) t1))
 ```
 
 5. Sum Types (|):
@@ -326,9 +327,10 @@ Type Definitions:
 (: Animal (-> Object Type))
 (: Cat (-> Object Type))
 (: Dog (-> Object Type))
+(: IsIn (-> Object Object Type))
 
 Statements:
-(: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (AtPlace $x petShelter) (| (Cat $x) (Dog $x)))))
+(: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (IsIn $x petShelter) (| (Cat $x) (Dog $x)))))
 ```
 
 6. Negation:
@@ -350,7 +352,7 @@ Statements:
 Type Definitions:
 
 Questions:
-(: $john_location_prf (AtPlace john $loc))
+(: $john_location_prf (IsIn john $loc))
 ```
 
 8. Relationship Questions:
@@ -422,10 +424,10 @@ From Context:
 
 Type Definitions:
 
-Statments:
+Statements:
 
 Questions
-(: $humans_are_animals_prf (-> (: $prfhuman (Human $x)) (Animals $x)))
+(: $humans_are_animals_prf (-> (: $prfhuman (Human $x)) (Animal $x)))
 ```
 
 13. Temporal/Spatial Example:
@@ -444,9 +446,27 @@ Statements:
 (: umbrellaIsUmbrella (Umbrella umbrella))
 (: morning Object)
 (: morningIsMorning (Morning morning))
-(: johnLeavesUmbrella (AtTime (LeaveWith john umbrella) morning))
+(: johnLeavesUmbrella (TrueAtTime (LeaveSomething john umbrella) morning))
 ```
 
+14. Combining Negation and Time:
+"It's not true that John left home this morning."
+
+```
+From Context:
+
+Type Definitions:
+(: Home (-> Object Type))
+(: Money (-> Object Type))
+
+Statements:
+(: john Object)
+(: home Object)
+(: homeIsHome (Home home))
+(: morning Object)
+(: morningIsMorning (Morning morning))
+(: johnDidntleave (TrueAtTime (Not (LeaveLocation john home)) morning))
+```
 
 For performatives and other expressions without logical meaning just output:
 ```
