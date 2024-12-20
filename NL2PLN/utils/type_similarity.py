@@ -65,10 +65,10 @@ class TypeSimilarityHandler:
 
                 "4. Temporal Relations:\n"
                 "Type 1: (: LeaveLocation (-> (: $person Object) (: $location Object) Type))\n"
-                "Type 2: (: AtLocation (-> (: $person Object) (: $location Object) Type))\n"
+                "Type 2: (: ArriveAt (-> (: $person Object) (: $location Object) Type))\n"
                 "Output:"
                 "```"
-                "(: LeaveLocationNotAt (-> (LeaveLocation $p $loc) (Not (AtLocation $p $loc))))\n"
+                "(: LeaveBeforeArrive (-> (: $t1 Object) (-> (: $t2 Object) (-> (Before $t1 $t2) (-> (: $l1 (TrueAtTime (LeaveLocation $p $loc1) $t1)) (-> (: $l2 (TrueAtTime (ArriveAt $p $loc2) $t2)) (Not (= $loc1 $loc2))))))))\n"
                 "```\n\n"
 
                 "Note: By default, all statements in a relationship are assumed to happen at the same time and place.\n"
