@@ -324,10 +324,10 @@ From Context:
 (: petShelter Object)
 
 Type Definitions:
-(: Animal (-> Object Type))
-(: Cat (-> Object Type))
-(: Dog (-> Object Type))
-(: IsIn (-> Object Object Type))
+(: Animal (-> (: $animal Object) Type))
+(: Cat (-> (: $cat Object) Type))
+(: Dog (-> (: $dog Object) Type))
+(: IsIn (-> (: $thing Object) (: $place Object) Type))
 
 Statements:
 (: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (IsIn $x petShelter) (| (Cat $x) (Dog $x)))))
