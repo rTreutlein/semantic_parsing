@@ -68,6 +68,12 @@
      (($atom (Empty))
       (Empty (add-atom $space $atom)))))
 
+(: add-atom-nodup (-> $st Atom ()))
+(= (add-atom-nodup-nofail $space $atom)
+   (case (match $space $atom $atom)
+     (($atom ())
+      (Empty (add-atom $space $atom)))))
+
 (= (ddfc $kb $query)
     (let* (($out (fc $kb (S (S Z)) $query))
            ($dummy (add-atom-nodup $kb $out))
@@ -78,7 +84,7 @@
 ;;deduplicatig bc
 (= (ddbc $kb $query)
     (let* (($out (bc $kb (S (S Z)) $query))
-           ($dummy (add-atom-nodup $kb $out))
+           ($dummy (add-atom-nodup-nofail $kb $out))
           )
     $out
 ))
