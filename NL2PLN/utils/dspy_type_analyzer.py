@@ -63,7 +63,31 @@ def create_training_data():
                 "(: ToStayToNotToLeave (-> (: $t (ToStay $a $b)) (Not (ToStay $a $b))))"
             ]
         ),
-        # Add more examples...
+        dspy.Example(
+            new_types=["(: EntityType (-> (: $entity Object) Type))"],
+            similar_types=["(: Person EntityType)", "(: Animal EntityType)"],
+            statements=[
+                "(: EntityTypeIsType (-> (: $e EntityType) Type))",
+                "(: PersonIsEntityType (-> (: $p Person) (EntityType $p)))",
+                "(: AnimalIsEntityType (-> (: $a Animal) (EntityType $a)))"
+            ]
+        ),
+        dspy.Example(
+            new_types=["(: HasLocation (-> (: $entity EntityType) (: $location Object) Type))"],
+            similar_types=["(: IsAt (-> (: $thing Object) (: $place Object) Type))"],
+            statements=[
+                "(: HasLocationToIsAt (-> (: $h (HasLocation $e $l)) (IsAt $e $l)))",
+                "(: IsAtToHasLocation (-> (: $i (IsAt $e $l)) (HasLocation $e $l)))"
+            ]
+        ),
+        dspy.Example(
+            new_types=["(: Vehicle (-> (: $v Object) Type))", "(: Car (-> (: $c Object) Type))"],
+            similar_types=["(: Bicycle (-> (: $b Object) Type))"],
+            statements=[
+                "(: CarIsVehicle (-> (: $c (Car $c)) (Vehicle $c)))",
+                "(: BicycleIsVehicle (-> (: $b (Bicycle $b)) (Vehicle $b)))"
+            ]
+        )
     ]
 
 def optimize_prompt():
