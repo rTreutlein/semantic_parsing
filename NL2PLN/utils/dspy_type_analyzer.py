@@ -23,6 +23,7 @@ class TypeAnalyzer(dspy.Module):
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 
                                 similar_types="\n".join(similar_types))
+        print(prediciton)
         return prediction.statements.split("\n")
 
 def my_metric(example: dspy.Example, predictions: List[str]) -> float:
@@ -211,7 +212,7 @@ def optimize_prompt():
     return optimized_program
 
 def main():
-    optimize_prompt()
+    #optimize_prompt()
 
 
 if __name__ == "__main__":
