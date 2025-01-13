@@ -205,7 +205,6 @@ def create_training_data():
                 "(: MammalIsAnimal (-> (: $mammal_prf (Mammal $mammal_obj)) (Animal $mammal_obj)))",
                 "(: CarnivoreEatsMeat (-> (: $carn_prf (Carnivore $carn_obj)) (EatsMeat $carn_obj)))",
                 "(: HerbivoreEatsPlants (-> (: $herb_prf (Herbivore $herb_obj)) (EatsPlants $herb_obj)))",
-                "(: CarnivoreNotHerbivore (-> (: $carn_prf (Carnivore $animal_obj)) (Not (Herbivore $animal_obj))))"
             ]
         ),
         # Weather conditions
@@ -224,7 +223,6 @@ def create_training_data():
                 "(: RainingIsWeather (-> (: $rain_prf (Raining $weather_obj)) (WeatherCondition $weather_obj)))",
                 "(: SunnyIsWeather (-> (: $sun_prf (Sunny $weather_obj)) (WeatherCondition $weather_obj)))",
                 "(: CloudyIsWeather (-> (: $cloud_prf (Cloudy $weather_obj)) (WeatherCondition $weather_obj)))",
-                "(: RainingNotSunny (-> (: $rain_prf (Raining $weather_obj)) (Not (Sunny $weather_obj))))"
             ]
         ),
     ]
@@ -262,25 +260,6 @@ def optimize_prompt(program,trainset):
     optimized_program.save("mipro_optimized_type_analyzer.json")
     
     return optimized_program
-
-def single_test_step():
-    # Run a single step of TypeAnalyzer for testing
-    
-    # Test case with new vehicle type and existing types
-    new_types = ["(: Motorcycle (-> (: $m Object) Type))"]
-    similar_types = [
-        "(: Vehicle (-> (: $v Object) Type))",
-        "(: Car (-> (: $c Object) Type))"
-    ]
-    
-    print("Testing TypeAnalyzer with:")
-    print("New types:", new_types)
-    print("Similar types:", similar_types)
-    
-    results = analyzer(new_types=new_types, similar_types=similar_types)
-    print("\nGenerated statements:")
-    for stmt in results:
-        print(stmt)
 
 def eval(program, dataset):
     print("\nRunning optimized program on training set and comparing results:")
