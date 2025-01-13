@@ -135,7 +135,7 @@ def create_training_data():
             statements=[
                 "(: RectangleIsShape (-> (: $rect_prf (Rectangle $rect_obj)) (Shape $rect_obj)))",
                 "(: SquareIsShape (-> (: $sq_prf (Square $sq_obj)) (Shape $sq_obj)))",
-                "(: SquareIsRectangle (-> (: $sq_prf (Square $sq_obj)) (Rectangle $sq_obj)))"
+                "(: SquareIsRectangle (-> (: $sq_prf (Square $sq_obj)) (Rectangle $sq_obj)))",
                 "(: CircleIsShape (-> (: $circle_prf (Circle $circle_obj)) (Shape $circle_obj)))"
             ]
         ),
