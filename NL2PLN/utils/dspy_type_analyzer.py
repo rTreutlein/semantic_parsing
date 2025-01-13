@@ -294,6 +294,61 @@ def create_training_data():
                 "(: SuppliesToRequiresMaterial (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (RequiresMaterial $manuf_obj $material_obj)))"
             ]
         ),
+        # Family Relationships
+        dspy.Example(
+            new_types=[
+                "(: Parent (-> (: $parent Object) (: $child Object) Type))",
+                "(: Sibling (-> (: $sib1 Object) (: $sib2 Object) Type))",
+                "(: Grandparent (-> (: $gparent Object) (: $gchild Object) Type))"
+            ],
+            similar_types=[
+                "(: Related (-> (: $person1 Object) (: $person2 Object) Type))",
+                "(: SameGeneration (-> (: $p1 Object) (: $p2 Object) Type))"
+            ],
+            statements=[
+                "(: ParentToRelated (-> (: $parent_prf (Parent $parent_obj $child_obj)) (Related $parent_obj $child_obj)))",
+                "(: GrandparentFromParent (-> (: $parent1_prf (Parent $gparent_obj $parent_obj)) (: $parent2_prf (Parent $parent_obj $gchild_obj)) (Grandparent $gparent_obj $gchild_obj)))",
+                "(: SiblingsAreSymmetric (-> (: $sib_prf (Sibling $sib1_obj $sib2_obj)) (Sibling $sib2_obj $sib1_obj)))",
+                "(: SiblingsAreSameGeneration (-> (: $sib_prf (Sibling $sib1_obj $sib2_obj)) (SameGeneration $sib1_obj $sib2_obj)))"
+            ]
+        ),
+        # Chemical Reactions
+        dspy.Example(
+            new_types=[
+                "(: Chemical (-> (: $c Object) Type))",
+                "(: ReactsWith (-> (: $reactant1 Object) (: $reactant2 Object) (: $product Object) Type))",
+                "(: Catalyst (-> (: $catalyst Object) (: $reaction Object) Type))",
+                "(: Inhibits (-> (: $inhibitor Object) (: $reaction Object) Type))"
+            ],
+            similar_types=[
+                "(: Element (-> (: $e Object) Type))",
+                "(: Compound (-> (: $c Object) Type))"
+            ],
+            statements=[
+                "(: CompoundIsChemical (-> (: $compound_prf (Compound $compound_obj)) (Chemical $compound_obj)))",
+                "(: ElementIsChemical (-> (: $element_prf (Element $element_obj)) (Chemical $element_obj)))",
+                "(: ReactionNeedsChemicals (-> (: $reaction_prf (ReactsWith $r1_obj $r2_obj $p_obj)) (Chemical $r1_obj) (Chemical $r2_obj) (Chemical $p_obj)))",
+                "(: CatalystIsChemical (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Chemical $cat_obj)))"
+            ]
+        ),
+        # Software Dependencies
+        dspy.Example(
+            new_types=[
+                "(: Package (-> (: $pkg Object) Type))",
+                "(: DependsOn (-> (: $pkg Object) (: $dep Object) Type))",
+                "(: VersionRange (-> (: $pkg Object) (: $min Object) (: $max Object) Type))",
+                "(: Incompatible (-> (: $pkg1 Object) (: $pkg2 Object) Type))"
+            ],
+            similar_types=[
+                "(: Installed (-> (: $pkg Object) Type))",
+                "(: Available (-> (: $pkg Object) Type))"
+            ],
+            statements=[
+                "(: DependencyMustBeInstalled (-> (: $dep_prf (DependsOn $pkg_obj $dep_obj)) (: $pkg_prf (Installed $pkg_obj)) (Installed $dep_obj)))",
+                "(: IncompatibleIsSymmetric (-> (: $incomp_prf (Incompatible $pkg1_obj $pkg2_obj)) (Incompatible $pkg2_obj $pkg1_obj)))",
+                "(: IncompatibleNotInstalled (-> (: $incomp_prf (Incompatible $pkg1_obj $pkg2_obj)) (: $inst1_prf (Installed $pkg1_obj)) (Not (Installed $pkg2_obj))))"
+            ]
+        ),
     ]
     
     # Set inputs for all examples
