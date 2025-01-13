@@ -1,4 +1,5 @@
 import dspy
+import os
 from typing import List, Dict
 from dspy.teleprompt import MIPROv2
 from dspy.evaluate import Evaluate
@@ -9,6 +10,14 @@ class TypeAnalyzerSignature(dspy.Signature):
     
     Analyzes new types and similar existing types to generate valid MeTTa statements
     that express relationships between them using operators like -> and Not.
+
+    Make sure that:
+    - The conclusion has no unbound variables
+    - Negations are only used for relationships (relationship 1 -> Not relationship 2)
+     - So don't do (dog -> not cat) as dog and cat are not relationships
+     - Relationships are Types with multiple arguments lik (HasColor $color $obj)
+    - Try to come up with counter examples before you submit your answer
+    - Only use the types provided do not invent new ones
     """
     
     new_types: list[str] = dspy.InputField(desc="List of new type definitions in MeTTa syntax")
@@ -46,7 +55,7 @@ def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) ->
 
     maxcnt = max(scnt, pcnt)
     if maxcnt == 0:
-        return 0.0
+        return 1
     return sum / maxcnt
 
 
@@ -69,14 +78,13 @@ def create_training_data():
                 "(: ToStayToNotToLeave (-> (: $stay_prf (ToStay $person_obj $location_obj)) (Not (ToLeave $person_obj $location_obj))))"
             ]
         ),
-        # Example with no meaningful relationships
         dspy.Example(
             new_types=["(: Temperature (-> (: $t Object) Type))"],
             similar_types=[
                 "(: Pressure (-> (: $p Object) Type))",
                 "(: Distance (-> (: $d Object) Type))"
             ],
-            statements=[]  # Empty because these types aren't meaningfully related
+            statements=[]
         ),
         dspy.Example(
             new_types=["(: Boy (-> (: $boy Object) Type))"],
@@ -84,7 +92,10 @@ def create_training_data():
                 "(: Male (-> (: $male Object) Type))",
                 "(: Person (-> (: $person Object) Type))"
             ],
-            statements=["(: BoyIsMale (-> (: $boy_prf (Boy $boy_obj)) (Male $boy_obj)))"] # Boy is male but not necessarily a person (might be an animal)
+            statements=[
+                "(: BoyIsMale (-> (: $boy_prf (Boy $boy_obj)) (Male $boy_obj)))",
+                "(: BoyIsPerson (-> (: $boy_prf (Boy $boy_obj)) (Person $boy_obj)))"
+            ]
         ),
         dspy.Example(
             new_types=["(: HasLocation (-> (: $entity Object) (: $location Object) Type))"],
@@ -118,13 +129,14 @@ def create_training_data():
             ],
             similar_types=[
                 "(: Circle (-> (: $c Object) Type))",
-                "(: Weight (-> (: $w Number) Type))",  # Unrelated measurement
-                "(: Volume (-> (: $v Number) Type))"   # Unrelated measurement
+                "(: Weight (-> (: $w Object) Type))",  # Unrelated measurement
+                "(: Volume (-> (: $v Object) Type))"   # Unrelated measurement
             ],
             statements=[
                 "(: RectangleIsShape (-> (: $rect_prf (Rectangle $rect_obj)) (Shape $rect_obj)))",
                 "(: SquareIsShape (-> (: $sq_prf (Square $sq_obj)) (Shape $sq_obj)))",
                 "(: SquareIsRectangle (-> (: $sq_prf (Square $sq_obj)) (Rectangle $sq_obj)))"
+                "(: CircleIsShape (-> (: $circle_prf (Circle $circle_obj)) (Shape $circle_obj)))"
             ]
         ),
         # Profession and skill relationships
@@ -132,7 +144,7 @@ def create_training_data():
             new_types=[
                 "(: HasSkill (-> (: $person Object) (: $skill Object) Type))",
                 "(: Profession (-> (: $p Object) Type))",
-                "(: RequiresSkill (-> (: $prof Profession) (: $skill Object) Type))"
+                "(: RequiresSkill (-> (: $prof Object) (: $skill Object) Type))"
             ],
             similar_types=[
                 "(: WorksAs (-> (: $person Object) (: $prof Object) Type))",
@@ -140,15 +152,15 @@ def create_training_data():
                 "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
             ],
             statements=[
-                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $work_prf (WorksAs $person_obj $prof_obj)) (-> (: $req_prf (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj))))"
+                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $work_prf (WorksAs $person_obj $prof_obj)) (: $req_prf (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj)))"
             ]
         ),
         # Food and ingredient relationships
         dspy.Example(
             new_types=[
                 "(: Food (-> (: $f Object) Type))",
-                "(: Ingredient (-> (: $i Object) Type))",
-                "(: ContainsIngredient (-> (: $food Food) (: $ing Ingredient) Type))"
+                "(: CookingIngredient (-> (: $i Object) Type))",
+                "(: ContainsIngredient (-> (: $mixture Object) (: $ingredient Object) Type))"
             ],
             similar_types=[
                 "(: Recipe (-> (: $r Object) Type))",
@@ -156,7 +168,7 @@ def create_training_data():
                 "(: CookingMethod (-> (: $m Object) Type))" # Unrelated cooking concept
             ],
             statements=[
-                "(: IngredientIsFood (-> (: $ing_prf (Ingredient $ing_obj)) (Food $ing_obj)))"
+                "(: IngredientIsFood (-> (: $ing_prf (CookingIngredient $ing_obj)) (Food $ing_obj)))"
             ]
         ),
     ]
@@ -164,25 +176,14 @@ def create_training_data():
     # Set inputs for all examples
     return [ex.with_inputs("new_types", "similar_types") for ex in examples]
 
-def optimize_prompt():
-    # Initialize DSPy settings
-    lm = dspy.LM('deepseek/deepseek-chat')
-    #lm = dspy.LM('openrouter/microsoft/phi-4')
-    dspy.configure(lm=lm)
-    
-    # Create training data
-    trainset = create_training_data()
-    
-    # Create the base program
-    program = TypeAnalyzer()
-    
+def optimize_prompt(program,trainset):
     # Set up evaluation
     evaluate = Evaluate(devset=trainset, metric=my_metric)
     
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
         metric=my_metric,
-        auto="medium",  # light/medium/heavy optimization run
+        auto="light",  # light/medium/heavy optimization run
         verbose=True
     )
     
@@ -208,9 +209,6 @@ def optimize_prompt():
 
 def single_test_step():
     # Run a single step of TypeAnalyzer for testing
-    analyzer = TypeAnalyzer()
-    lm = dspy.LM('deepseek/deepseek-chat')
-    dspy.configure(lm=lm)
     
     # Test case with new vehicle type and existing types
     new_types = ["(: Motorcycle (-> (: $m Object) Type))"]
@@ -228,31 +226,45 @@ def single_test_step():
     for stmt in results:
         print(stmt)
 
+def eval(program, dataset):
+    print("\nRunning optimized program on training set and comparing results:")
+    total = 0
+    for example in dataset:
+        # Get the optimized program's predictions
+        prediction = program(new_types=example.new_types, 
+                                     similar_types=example.similar_types)
+        
+        metric = my_metric(example, prediction, trace=None)
+        total += metric
+
+        if metric != 1.0:
+            print(f"\nExample mismatch for types metric {metric}:")
+            print(f"New types: {example.new_types}")
+            print(f"Similar types: {example.similar_types}")
+            print(f"Expected statements: {example.statements}")
+            print(f"Actual statements: {prediction.statements}")
+            print("="*80)
+            
+    print(f"\nTotal metric: {total/len(dataset)}")
+
 
 def main():
+    program = TypeAnalyzer()
+    lm = dspy.LM('deepseek/deepseek-chat')
+    dspy.configure(lm=lm)
+
     # Optimize the program
-    optimized_program = optimize_prompt()
+    #optimized_program = optimize_prompt(program)
+
+    program.load("mipro_optimized_type_analyzer.json")
     
     # Load the training set
     trainset = create_training_data()
+
+    eval(program, trainset)
+
+    print(os.environ["DSPY_CACHEDIR"])
     
-    print("\nRunning optimized program on training set and comparing results:")
-    for example in trainset:
-        # Get the optimized program's predictions
-        prediction = optimized_program(new_types=example.new_types, 
-                                     similar_types=example.similar_types)
-        
-        # Compare with expected statements
-        expected = set(example.statements)
-        actual = set(prediction.statements)
-        
-        if expected != actual:
-            print(f"\nExample mismatch for types:")
-            print(f"New types: {example.new_types}")
-            print(f"Similar types: {example.similar_types}")
-            print(f"Expected statements: {expected}")
-            print(f"Actual statements: {actual}")
-            print("="*80)
 
 if __name__ == "__main__":
     main()
