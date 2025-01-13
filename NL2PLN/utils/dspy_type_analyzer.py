@@ -48,7 +48,7 @@ def my_metric(example: dspy.Example, predictions: List[str]) -> float:
 
 
 def create_training_data():
-    return [
+    examples = [
         dspy.Example(
             new_types=["(: Apple (-> (: $apple Object) Type))"],
             similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $c Object) Type))"],
@@ -162,6 +162,9 @@ def create_training_data():
             ]
         )
     ]
+    
+    # Set inputs for all examples
+    return [ex.with_inputs("new_types", "similar_types") for ex in examples]
 
 def optimize_prompt():
     # Initialize DSPy settings
