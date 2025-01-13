@@ -214,6 +214,24 @@ def optimize_prompt():
 def main():
     #optimize_prompt()
 
+    # Run a single step of TypeAnalyzer for testing
+    analyzer = TypeAnalyzer()
+    
+    # Test case with new vehicle type and existing types
+    new_types = ["(: Motorcycle (-> (: $m Object) Type))"]
+    similar_types = [
+        "(: Vehicle (-> (: $v Object) Type))",
+        "(: Car (-> (: $c Object) Type))"
+    ]
+    
+    print("Testing TypeAnalyzer with:")
+    print("New types:", new_types)
+    print("Similar types:", similar_types)
+    
+    results = analyzer(new_types=new_types, similar_types=similar_types)
+    print("\nGenerated statements:")
+    for stmt in results:
+        print(stmt)
 
 if __name__ == "__main__":
     main()
