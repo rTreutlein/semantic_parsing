@@ -158,6 +158,57 @@ def create_training_data():
             statements=[
                 "(: IngredientIsFood (-> (: $ing_prf (Ingredient $ing_obj)) (Food $ing_obj)))"
             ]
+        ),
+        # Time and event relationships
+        dspy.Example(
+            new_types=[
+                "(: Event (-> (: $e Object) Type))",
+                "(: Time (-> (: $t Object) Type))",
+                "(: OccursAt (-> (: $event Event) (: $time Time) Type))"
+            ],
+            similar_types=[
+                "(: Duration (-> (: $d Object) Type))",
+                "(: Location (-> (: $l Object) Type))",  # Unrelated spatial concept
+                "(: Frequency (-> (: $f Object) Type))" # Unrelated temporal concept
+            ],
+            statements=[
+                "(: EventHasTime (-> (: $event_prf (Event $event_obj)) (Time $event_obj)))",
+                "(: OccursAtImpliesEvent (-> (: $occurs_prf (OccursAt $event_obj $time_obj)) (Event $event_obj)))"
+            ]
+        ),
+        # Mathematical relationships
+        dspy.Example(
+            new_types=[
+                "(: Number (-> (: $n Object) Type))",
+                "(: Operation (-> (: $op Object) Type))",
+                "(: ResultOf (-> (: $num1 Number) (: $num2 Number) (: $op Operation) (: $result Number) Type))"
+            ],
+            similar_types=[
+                "(: Add (-> (: $a Operation) Type))",
+                "(: Subtract (-> (: $s Operation) Type))",
+                "(: Multiply (-> (: $m Operation) Type))"
+            ],
+            statements=[
+                "(: AddIsOperation (-> (: $add_prf (Add $add_obj)) (Operation $add_obj)))",
+                "(: ResultOfAddImpliesNumber (-> (: $result_prf (ResultOf $num1_obj $num2_obj $add_obj $result_obj)) (Number $result_obj)))"
+            ]
+        ),
+        # Social relationships
+        dspy.Example(
+            new_types=[
+                "(: Person (-> (: $p Object) Type))",
+                "(: Relationship (-> (: $r Object) Type))",
+                "(: HasRelationship (-> (: $person1 Person) (: $person2 Person) (: $rel Relationship) Type))"
+            ],
+            similar_types=[
+                "(: Friend (-> (: $f Relationship) Type))",
+                "(: Colleague (-> (: $c Relationship) Type))",
+                "(: FamilyMember (-> (: $fm Relationship) Type))"
+            ],
+            statements=[
+                "(: FriendIsRelationship (-> (: $friend_prf (Friend $friend_obj)) (Relationship $friend_obj)))",
+                "(: HasFriendImpliesPerson (-> (: $has_prf (HasRelationship $person1_obj $person2_obj $friend_obj)) (Person $person2_obj)))"
+            ]
         )
     ]
     
