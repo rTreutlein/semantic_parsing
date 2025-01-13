@@ -225,6 +225,62 @@ def create_training_data():
                 "(: CloudyIsWeather (-> (: $cloud_prf (Cloudy $weather_obj)) (WeatherCondition $weather_obj)))",
             ]
         ),
+        # Educational Achievement Chain
+        dspy.Example(
+            new_types=[
+                "(: Studies (-> (: $student Object) (: $subject Object) Type))",
+                "(: Completes (-> (: $student Object) (: $course Object) Type))",
+                "(: HasDegree (-> (: $person Object) (: $degree Object) Type))",
+                "(: QualifiedFor (-> (: $person Object) (: $position Object) Type))",
+                "(: RequiresDegree (-> (: $position Object) (: $degree Object) Type))"
+            ],
+            similar_types=[
+                "(: Enrolls (-> (: $student Object) (: $course Object) Type))",
+                "(: Teaches (-> (: $teacher Object) (: $subject Object) Type))"
+            ],
+            statements=[
+                "(: CompletionLeadsToDegree (-> (: $complete_prf (Completes $student_obj $course_obj)) (HasDegree $student_obj $course_obj)))",
+                "(: DegreeQualifiesPerson (-> (: $degree_prf (HasDegree $person_obj $degree_obj)) (: $req_prf (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj)))",
+                "(: StudyingImpliesEnrollment (-> (: $study_prf (Studies $student_obj $subject_obj)) (Enrolls $student_obj $subject_obj)))"
+            ]
+        ),
+        # Supply Chain Relationships
+        dspy.Example(
+            new_types=[
+                "(: Produces (-> (: $manufacturer Object) (: $product Object) Type))",
+                "(: Supplies (-> (: $supplier Object) (: $material Object) (: $manufacturer Object) Type))",
+                "(: Uses (-> (: $product Object) (: $material Object) Type))",
+                "(: RequiresMaterial (-> (: $manufacturer Object) (: $material Object) Type))"
+            ],
+            similar_types=[
+                "(: Stores (-> (: $warehouse Object) (: $item Object) Type))",
+                "(: Transports (-> (: $carrier Object) (: $cargo Object) Type))"
+            ],
+            statements=[
+                "(: ProductionNeedsMaterial (-> (: $prod_prf (Produces $manuf_obj $product_obj)) (: $use_prf (Uses $product_obj $material_obj)) (RequiresMaterial $manuf_obj $material_obj)))",
+                "(: SupplyMeetsRequirement (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (: $req_prf (RequiresMaterial $manuf_obj $material_obj)) (Stores $supplier_obj $material_obj)))",
+                "(: TransportSupplies (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (Transports $carrier_obj $material_obj)))"
+            ]
+        ),
+        # Team Project Dependencies
+        dspy.Example(
+            new_types=[
+                "(: LeadsProject (-> (: $leader Object) (: $project Object) Type))",
+                "(: WorksOn (-> (: $person Object) (: $project Object) Type))",
+                "(: HasSkill (-> (: $person Object) (: $skill Object) Type))",
+                "(: ProjectRequires (-> (: $project Object) (: $skill Object) Type))",
+                "(: CanDelegate (-> (: $leader Object) (: $task Object) (: $worker Object) Type))"
+            ],
+            similar_types=[
+                "(: AssignedTo (-> (: $task Object) (: $person Object) Type))",
+                "(: TaskNeedsSkill (-> (: $task Object) (: $skill Object) Type))"
+            ],
+            statements=[
+                "(: LeaderCanDelegateToSkilled (-> (: $leads_prf (LeadsProject $leader_obj $project_obj)) (: $works_prf (WorksOn $worker_obj $project_obj)) (: $has_prf (HasSkill $worker_obj $skill_obj)) (: $task_prf (TaskNeedsSkill $task_obj $skill_obj)) (CanDelegate $leader_obj $task_obj $worker_obj)))",
+                "(: ProjectNeedsSkilled (-> (: $works_prf (WorksOn $person_obj $project_obj)) (: $req_prf (ProjectRequires $project_obj $skill_obj)) (HasSkill $person_obj $skill_obj)))",
+                "(: DelegationAssigns (-> (: $delegate_prf (CanDelegate $leader_obj $task_obj $worker_obj)) (AssignedTo $task_obj $worker_obj)))"
+            ]
+        )
     ]
     
     # Set inputs for all examples
