@@ -63,14 +63,6 @@ class TypeSimilarityHandler:
                 "(: ToRedVehicle (-> (Vehicle $x) (-> (Red $x) (RedVehicle $x))))\n\n"
                 "```\n\n"
 
-                "4. Temporal Relations:\n"
-                "Type 1: (: LeaveLocation (-> (: $person Object) (: $location Object) Type))\n"
-                "Type 2: (: AtLocation (-> (: $person Object) (: $location Object) Type))\n"
-                "Output:"
-                "```"
-                "(: LeaveImpliesNotAt (-> (TrueAtTime (LeaveLocation $p $loc) $t) (Not (TrueAtTime (AtLocation $p $loc) $t))))\n"
-                "```\n\n"
-
                 "Note: By default, all statements in a relationship are assumed to happen at the same time and place.\n"
                 "Only use TrueAtTime, TrueAtPlace, or TrueAtTimePlace when relating events that happen at different times or places.\n"
 
