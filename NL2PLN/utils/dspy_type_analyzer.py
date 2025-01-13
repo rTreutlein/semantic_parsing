@@ -230,7 +230,29 @@ def single_test_step():
 
 
 def main():
-    optimize_prompt()
+    # Optimize the program
+    optimized_program = optimize_prompt()
+    
+    # Load the training set
+    trainset = create_training_data()
+    
+    print("\nRunning optimized program on training set and comparing results:")
+    for example in trainset:
+        # Get the optimized program's predictions
+        prediction = optimized_program(new_types=example.new_types, 
+                                     similar_types=example.similar_types)
+        
+        # Compare with expected statements
+        expected = set(example.statements)
+        actual = set(prediction.statements)
+        
+        if expected != actual:
+            print(f"\nExample mismatch for types:")
+            print(f"New types: {example.new_types}")
+            print(f"Similar types: {example.similar_types}")
+            print(f"Expected statements: {expected}")
+            print(f"Actual statements: {actual}")
+            print("="*80)
 
 if __name__ == "__main__":
     main()
