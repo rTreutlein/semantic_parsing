@@ -110,6 +110,57 @@ def create_training_data():
                 "(: CarIsVehicle (-> (: $c (Car $c)) (Vehicle $c)))",
                 "(: BicycleIsVehicle (-> (: $b (Bicycle $b)) (Vehicle $b)))"
             ]
+        ),
+        # Shape hierarchy example
+        dspy.Example(
+            new_types=[
+                "(: Shape (-> (: $s Object) Type))",
+                "(: Rectangle (-> (: $r Object) Type))",
+                "(: Square (-> (: $sq Object) Type))"
+            ],
+            similar_types=[
+                "(: Circle (-> (: $c Object) Type))",
+                "(: Weight (-> (: $w Number) Type))",  # Unrelated measurement
+                "(: Volume (-> (: $v Number) Type))"   # Unrelated measurement
+            ],
+            statements=[
+                "(: RectangleIsShape (-> (: $r (Rectangle $r)) (Shape $r)))",
+                "(: SquareIsShape (-> (: $s (Square $s)) (Shape $s)))",
+                "(: SquareIsRectangle (-> (: $s (Square $s)) (Rectangle $s)))"
+            ]
+        ),
+        # Profession and skill relationships
+        dspy.Example(
+            new_types=[
+                "(: HasSkill (-> (: $person Object) (: $skill Object) Type))",
+                "(: Profession (-> (: $p Object) Type))",
+                "(: RequiresSkill (-> (: $prof Profession) (: $skill Object) Type))"
+            ],
+            similar_types=[
+                "(: WorksAs (-> (: $person Object) (: $prof Object) Type))",
+                "(: Hobby (-> (: $h Object) Type))",      # Unrelated activity
+                "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
+            ],
+            statements=[
+                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $p (WorksAs $person $prof)) (: $r (RequiresSkill $prof $skill)) (HasSkill $person $skill)))"
+            ]
+        ),
+        # Food and ingredient relationships
+        dspy.Example(
+            new_types=[
+                "(: Food (-> (: $f Object) Type))",
+                "(: Ingredient (-> (: $i Object) Type))",
+                "(: ContainsIngredient (-> (: $food Food) (: $ing Ingredient) Type))"
+            ],
+            similar_types=[
+                "(: Recipe (-> (: $r Object) Type))",
+                "(: Tool (-> (: $t Object) Type))",       # Unrelated kitchen item
+                "(: CookingMethod (-> (: $m Object) Type))" # Unrelated cooking concept
+            ],
+            statements=[
+                "(: FoodHasIngredient (-> (: $f Food) (: $i Ingredient) (ContainsIngredient $f $i)))",
+                "(: IngredientIsFood (-> (: $i (Ingredient $i)) (Food $i)))"
+            ]
         )
     ]
 
