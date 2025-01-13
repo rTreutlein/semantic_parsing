@@ -13,11 +13,23 @@ class TypeAnalyzerSignature(dspy.Signature):
 
     Make sure that:
     - The conclusion has no unbound variables
-    - Negations are only used for relationships (relationship 1 -> Not relationship 2)
-     - So don't do (dog -> not cat) as dog and cat are not relationships
-     - Relationships are Types with multiple arguments lik (HasColor $color $obj)
+     - Meaning if a variable appeas in the conclusion it must exist in the premises
+      -  CORRECT (: CompletionToFinishes (: $complete_prf (Completes $student_obj $course_obj)) (Finishes $student_obj $course_obj))
+      -  INCORRECT (: CompletionToDegree (: $complete_prf (Completes $student_obj $course_obj)) (HasDegree $student_obj $degree_obj))
+       - The $degree_obj variable is unbound as it does not exist in the premises
+
+    - Negations (Not) should ONLY be used between relationships predicates (predicates with 2 or more arguments)
+     - CORRECT: (: ToStayToNotToLeave (-> (: $stay_prf (ToStay $person_obj $location_obj)) (Not (ToLeave $person_obj $location_obj))))
+     - INCORRECT: (: CarnivorToNotHerbivor (-> (: $carn_prf (Carnivore $carn_obj)) (Not (Herbivore $carn_obj))))
+     - Instead of negating types, express positive relationships:
+       e.g., (: EatsMeatToCarnivore (-> (: $eat_prf (EatsMeat $animal_obj)) (Carnivore $animal_obj)))
+
     - Try to come up with counter examples before you submit your answer
+
     - Only use the types provided do not invent new ones
+
+    - If something is only possible but not always true do not create the relationship
+      only create the relationship that are always true
     """
     
     new_types: list[str] = dspy.InputField(desc="List of new type definitions in MeTTa syntax")
@@ -32,6 +44,24 @@ class TypeAnalyzer(dspy.Module):
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 
                                 similar_types="\n".join(similar_types))
+
+
+        metta = MeTTa()
+        for statement in prediction.statements:
+
+            try:
+                metta.parse_single(statement)
+                metta.run(f"!(add-atom &kb {statement})")
+            except:
+                pass
+
+        res = metta.run("!(match &self (: $prf (-> (: $prf_a ($A $a)) (Not ($B $a)))) (: $prf (-> (: $prf_a ($A $a)) (Not ($B $a)))))")
+
+        for elem in res[0]:
+            for statement in prediction.statements:
+                if elem == statement:
+                    prediction.statements.remove(statement)
+
         return prediction
 
 def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
@@ -183,9 +213,12 @@ def create_training_data():
                 "(: Simultaneous (-> (: $t1 Object) (: $t2 Object) Type))"
             ],
             statements=[
-                "(: BeforeImpliesAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
-                "(: AfterImpliesBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
-                "(: TimePointsAreOrdered (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
+                "(: BeforeToAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
+                "(: AfterToBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
+                "(: BeforToNotSimultaneous (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
+                "(: AfterToNotSimultaneous (-> (: $after_prf (After $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
+                "(: SimultaneousToNotBefore (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (Before $t1_obj $t2_obj))))"
+                "(: SimultaneousToNotAfter (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (After $t1_obj $t2_obj))))"
             ]
         ),
         # Animal classification
@@ -239,9 +272,10 @@ def create_training_data():
                 "(: Teaches (-> (: $teacher Object) (: $subject Object) Type))"
             ],
             statements=[
-                "(: CompletionLeadsToDegree (-> (: $complete_prf (Completes $student_obj $course_obj)) (HasDegree $student_obj $course_obj)))",
                 "(: DegreeQualifiesPerson (-> (: $degree_prf (HasDegree $person_obj $degree_obj)) (: $req_prf (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj)))",
-                "(: StudyingImpliesEnrollment (-> (: $study_prf (Studies $student_obj $subject_obj)) (Enrolls $student_obj $subject_obj)))"
+                "(: StudyingImpliesEnrollment (-> (: $study_prf (Studies $student_obj $subject_obj)) (Enrolls $student_obj $subject_obj)))",
+                '(: EnrollsToStudies (-> (: $enroll_prf (Enrolls $student_obj $course_obj)) (Studies $student_obj $course_obj)))',
+                '(: CompletesToNotEnrolls (-> (: $complete_prf (Completes $student_obj $course_obj)) (Not (Enrolls $student_obj $course_obj))))',
             ]
         ),
         # Supply Chain Relationships
@@ -258,42 +292,22 @@ def create_training_data():
             ],
             statements=[
                 "(: ProductionNeedsMaterial (-> (: $prod_prf (Produces $manuf_obj $product_obj)) (: $use_prf (Uses $product_obj $material_obj)) (RequiresMaterial $manuf_obj $material_obj)))",
-                "(: SupplyMeetsRequirement (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (: $req_prf (RequiresMaterial $manuf_obj $material_obj)) (Stores $supplier_obj $material_obj)))",
-                "(: TransportSupplies (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (Transports $carrier_obj $material_obj)))"
+                "(: SuppliesToRequiresMaterial (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (RequiresMaterial $manuf_obj $material_obj)))"
             ]
         ),
-        # Team Project Dependencies
-        dspy.Example(
-            new_types=[
-                "(: LeadsProject (-> (: $leader Object) (: $project Object) Type))",
-                "(: WorksOn (-> (: $person Object) (: $project Object) Type))",
-                "(: HasSkill (-> (: $person Object) (: $skill Object) Type))",
-                "(: ProjectRequires (-> (: $project Object) (: $skill Object) Type))",
-                "(: CanDelegate (-> (: $leader Object) (: $task Object) (: $worker Object) Type))"
-            ],
-            similar_types=[
-                "(: AssignedTo (-> (: $task Object) (: $person Object) Type))",
-                "(: TaskNeedsSkill (-> (: $task Object) (: $skill Object) Type))"
-            ],
-            statements=[
-                "(: LeaderCanDelegateToSkilled (-> (: $leads_prf (LeadsProject $leader_obj $project_obj)) (: $works_prf (WorksOn $worker_obj $project_obj)) (: $has_prf (HasSkill $worker_obj $skill_obj)) (: $task_prf (TaskNeedsSkill $task_obj $skill_obj)) (CanDelegate $leader_obj $task_obj $worker_obj)))",
-                "(: ProjectNeedsSkilled (-> (: $works_prf (WorksOn $person_obj $project_obj)) (: $req_prf (ProjectRequires $project_obj $skill_obj)) (HasSkill $person_obj $skill_obj)))",
-                "(: DelegationAssigns (-> (: $delegate_prf (CanDelegate $leader_obj $task_obj $worker_obj)) (AssignedTo $task_obj $worker_obj)))"
-            ]
-        )
     ]
     
     # Set inputs for all examples
     return [ex.with_inputs("new_types", "similar_types") for ex in examples]
 
-def optimize_prompt(program,trainset):
+def optimize_prompt(program,trainset,mode="light",out="mipro_optimized_type_analyzer"):
     # Set up evaluation
     evaluate = Evaluate(devset=trainset, metric=my_metric)
     
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
         metric=my_metric,
-        auto="light",  # light/medium/heavy optimization run
+        auto=mode,  # light/medium/heavy optimization run
         verbose=True
     )
     
@@ -313,7 +327,7 @@ def optimize_prompt(program,trainset):
     print(f"Optimized program score: {score}")
     
     # Save the optimized program
-    optimized_program.save("mipro_optimized_type_analyzer.json")
+    optimized_program.save(f"{out}.json")
     
     return optimized_program
 
@@ -341,20 +355,20 @@ def eval(program, dataset):
 
 def main():
     program = TypeAnalyzer()
-    lm = dspy.LM('deepseek/deepseek-chat')
+    #lm = dspy.LM('deepseek/deepseek-chat', temperature=0.5)
+    #lm = dspy.LM('openrouter/qwen/qwq-32b-preview', temperature=0.5, max_tokens=10000)
+    #lm = dspy.LM('openai/o1-mini', temperature = 1, max_tokens = 5000)
+    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
     dspy.configure(lm=lm)
 
-    # Optimize the program
-    #optimized_program = optimize_prompt(program)
-
-    program.load("mipro_optimized_type_analyzer.json")
-    
     # Load the training set
     trainset = create_training_data()
 
-    eval(program, trainset)
+    # Optimize the program
+    #program = optimize_prompt(program,trainset,"medium")
 
-    print(os.environ["DSPY_CACHEDIR"])
+    program.load("claude_optimized_type_analyzer.json")
+    eval(program, trainset)
     
 
 if __name__ == "__main__":
