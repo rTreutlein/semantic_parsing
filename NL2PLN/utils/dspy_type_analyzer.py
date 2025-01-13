@@ -165,8 +165,8 @@ def create_training_data():
 
 def optimize_prompt():
     # Initialize DSPy settings
-    lm = dspy.OpenAI(model='gpt-4o-mini')
-    dspy.settings.configure(lm=lm)
+    lm = dspy.LM('openai/gpt-4o-mini')
+    dspy.configure(lm=lm)
     
     # Create training data
     trainset = create_training_data()
