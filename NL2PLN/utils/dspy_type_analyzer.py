@@ -56,7 +56,7 @@ def create_training_data():
         dspy.Example(
             new_types=["(: Apple (-> (: $apple Object) Type))"],
             similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $color Object) Type))"],
-            statements=["(: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))"]
+            statements=["(: AppleIsFruit (-> (: $apple_obj (Apple $apple_obj)) (Fruit $apple_obj)))"]
         ),
         dspy.Example(
             new_types=["(: ToLeave (-> (: $person Object) (: $location Object) Type))"],
@@ -65,8 +65,8 @@ def create_training_data():
                 "(: ToEat (-> (: $person Object) (: $food Object) Type))"  # Unrelated action
             ],
             statements=[
-                "(: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToStay $a $b))))",
-                "(: ToStayToNotToLeave (-> (: $t (ToStay $a $b)) (Not (ToLeave $a $b))))"
+                "(: ToLeaveToNotToStay (-> (: $leave_act (ToLeave $person_obj $location_obj)) (Not (ToStay $person_obj $location_obj))))",
+                "(: ToStayToNotToLeave (-> (: $stay_act (ToStay $person_obj $location_obj)) (Not (ToLeave $person_obj $location_obj))))"
             ]
         ),
         # Example with no meaningful relationships
@@ -84,7 +84,7 @@ def create_training_data():
                 "(: Male (-> (: $male Object) Type))",
                 "(: Person (-> (: $person Object) Type))"
             ],
-            statements=["(: BoyIsMale (-> (: $b (Boy $b)) (Male $b)))"] # Boy is male but not necessarily a person (might be an animal)
+            statements=["(: BoyIsMale (-> (: $boy_obj (Boy $boy_obj)) (Male $boy_obj)))"] # Boy is male but not necessarily a person (might be an animal)
         ),
         dspy.Example(
             new_types=["(: HasLocation (-> (: $entity Object) (: $location Object) Type))"],
@@ -93,8 +93,8 @@ def create_training_data():
                 "(: HasColor (-> (: $obj Object) (: $color Object) Type))"  # Unrelated property
             ],
             statements=[
-                "(: HasLocationToIsAt (-> (: $h (HasLocation $e $l)) (IsAt $e $l)))",
-                "(: IsAtToHasLocation (-> (: $i (IsAt $e $l)) (HasLocation $e $l)))"
+                "(: HasLocationToIsAt (-> (: $loc_rel (HasLocation $entity_obj $location_obj)) (IsAt $entity_obj $location_obj)))",
+                "(: IsAtToHasLocation (-> (: $at_rel (IsAt $entity_obj $location_obj)) (HasLocation $entity_obj $location_obj)))"
             ]
         ),
         dspy.Example(
@@ -105,8 +105,8 @@ def create_training_data():
                 "(: Furniture (-> (: $f Object) Type))"   # Unrelated type
             ],
             statements=[
-                "(: CarIsVehicle (-> (: $c (Car $c)) (Vehicle $c)))",
-                "(: BicycleIsVehicle (-> (: $b (Bicycle $b)) (Vehicle $b)))"
+                "(: CarIsVehicle (-> (: $car_obj (Car $car_obj)) (Vehicle $car_obj)))",
+                "(: BicycleIsVehicle (-> (: $bike_obj (Bicycle $bike_obj)) (Vehicle $bike_obj)))"
             ]
         ),
         # Shape hierarchy example
@@ -122,9 +122,9 @@ def create_training_data():
                 "(: Volume (-> (: $v Number) Type))"   # Unrelated measurement
             ],
             statements=[
-                "(: RectangleIsShape (-> (: $r (Rectangle $r)) (Shape $r)))",
-                "(: SquareIsShape (-> (: $s (Square $s)) (Shape $s)))",
-                "(: SquareIsRectangle (-> (: $s (Square $s)) (Rectangle $s)))"
+                "(: RectangleIsShape (-> (: $rect_obj (Rectangle $rect_obj)) (Shape $rect_obj)))",
+                "(: SquareIsShape (-> (: $sq_obj (Square $sq_obj)) (Shape $sq_obj)))",
+                "(: SquareIsRectangle (-> (: $sq_obj (Square $sq_obj)) (Rectangle $sq_obj)))"
             ]
         ),
         # Profession and skill relationships
@@ -140,7 +140,7 @@ def create_training_data():
                 "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
             ],
             statements=[
-                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $p (WorksAs $person $prof)) (-> (: $r (RequiresSkill $prof $skill)) (HasSkill $person $skill))))"
+                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $work_rel (WorksAs $person_obj $prof_obj)) (-> (: $req_rel (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj))))"
             ]
         ),
         # Food and ingredient relationships
@@ -156,7 +156,7 @@ def create_training_data():
                 "(: CookingMethod (-> (: $m Object) Type))" # Unrelated cooking concept
             ],
             statements=[
-                "(: IngredientIsFood (-> (: $i (Ingredient $i)) (Food $i)))"
+                "(: IngredientIsFood (-> (: $ing_obj (Ingredient $ing_obj)) (Food $ing_obj)))"
             ]
         )
     ]
