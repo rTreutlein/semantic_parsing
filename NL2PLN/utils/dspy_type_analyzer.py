@@ -171,6 +171,62 @@ def create_training_data():
                 "(: IngredientIsFood (-> (: $ing_prf (CookingIngredient $ing_obj)) (Food $ing_obj)))"
             ]
         ),
+        # Time relationships
+        dspy.Example(
+            new_types=[
+                "(: TimePoint (-> (: $t Object) Type))",
+                "(: Before (-> (: $t1 Object) (: $t2 Object) Type))",
+                "(: After (-> (: $t1 Object) (: $t2 Object) Type))"
+            ],
+            similar_types=[
+                "(: Duration (-> (: $d Object) Type))",
+                "(: Simultaneous (-> (: $t1 Object) (: $t2 Object) Type))"
+            ],
+            statements=[
+                "(: BeforeImpliesAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
+                "(: AfterImpliesBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
+                "(: TimePointsAreOrdered (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
+            ]
+        ),
+        # Animal classification
+        dspy.Example(
+            new_types=[
+                "(: Animal (-> (: $a Object) Type))",
+                "(: Mammal (-> (: $m Object) Type))",
+                "(: Carnivore (-> (: $c Object) Type))",
+                "(: Herbivore (-> (: $h Object) Type))"
+            ],
+            similar_types=[
+                "(: Vertebrate (-> (: $v Object) Type))",
+                "(: EatsPlants (-> (: $animal Object) Type))",
+                "(: EatsMeat (-> (: $animal Object) Type))"
+            ],
+            statements=[
+                "(: MammalIsAnimal (-> (: $mammal_prf (Mammal $mammal_obj)) (Animal $mammal_obj)))",
+                "(: CarnivoreEatsMeat (-> (: $carn_prf (Carnivore $carn_obj)) (EatsMeat $carn_obj)))",
+                "(: HerbivoreEatsPlants (-> (: $herb_prf (Herbivore $herb_obj)) (EatsPlants $herb_obj)))",
+                "(: CarnivoreNotHerbivore (-> (: $carn_prf (Carnivore $animal_obj)) (Not (Herbivore $animal_obj))))"
+            ]
+        ),
+        # Weather conditions
+        dspy.Example(
+            new_types=[
+                "(: WeatherCondition (-> (: $w Object) Type))",
+                "(: Raining (-> (: $r Object) Type))",
+                "(: Sunny (-> (: $s Object) Type))",
+                "(: Cloudy (-> (: $c Object) Type))"
+            ],
+            similar_types=[
+                "(: Temperature (-> (: $t Object) Type))",
+                "(: Humidity (-> (: $h Object) Type))"
+            ],
+            statements=[
+                "(: RainingIsWeather (-> (: $rain_prf (Raining $weather_obj)) (WeatherCondition $weather_obj)))",
+                "(: SunnyIsWeather (-> (: $sun_prf (Sunny $weather_obj)) (WeatherCondition $weather_obj)))",
+                "(: CloudyIsWeather (-> (: $cloud_prf (Cloudy $weather_obj)) (WeatherCondition $weather_obj)))",
+                "(: RainingNotSunny (-> (: $rain_prf (Raining $weather_obj)) (Not (Sunny $weather_obj))))"
+            ]
+        ),
     ]
     
     # Set inputs for all examples
