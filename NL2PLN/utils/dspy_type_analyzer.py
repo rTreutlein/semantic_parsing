@@ -52,12 +52,15 @@ def create_training_data():
     return [
         dspy.Example(
             new_types=["(: Apple (-> (: $apple Object) Type))"],
-            similar_types=["(: Fruit (-> (: $fruit Object) Type))"],
+            similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $c Object) Type))"],
             statements=["(: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))"]
         ),
         dspy.Example(
             new_types=["(: ToLeave (-> (: $person Object) (: $location Object) Type))"],
-            similar_types=["(: ToStay (-> (: $person Object) (: $location Object) Type))"],
+            similar_types=[
+                "(: ToStay (-> (: $person Object) (: $location Object) Type))",
+                "(: ToEat (-> (: $person Object) (: $food Object) Type))"  # Unrelated action
+            ],
             statements=[
                 "(: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToLeave $a $b))))",
                 "(: ToStayToNotToLeave (-> (: $t (ToStay $a $b)) (Not (ToStay $a $b))))"
@@ -65,16 +68,32 @@ def create_training_data():
         ),
         dspy.Example(
             new_types=["(: EntityType (-> (: $entity Object) Type))"],
-            similar_types=["(: Person EntityType)", "(: Animal EntityType)"],
+            similar_types=[
+                "(: Person EntityType)", 
+                "(: Animal EntityType)",
+                "(: Database (-> (: $db Object) Type))"  # Unrelated type
+            ],
             statements=[
                 "(: EntityTypeIsType (-> (: $e EntityType) Type))",
                 "(: PersonIsEntityType (-> (: $p Person) (EntityType $p)))",
                 "(: AnimalIsEntityType (-> (: $a Animal) (EntityType $a)))"
             ]
         ),
+        # Example with no meaningful relationships
+        dspy.Example(
+            new_types=["(: Temperature (-> (: $t Number) Type))"],
+            similar_types=[
+                "(: Pressure (-> (: $p Number) Type))",
+                "(: Distance (-> (: $d Number) Type))"
+            ],
+            statements=[]  # Empty because these types aren't meaningfully related
+        ),
         dspy.Example(
             new_types=["(: HasLocation (-> (: $entity EntityType) (: $location Object) Type))"],
-            similar_types=["(: IsAt (-> (: $thing Object) (: $place Object) Type))"],
+            similar_types=[
+                "(: IsAt (-> (: $thing Object) (: $place Object) Type))",
+                "(: HasColor (-> (: $obj Object) (: $color Object) Type))"  # Unrelated property
+            ],
             statements=[
                 "(: HasLocationToIsAt (-> (: $h (HasLocation $e $l)) (IsAt $e $l)))",
                 "(: IsAtToHasLocation (-> (: $i (IsAt $e $l)) (HasLocation $e $l)))"
@@ -82,7 +101,11 @@ def create_training_data():
         ),
         dspy.Example(
             new_types=["(: Vehicle (-> (: $v Object) Type))", "(: Car (-> (: $c Object) Type))"],
-            similar_types=["(: Bicycle (-> (: $b Object) Type))"],
+            similar_types=[
+                "(: Bicycle (-> (: $b Object) Type))",
+                "(: Book (-> (: $bk Object) Type))",      # Unrelated type
+                "(: Furniture (-> (: $f Object) Type))"   # Unrelated type
+            ],
             statements=[
                 "(: CarIsVehicle (-> (: $c (Car $c)) (Vehicle $c)))",
                 "(: BicycleIsVehicle (-> (: $b (Bicycle $b)) (Vehicle $b)))"
