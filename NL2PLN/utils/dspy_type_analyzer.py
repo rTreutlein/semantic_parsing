@@ -23,10 +23,9 @@ class TypeAnalyzer(dspy.Module):
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 
                                 similar_types="\n".join(similar_types))
-        print(prediciton)
-        return prediction.statements.split("\n")
+        return prediction
 
-def my_metric(example: dspy.Example, predictions: List[str]) -> float:
+def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
     sum = 0
     scnt = 0
     pcnt = 0
@@ -35,16 +34,20 @@ def my_metric(example: dspy.Example, predictions: List[str]) -> float:
     for statement in example.statements:
         scnt += 1
         metta.run(f"!(add-atom &kb {statement})")
-    for prediction in predictions:
+    for ps in prediction.statements:
         pcnt += 1
         try:
-            pred = metta.parse_single(prediction).get_children()[2]
+            pred = metta.parse_single(ps).get_children()[2]
             res = metta.run(f"!(match &kb (: $typenamexzy123 {pred}) {pred})")
             if len(res[0]) != 0:
                 sum += 1
         except:
             pass
-    return sum / max(scnt, pcnt)
+
+    maxcnt = max(scnt, pcnt)
+    if maxcnt == 0:
+        return 0.0
+    return sum / maxcnt
 
 
 
@@ -52,7 +55,7 @@ def create_training_data():
     examples = [
         dspy.Example(
             new_types=["(: Apple (-> (: $apple Object) Type))"],
-            similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $c Object) Type))"],
+            similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $color Object) Type))"],
             statements=["(: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))"]
         ),
         dspy.Example(
@@ -62,34 +65,29 @@ def create_training_data():
                 "(: ToEat (-> (: $person Object) (: $food Object) Type))"  # Unrelated action
             ],
             statements=[
-                "(: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToLeave $a $b))))",
-                "(: ToStayToNotToLeave (-> (: $t (ToStay $a $b)) (Not (ToStay $a $b))))"
-            ]
-        ),
-        dspy.Example(
-            new_types=["(: EntityType (-> (: $entity Object) Type))"],
-            similar_types=[
-                "(: Person EntityType)", 
-                "(: Animal EntityType)",
-                "(: Database (-> (: $db Object) Type))"  # Unrelated type
-            ],
-            statements=[
-                "(: EntityTypeIsType (-> (: $e EntityType) Type))",
-                "(: PersonIsEntityType (-> (: $p Person) (EntityType $p)))",
-                "(: AnimalIsEntityType (-> (: $a Animal) (EntityType $a)))"
+                "(: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToStay $a $b))))",
+                "(: ToStayToNotToLeave (-> (: $t (ToStay $a $b)) (Not (ToLeave $a $b))))"
             ]
         ),
         # Example with no meaningful relationships
         dspy.Example(
-            new_types=["(: Temperature (-> (: $t Number) Type))"],
+            new_types=["(: Temperature (-> (: $t Object) Type))"],
             similar_types=[
-                "(: Pressure (-> (: $p Number) Type))",
-                "(: Distance (-> (: $d Number) Type))"
+                "(: Pressure (-> (: $p Object) Type))",
+                "(: Distance (-> (: $d Object) Type))"
             ],
             statements=[]  # Empty because these types aren't meaningfully related
         ),
         dspy.Example(
-            new_types=["(: HasLocation (-> (: $entity EntityType) (: $location Object) Type))"],
+            new_types=["(: Boy (-> (: $boy Object) Type))"],
+            similar_types=[
+                "(: Male (-> (: $male Object) Type))",
+                "(: Person (-> (: $person Object) Type))"
+            ],
+            statements=["(: BoyIsMale (-> (: $b (Boy $b)) (Male $b)))"] # Boy is male but not necessarily a person (might be an animal)
+        ),
+        dspy.Example(
+            new_types=["(: HasLocation (-> (: $entity Object) (: $location Object) Type))"],
             similar_types=[
                 "(: IsAt (-> (: $thing Object) (: $place Object) Type))",
                 "(: HasColor (-> (: $obj Object) (: $color Object) Type))"  # Unrelated property
@@ -142,7 +140,7 @@ def create_training_data():
                 "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
             ],
             statements=[
-                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $p (WorksAs $person $prof)) (: $r (RequiresSkill $prof $skill)) (HasSkill $person $skill)))"
+                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $p (WorksAs $person $prof)) (-> (: $r (RequiresSkill $prof $skill)) (HasSkill $person $skill))))"
             ]
         ),
         # Food and ingredient relationships
@@ -158,7 +156,6 @@ def create_training_data():
                 "(: CookingMethod (-> (: $m Object) Type))" # Unrelated cooking concept
             ],
             statements=[
-                "(: FoodHasIngredient (-> (: $f Food) (: $i Ingredient) (ContainsIngredient $f $i)))",
                 "(: IngredientIsFood (-> (: $i (Ingredient $i)) (Food $i)))"
             ]
         )
@@ -169,7 +166,8 @@ def create_training_data():
 
 def optimize_prompt():
     # Initialize DSPy settings
-    lm = dspy.LM('openai/gpt-4o-mini')
+    lm = dspy.LM('deepseek/deepseek-chat')
+    #lm = dspy.LM('openrouter/microsoft/phi-4')
     dspy.configure(lm=lm)
     
     # Create training data
@@ -184,10 +182,7 @@ def optimize_prompt():
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
         metric=my_metric,
-        auto="light",  # Light optimization run
-        num_threads=4,
-        max_bootstrapped_demos=3,
-        max_labeled_demos=4,
+        auto="medium",  # light/medium/heavy optimization run
         verbose=True
     )
     
@@ -207,15 +202,15 @@ def optimize_prompt():
     print(f"Optimized program score: {score}")
     
     # Save the optimized program
-    optimized_program.save("mipro_optimized_type_analyzer")
+    optimized_program.save("mipro_optimized_type_analyzer.json")
     
     return optimized_program
 
-def main():
-    #optimize_prompt()
-
+def single_test_step():
     # Run a single step of TypeAnalyzer for testing
     analyzer = TypeAnalyzer()
+    lm = dspy.LM('openai/gpt-4o-mini')
+    dspy.configure(lm=lm)
     
     # Test case with new vehicle type and existing types
     new_types = ["(: Motorcycle (-> (: $m Object) Type))"]
@@ -232,6 +227,10 @@ def main():
     print("\nGenerated statements:")
     for stmt in results:
         print(stmt)
+
+
+def main():
+    optimize_prompt()
 
 if __name__ == "__main__":
     main()
