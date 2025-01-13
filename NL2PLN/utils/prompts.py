@@ -456,8 +456,8 @@ Statements:
 From Context:
 
 Type Definitions:
-(: Home (-> Object Type))
-(: Money (-> Object Type))
+(: Home (-> (: $home Object) Type))
+(: Money (-> (: $money Object) Type))
 
 Statements:
 (: john Object)

@@ -29,3 +29,7 @@
 
 !(add-atom &kb (: contraposition (-> (: $ab (-> (: $a $A) $B))
                                             (-> (: $nb (Not $B)) (Not $A)))))
+
+!(add-atom &kb (: anotate_time (-> (: $ab (-> (: $a $A) $B)) (-> (: $at (TrueAtTime $A $t)) (TrueAtTime $B $t)))))
+!(add-atom &kb (: anotate_time (-> (: $ab (-> (: $a $A) $B)) (-> (: $at (TrueAtPlace $A $t)) (TrueAtPlace $B $t)))))
+!(add-atom &kb (: anotate_time (-> (: $ab (-> (: $a $A) $B)) (-> (: $at (TrueAtTimePlace $A $t)) (TrueAtTimePlace $B $t)))))
