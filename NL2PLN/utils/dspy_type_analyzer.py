@@ -215,9 +215,9 @@ def create_training_data():
             statements=[
                 "(: BeforeToAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
                 "(: AfterToBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
-                "(: BeforToNotSimultaneous (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
-                "(: AfterToNotSimultaneous (-> (: $after_prf (After $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))"
-                "(: SimultaneousToNotBefore (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (Before $t1_obj $t2_obj))))"
+                "(: BeforToNotSimultaneous (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
+                "(: AfterToNotSimultaneous (-> (: $after_prf (After $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
+                "(: SimultaneousToNotBefore (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (Before $t1_obj $t2_obj))))",
                 "(: SimultaneousToNotAfter (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (After $t1_obj $t2_obj))))"
             ]
         ),
@@ -273,7 +273,6 @@ def create_training_data():
             ],
             statements=[
                 "(: DegreeQualifiesPerson (-> (: $degree_prf (HasDegree $person_obj $degree_obj)) (: $req_prf (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj)))",
-                "(: StudyingImpliesEnrollment (-> (: $study_prf (Studies $student_obj $subject_obj)) (Enrolls $student_obj $subject_obj)))",
                 '(: EnrollsToStudies (-> (: $enroll_prf (Enrolls $student_obj $course_obj)) (Studies $student_obj $course_obj)))',
                 '(: CompletesToNotEnrolls (-> (: $complete_prf (Completes $student_obj $course_obj)) (Not (Enrolls $student_obj $course_obj))))',
             ]
@@ -351,9 +350,9 @@ def eval(program, dataset):
             print(f"\nSimilar types:")
             pprint(example.similar_types)
             print(f"\nExpected statements:")
-            pprint(example.statements)
+            pprint(example.statements, width=200)
             print(f"\nActual statements:")
-            pprint(prediction.statements)
+            pprint(prediction.statements, width=200)
             print("="*80)
             
     print(f"\nTotal metric: {total/len(dataset)}")
