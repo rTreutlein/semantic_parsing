@@ -4,22 +4,21 @@ from dspy.teleprompt import MIPROv2
 from dspy.evaluate import Evaluate
 from hyperon import MeTTa
 
+class TypeAnalyzerSignature(dspy.Signature):
+    """Generate logical linking statements between MeTTa types.
+    
+    Analyzes new types and similar existing types to generate valid MeTTa statements
+    that express relationships between them using operators like -> and Not.
+    """
+    
+    new_types: list[str] = dspy.InputField(desc="List of new type definitions in MeTTa syntax")
+    similar_types: list[str] = dspy.InputField(desc="List of existing similar type definitions")
+    statements: list[str] = dspy.OutputField(desc="Generated MeTTa statements expressing relationships between types")
+
 class TypeAnalyzer(dspy.Module):
     def __init__(self):
         super().__init__()
-        self.analyze = dspy.Predict("Given the following types, generate logical linking statements between them. "
-                                  "Only use valid MeTTa statements and operators like ->, Not.\n\n"
-                                  "Examples:\n"
-                                  "1. Simple inheritance:\n"
-                                  "Type 1: (: Apple (-> (: $apple Object) Type))\n"
-                                  "Type 2: (: Fruit (-> (: $fruit Object) Type))\n"
-                                  "Relationship: (: AppleIsFruit (-> (: $a (Apple $a)) (Fruit $a)))\n\n"
-                                  "2. Action negation:\n"
-                                  "Type 1: (: ToLeave (-> (: $person Object) (: $location Object) Type))\n"
-                                  "Type 2: (: ToStay (-> (: $person Object) (: $location Object) Type))\n"
-                                  "Relationship: (: ToLeaveToNotToStay (-> (: $l (ToLeave $a $b)) (Not (ToLeave $a $b))))\n\n"
-                                  "New types: {new_types}\n"
-                                  "Similar existing types: {similar_types}")
+        self.analyze = dspy.Predict(TypeAnalyzerSignature)
     
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 
