@@ -331,6 +331,8 @@ def optimize_prompt(program,trainset,mode="light",out="mipro_optimized_type_anal
     
     return optimized_program
 
+from pprint import pprint
+
 def eval(program, dataset):
     print("\nRunning optimized program on training set and comparing results:")
     total = 0
@@ -344,10 +346,14 @@ def eval(program, dataset):
 
         if metric != 1.0:
             print(f"\nExample mismatch for types metric {metric}:")
-            print(f"New types: {example.new_types}")
-            print(f"Similar types: {example.similar_types}")
-            print(f"Expected statements: {example.statements}")
-            print(f"Actual statements: {prediction.statements}")
+            print(f"New types:")
+            pprint(example.new_types)
+            print(f"\nSimilar types:")
+            pprint(example.similar_types)
+            print(f"\nExpected statements:")
+            pprint(example.statements)
+            print(f"\nActual statements:")
+            pprint(prediction.statements)
             print("="*80)
             
     print(f"\nTotal metric: {total/len(dataset)}")
