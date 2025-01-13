@@ -1,6 +1,6 @@
 import dspy
 from typing import List, Dict
-from dspy.teleprompt import BootstrapFewShot
+from dspy.teleprompt import MIPROv2
 from dspy.evaluate import Evaluate
 from hyperon import MeTTa
 
@@ -80,13 +80,33 @@ def optimize_prompt():
     # Set up evaluation
     evaluate = Evaluate(devset=trainset, metric=my_metric)
     
-    # Optimize the prompt
-    teleprompter = BootstrapFewShot(metric=my_metric)
-    optimized_program = teleprompter.compile(program, trainset=trainset)
+    # Initialize MIPROv2 optimizer with light optimization settings
+    teleprompter = MIPROv2(
+        metric=my_metric,
+        auto="light",  # Light optimization run
+        num_threads=4,
+        max_bootstrapped_demos=3,
+        max_labeled_demos=4,
+        verbose=True
+    )
+    
+    # Optimize the program
+    print("Optimizing program with MIPROv2...")
+    optimized_program = teleprompter.compile(
+        program.deepcopy(),
+        trainset=trainset,
+        num_trials=15,
+        minibatch_size=25,
+        minibatch=True,
+        requires_permission_to_run=False
+    )
     
     # Evaluate the optimized program
     score = evaluate(optimized_program)
     print(f"Optimized program score: {score}")
+    
+    # Save the optimized program
+    optimized_program.save("mipro_optimized_type_analyzer")
     
     return optimized_program
 
