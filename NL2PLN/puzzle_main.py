@@ -36,10 +36,21 @@ def run_forward_chaining(metta_handler, pln):
     return fc_results
 
 def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
+    print("Fix conversion to english by checking if the generated statment is intersting.")
+    return 
+
     english_results = [convert_to_english(result, "", similar_examples) for result in fc_results]
     print(f"Forward chaining results in English: {english_results}")
-    store_fc_results(rag, fc_results, english_results)
-    return pln, fc_results, english_results
+
+    for fc_result, english_result in zip(fc_results, english_results):
+        rag.store_embedding({
+            "sentence": english_result,
+            "statements": fc_result,
+            "from_context": [],  # Forward chaining results don't have from context
+            "type_definitions": [],  # Forward chaining results don't have type definitions
+        }, ["sentence","statements"])
+
+    return
 
 def store_results(rag, sentence, pln_data):
     rag.store_embedding({
@@ -49,14 +60,6 @@ def store_results(rag, sentence, pln_data):
         "statements": pln_data["statements"]
     }, ["sentence","statements"])
 
-def store_fc_results(rag, fc_results, english_results):
-    for fc_result, english_result in zip(fc_results, english_results):
-        rag.store_embedding({
-            "sentence": english_result,
-            "statements": fc_result,
-            "from_context": [],  # Forward chaining results don't have from context
-            "type_definitions": [],  # Forward chaining results don't have type definitions
-        }, ["sentence","statements"])
 
 def process_sentence(line, rag, metta_handler, type_handler, previous_sentences=None) -> bool:
     similar = rag.search_similar(line, limit=5)
@@ -70,7 +73,7 @@ def process_sentence(line, rag, metta_handler, type_handler, previous_sentences=
         return True
     
     # Process type definitions first
-    type_names, linking_statements = type_handler.process_new_typedefs(pln_data["type_definitions"])
+    linking_statements = type_handler.process_new_typedefs(pln_data["type_definitions"])
     
     # Add type definitions and any discovered type relationships to MeTTa KB
     for type_def in pln_data["type_definitions"]:
@@ -153,12 +156,12 @@ def main():
             similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
                               for item in similar if 'sentence' in item]
             
-            pln_data = convert_logic(conclusion, nl2pln, similar_examples, previous_sentences)
+            pln_data = convert_logic("Is it true that " + conclusion, nl2pln, similar_examples, previous_sentences)
             if pln_data != "Performative":
                 print(f"\nAttempting to prove conclusion: {conclusion}")
-                for statement in pln_data["statements"]:
-                    proof_steps, proven = metta_handler.bc(statement)
-                    print(f"\nConclusion statement: {statement}")
+                for query in pln_data["questions"]:
+                    proof_steps, proven = metta_handler.bc(query)
+                    print(f"\nConclusion statement: {query}")
                     print(f"Proven: {proven}")
                     if proof_steps:
                         print("Proof steps:")

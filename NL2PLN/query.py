@@ -162,7 +162,7 @@ class KBShell(cmd.Cmd):
                 "statements": pln_data["statements"],
                 "type_definitions": pln_data.get("type_definitions", []),
                 "from_context": pln_data["from_context"],
-            })
+            }, ["sentence", "statements"])
             for statement in pln_data["statements"]:
                 print("Got statement: " + statement)
                 result = self.metta_handler.add_atom_and_run_fc(statement)
