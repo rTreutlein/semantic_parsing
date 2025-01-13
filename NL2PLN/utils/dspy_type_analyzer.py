@@ -2,6 +2,7 @@ import dspy
 from typing import List, Dict
 from dspy.teleprompt import BootstrapFewShot
 from dspy.evaluate import Evaluate
+from hyperon import MeTTa
 
 class TypeAnalyzer(dspy.Module):
     def __init__(self):
@@ -25,17 +26,27 @@ class TypeAnalyzer(dspy.Module):
                                 similar_types="\n".join(similar_types))
         return prediction.statements.split("\n")
 
-class ValidMeTTaMetric(dspy.Metric):
-    def __init__(self):
-        super().__init__()
-        
-    def __call__(self, example, pred, trace=None):
-        # Basic validation - check if all statements start with (: and end with )
-        valid_count = 0
-        for statement in pred:
-            if statement.strip().startswith("(:") and statement.strip().endswith(")"):
-                valid_count += 1
-        return valid_count / len(pred) if pred else 0
+def my_metric(example: dspy.Example, predictions: List[str]) -> float:
+    sum = 0
+    scnt = 0
+    pcnt = 0
+    metta = MeTTa()
+    metta.run("!(bind! &kb (new-space))")
+    for statement in example.statements:
+        scnt += 1
+        metta.run(f"!(add-atom &kb {statement})")
+    for prediction in predictions:
+        pcnt += 1
+        try:
+            pred = metta.parse_single(prediction).get_children()[2]
+            res = metta.run(f"!(match &kb (: $typenamexzy123 {pred}) {pred})")
+            if len(res[0]) != 0:
+                sum += 1
+        except:
+            pass
+    return sum / max(scnt, pcnt)
+
+
 
 def create_training_data():
     return [
@@ -57,7 +68,7 @@ def create_training_data():
 
 def optimize_prompt():
     # Initialize DSPy settings
-    lm = dspy.OpenAI(model='gpt-4')
+    lm = dspy.OpenAI(model='gpt-4o-mini')
     dspy.settings.configure(lm=lm)
     
     # Create training data
@@ -67,10 +78,10 @@ def optimize_prompt():
     program = TypeAnalyzer()
     
     # Set up evaluation
-    evaluate = Evaluate(devset=trainset, metric=ValidMeTTaMetric(), num_threads=4)
+    evaluate = Evaluate(devset=trainset, metric=my_metric)
     
     # Optimize the prompt
-    teleprompter = BootstrapFewShot(metric=ValidMeTTaMetric())
+    teleprompter = BootstrapFewShot(metric=my_metric)
     optimized_program = teleprompter.compile(program, trainset=trainset)
     
     # Evaluate the optimized program
@@ -78,3 +89,10 @@ def optimize_prompt():
     print(f"Optimized program score: {score}")
     
     return optimized_program
+
+def main():
+    optimize_prompt()
+
+
+if __name__ == "__main__":
+    main()
