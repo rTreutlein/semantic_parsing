@@ -5,17 +5,7 @@ from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
 
 class TypeSimilarityHandler:
-    """Handles storage and comparison of type definitions.
-    
-    This class manages type definitions, their storage, comparison, and analysis using
-    both RAG-based similarity search and DSPy-powered analysis.
-    
-    Attributes:
-        rag: RAG instance for storing and retrieving type definitions
-        analyzer: DSPy TypeAnalyzer for analyzing type similarities
-        cache_file: Path to the file storing analyzer call results
-        cache: Dictionary containing cached analyzer results
-    """
+    """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
     
     def __init__(self, collection_name: str = "type_definitions", cache_file: str = "analyzer_cache.json"):
         """Initialize the handler with RAG collection and cache settings.
@@ -72,32 +62,6 @@ class TypeSimilarityHandler:
             pass
         return None
 
-    def store_type(self, type_name: str, full_type: str):
-        """Store a new type definition in the RAG database.
-        
-        Args:
-            type_name: Name of the type
-            full_type: Complete type definition statement
-        """
-        self.rag.store_embedding({
-            "type_name": type_name,
-            "full_type": full_type,
-        }, ["type_name"])
-
-    # Similarity and Analysis Methods
-    # -----------------------------
-
-    def find_similar_types(self, type_name: str, limit: int = 5) -> List[Any]:
-        """Find similar type names in the database.
-        
-        Args:
-            type_name: Type name to find similar matches for
-            limit: Maximum number of similar types to return
-            
-        Returns:
-            List of similar type definitions
-        """
-        return self.rag.search_similar(type_name, limit=limit)
 
     def analyze_type_similarities(self, new_types: List[str], similar_types: List[Dict]) -> List[str]:
         """Analyze similarities between new types and existing types.
@@ -143,46 +107,26 @@ class TypeSimilarityHandler:
     # ----------------------
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
-        """Process a list of new type definitions.
-        
-        This is the main entry point for processing new type definitions.
-        It handles extraction, storage, similarity finding, and analysis.
-        
-        Args:
-            typedefs: List of type definition strings
-            
-        Returns:
-            List of linking statements describing relationships between types
-        """
-        
-        # Extract all type names first
+        """Process new type definitions and return linking statements."""
+        # Extract and store types
         type_names = []
         for typedef in typedefs:
-            type_name = self.extract_type_name(typedef)
-            if type_name:
+            if type_name := self.extract_type_name(typedef):
                 type_names.append(type_name)
-                self.store_type(type_name, typedef)
+                self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
+        
+        if not type_names:
+            return []
 
         print(f"Extracted type names: {type_names}")
         
-        # Find similar types for all new types together
-        all_similar_types = []
-        for type_name in type_names:
-            similar_types = self.find_similar_types(type_name)
-            all_similar_types.extend(similar_types)
-        
-        # Remove duplicates while preserving order
+        # Find and deduplicate similar types
         seen = set()
-        unique_similar_types = []
-        for t in all_similar_types:
-            if t['type_name'] not in seen:
-                seen.add(t['type_name'])
-                unique_similar_types.append(t)
+        unique_similar_types = [
+            t for types in (self.rag.search_similar(name, limit=5) for name in type_names)
+            for t in types if t['type_name'] not in seen and not seen.add(t['type_name'])
+        ]
 
         print(f"Found similar types: {unique_similar_types}")
         
-        # Analyze all types together
-        if type_names:
-            return self.analyze_type_similarities(type_names, unique_similar_types)
-                
-        return []
+        return self.analyze_type_similarities(type_names, unique_similar_types)
