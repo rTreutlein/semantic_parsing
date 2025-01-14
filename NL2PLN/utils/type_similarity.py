@@ -1,15 +1,11 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Any
 from NL2PLN.utils.ragclass import RAG
-from NL2PLN.utils.common import create_openai_completion
+from .dspy_type_analyzer import TypeAnalyzer
 
 class TypeSimilarityHandler:
     """Handles storage and comparison of type definitions"""
     
-    def __init__(self, collection_name: str = "type_definitions"):
-        """Initialize with a separate RAG collection for types"""
-        self.rag = RAG(collection_name=collection_name)
-        
-    def extract_type_name(self, typedef: str) -> str:
+    def extract_type_name(self, typedef: str) -> str | None:
         """Extract the type name from a typedef statement
         Example: (: Person EntityType) -> Person
         """
@@ -22,15 +18,15 @@ class TypeSimilarityHandler:
             pass
         return None
 
-    def find_similar_types(self, type_name: str, limit: int = 5) -> List[Dict]:
+    def find_similar_types(self, type_name: str, limit: int = 5) -> List[Any]:
         """Find similar type names in the database"""
         return self.rag.search_similar(type_name, limit=limit)
 
     def __init__(self, collection_name: str = "type_definitions"):
         """Initialize with a separate RAG collection for types"""
         self.rag = RAG(collection_name=collection_name)
-        from .dspy_type_analyzer import optimize_prompt
-        self.analyzer = optimize_prompt()
+        self.analyzer = TypeAnalyzer()
+        self.analyzer.load("claude_optimized_type_analyzer2.json")
         
     def analyze_type_similarities(self, new_types: List[str], similar_types: List[Dict]) -> List[str]:
         """Use DSPy-optimized prompt to analyze type similarities"""
@@ -41,10 +37,10 @@ class TypeSimilarityHandler:
         similar_type_defs = [t['full_type'] for t in similar_types]
         
         # Use DSPy analyzer
-        statements = self.analyzer(new_types=new_types, similar_types=similar_type_defs)
+        prediction = self.analyzer(new_types=new_types, similar_types=similar_type_defs)
         
         # Filter and return valid statements
-        return [s.strip() for s in statements if s.strip()]
+        return [s.strip() for s in prediction.statements if s.strip()]
 
     def store_type(self, type_name: str, full_type: str):
         """Store a new type definition"""
@@ -57,7 +53,6 @@ class TypeSimilarityHandler:
         """Process a list of new type definitions
         Returns: (linking_statements)
         """
-        all_linking_statements = []
         
         # Extract all type names first
         type_names = []
@@ -87,7 +82,6 @@ class TypeSimilarityHandler:
         
         # Analyze all types together
         if type_names:
-            linking_statements = self.analyze_type_similarities(type_names, unique_similar_types)
-            all_linking_statements.extend(linking_statements)
+            return self.analyze_type_similarities(type_names, unique_similar_types)
                 
-        return all_linking_statements
+        return []
