@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict, Any
+import dspy
 
 class CacheHandler:
     """Handles caching of results to avoid redundant computations."""
@@ -24,11 +25,26 @@ class CacheHandler:
         with open(self.cache_file, 'w') as f:
             json.dump(self.cache, f, indent=2)
     
+    def _serialize_value(self, value: Any) -> Any:
+        """Convert value to JSON-serializable format."""
+        if isinstance(value, dspy.Prediction):
+            return dict(value.items())
+        return value
+    
+    def _deserialize_value(self, value: Any) -> Any:
+        """Convert stored value back to appropriate format."""
+        if isinstance(value, dict):
+            return dspy.Prediction(**value)
+        return value
+    
     def get(self, key: str) -> Any:
         """Get value from cache."""
-        return self.cache.get(key)
+        value = self.cache.get(key)
+        if value is not None:
+            return self._deserialize_value(value)
+        return None
     
     def set(self, key: str, value: Any):
         """Set value in cache and save to file."""
-        self.cache[key] = value
+        self.cache[key] = self._serialize_value(value)
         self._save_cache()
