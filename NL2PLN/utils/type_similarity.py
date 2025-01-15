@@ -1,8 +1,7 @@
-import json
-import os
 from typing import List, Dict, Any
 from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
+from .cache_handler import CacheHandler
 
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
@@ -11,21 +10,7 @@ class TypeSimilarityHandler:
         self.rag = RAG(collection_name=collection_name)
         self.analyzer = TypeAnalyzer()
         self.analyzer.load("claude_optimized_type_analyzer2.json")
-        self.cache_file = cache_file
-        self.cache = self._load_cache()
-        
-    def _load_cache(self) -> Dict:
-        if not os.path.exists(self.cache_file):
-            return {}
-        try:
-            with open(self.cache_file, 'r') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return {}
-    
-    def _save_cache(self):
-        with open(self.cache_file, 'w') as f:
-            json.dump(self.cache, f, indent=2)
+        self.cache = CacheHandler(cache_file)
     
     def extract_type_name(self, typedef: str) -> str | None:
         """Extract type name from definition (e.g., "(: Person EntityType)" -> "Person")"""
@@ -44,12 +29,12 @@ class TypeSimilarityHandler:
         similar_type_defs = [t['full_type'] for t in similar_types]
         analysis_signature = str({"new_types": sorted(new_types), "similar_types": sorted(similar_type_defs)})
         
-        if analysis_signature in self.cache:
-            return [s.strip() for s in self.cache[analysis_signature] if s.strip()]
+        cached_result = self.cache.get(analysis_signature)
+        if cached_result is not None:
+            return [s.strip() for s in cached_result if s.strip()]
         
         prediction = self.analyzer(new_types=new_types, similar_types=similar_type_defs)
-        self.cache[analysis_signature] = prediction.statements
-        self._save_cache()
+        self.cache.set(analysis_signature, prediction.statements)
         
         return [s.strip() for s in prediction.statements if s.strip()]
 
