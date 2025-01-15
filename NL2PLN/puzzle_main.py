@@ -1,4 +1,5 @@
 import argparse
+import dspy
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -8,7 +9,6 @@ from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
 from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
-from NL2PLN.utils.lm_config import configure_lm
 
 class PuzzleProcessor:
     def __init__(self, output_base: str, reset_db: bool = False):
@@ -126,6 +126,11 @@ class PuzzleProcessor:
         self.process_section("premises", 
                            puzzle_sections.get('premises', '').split('\n'))
         self.process_conclusion(puzzle_sections.get('conclusion', ''))
+
+def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
+    """Configure the LM for DSPY."""
+    lm = dspy.LM(model_name)
+    dspy.configure(lm=lm)
 
 def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
