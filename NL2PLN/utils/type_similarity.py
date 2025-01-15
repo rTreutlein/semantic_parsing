@@ -38,24 +38,29 @@ class TypeSimilarityHandler:
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
         """Process new type definitions and return linking statements."""
-        # Extract and store types
+        # Extract type names
         type_names = []
+        type_mapping = {}  # Store mapping of names to full typedefs
         for typedef in typedefs:
             if type_name := self.extract_type_name(typedef):
                 type_names.append(type_name)
-                self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
+                type_mapping[type_name] = typedef
         
         if not type_names:
             return []
 
         print(f"Extracted type names: {type_names}")
         
-        # Find and deduplicate similar types
+        # Find and deduplicate similar types before storing new ones
         seen = set()
         unique_similar_types = [
             t for types in (self.rag.search_similar(name, limit=5) for name in type_names)
             for t in types if t['type_name'] not in seen and not seen.add(t['type_name'])
         ]
+
+        # Store new types after finding similar ones
+        for type_name, typedef in type_mapping.items():
+            self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
 
         print(f"Found similar types: {unique_similar_types}")
         
