@@ -10,17 +10,12 @@ from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
 from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
-
-
 def run_forward_chaining(metta_handler, pln):
     fc_results = metta_handler.add_atom_and_run_fc(pln)
     print(f"Forward chaining results: {fc_results}")
     return fc_results
 
 def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
-    print("Fix conversion to english by checking if the generated statement is intersting.")
-    return 
-
     english_results = [convert_to_english(result, "", similar_examples) for result in fc_results]
     print(f"Forward chaining results in English: {english_results}")
 
@@ -43,7 +38,7 @@ def store_results(rag, sentence, pln_data):
     }, ["sentence","statements"])
 
 
-def process_sentence(line, nl2pln, metta_handler, type_handler, previous_sentences=None) -> bool:
+def process_sentence(line, rag, nl2pln, metta_handler, type_handler, previous_sentences=None) -> bool:
     previous_sentences = previous_sentences or []
 
     print(f"Processing line: {line}")
@@ -80,7 +75,8 @@ def process_sentence(line, nl2pln, metta_handler, type_handler, previous_sentenc
         if fc_result:
             fc_results.extend(fc_result)
     if fc_results:
-        process_forward_chaining_results(rag, fc_results, pln_data, similar_examples)
+        print("Fix conversion to english by checking if the generated statement is intersting.")
+        #process_forward_chaining_results(rag, fc_results, pln_data, similar_examples)
     return True
 
 def main():
@@ -127,7 +123,7 @@ def main():
             print(f"\nProcessing {section_name}:")
             for sentence in sentences:
                 if sentence.strip():
-                   result = process_sentence(sentence, nl2pln, metta_handler, type_handler,
+                   result = process_sentence(sentence, rag, nl2pln, metta_handler, type_handler,
                                           previous_sentences[-10:] if previous_sentences else [])
                    if result:
                        previous_sentences.append(sentence)
