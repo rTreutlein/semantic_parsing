@@ -1,11 +1,19 @@
 from typing import Dict, List, Tuple
-from .common import create_openai_completion
+import dspy
 
-class LogicPuzzleGenerator:
+class PuzzleGeneratorSignature(dspy.Signature):
+    """Signature for generating logic puzzles."""
+    premises = dspy.OutputField(desc="The story premises containing logical statements")
+    conclusion = dspy.OutputField(desc="The logical conclusion from the premises")
+    common_sense = dspy.OutputField(desc="Common sense knowledge needed to solve the puzzle")
+
+class LogicPuzzleGenerator(dspy.Module):
     """Generates logic puzzles in narrative form with their logical solutions."""
     
     def __init__(self):
-        self.system_prompt = """You are a logic puzzle creator. Create puzzles following these rules:
+        super().__init__()
+        self.generate = dspy.ChainOfThought(PuzzleGeneratorSignature)
+        self.prompt = """You are a logic puzzle creator. Create puzzles following these rules:
 1. Write a short story that contains logical premises hidden in natural language
 2. The story should be casual and natural, not obviously a logic puzzle
 3. Split the story into Premises and Conclusion
@@ -44,33 +52,13 @@ Umbrellas are items that can be carried
         
         Returns:
             Dict containing:
-                - 'story': The narrative version of the puzzle
-                - 'premises': List of premises in natural language
-                - 'logical_form': The formal logical representation
+                - 'premises': The story premises containing logical statements
+                - 'conclusion': The logical conclusion from the premises
+                - 'common_sense': Common sense knowledge needed to solve the puzzle
         """
-        response = create_openai_completion(
-            system_msg=self.system_prompt,
-            user_msg=[{"role": "user", "content": "Generate a logic puzzle about everyday situations that can be solved using simple logical reasoning."}],
-            model="claude-3-5-sonnet-20241022"
-        )
-        
-        # Parse the response into components
-        sections = {}
-        current_section = None
-        current_content = []
-        
-        for line in response.split('\n'):
-            if line.strip() in ['Premises:', 'Conclusion:']:
-                if current_section:
-                    sections[current_section] = '\n'.join(current_content).strip()
-                current_section = line.strip()[:-1].lower()
-                current_content = []
-            else:
-                current_content.append(line)
-        
-        if current_section:
-            sections[current_section] = '\n'.join(current_content).strip()
-            
-        # Add empty string if common sense section is missing
-        sections['common_sense'] = sections.get('common sense knowledge', '')
-        return sections
+        prediction = self.generate()
+        return {
+            'premises': prediction.premises,
+            'conclusion': prediction.conclusion,
+            'common_sense': prediction.common_sense
+        }
