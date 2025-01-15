@@ -9,7 +9,9 @@ import dspy
 def format_for_editing(value: Any) -> Any:
     """Format values for better readability in the editor."""
     if isinstance(value, str) and ('\n' in value or len(value) > 80):
-        return value.split('\n')
+        return {"_type": "formatted_string", "value": value.split('\n')}
+    elif isinstance(value, list) and all(isinstance(x, str) for x in value):
+        return {"_type": "string_list", "value": value}
     elif isinstance(value, dict):
         return {k: format_for_editing(v) for k, v in value.items()}
     elif isinstance(value, list):
@@ -18,9 +20,12 @@ def format_for_editing(value: Any) -> Any:
 
 def restore_from_editing(value: Any) -> Any:
     """Restore values from their edited format."""
-    if isinstance(value, list) and all(isinstance(x, str) for x in value):
-        return '\n'.join(value)
-    elif isinstance(value, dict):
+    if isinstance(value, dict):
+        if "_type" in value:
+            if value["_type"] == "formatted_string":
+                return '\n'.join(value["value"])
+            elif value["_type"] == "string_list":
+                return value["value"]
         return {k: restore_from_editing(v) for k, v in value.items()}
     elif isinstance(value, list):
         return [restore_from_editing(v) for v in value]
