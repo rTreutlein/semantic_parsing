@@ -8,7 +8,8 @@ class VerifiedPredictor:
     def __init__(self, 
                  predictor: dspy.Module,
                  verify_func: Callable[[dspy.Prediction, Any], dspy.Prediction],
-                 cache_file: str = "verified_predictions_cache.json"):
+                 cache_file: str = "verified_predictions_cache.json",
+                 verify_kwargs: list[str] = None):
         """
         Initialize the verifier.
         
@@ -16,10 +17,12 @@ class VerifiedPredictor:
             predictor: The dspy.Module to wrap
             verify_func: Function that takes (prediction, input) and returns verified prediction
             cache_file: Path to the cache file
+            verify_kwargs: List of kwarg names to pass to verify_func
         """
         self.predictor = predictor
         self.verify_func = verify_func
         self.cache = CacheHandler(cache_file)
+        self.verify_kwargs = verify_kwargs or []
     
     def predict(self, *args, **kwargs) -> dspy.Prediction:
         """
@@ -42,7 +45,8 @@ class VerifiedPredictor:
         prediction = self.predictor.forward(*args, **kwargs)
         
         # Get verification
-        verified_prediction = self.verify_func(prediction, args[0] if args else None)
+        verify_args = {k: kwargs[k] for k in self.verify_kwargs if k in kwargs}
+        verified_prediction = self.verify_func(prediction, args[0] if args else None, **verify_args)
         
         # Cache the verified result
         self.cache.set(cache_key, verified_prediction)
