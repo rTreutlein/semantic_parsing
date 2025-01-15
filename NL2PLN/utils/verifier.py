@@ -47,7 +47,7 @@ class VerifiedPredictor:
         # Get input text and verification kwargs
         input_text = args[0] if args else ""
         verify_args = {k: kwargs[k] for k in self.verify_kwargs if k in kwargs}
-        verified_prediction, _ = self.verify_func(prediction, input_text, **verify_args)
+        verified_prediction = self.verify_func(prediction, input_text, **verify_args)
         
         # Cache the verified result
         self.cache.set(cache_key, verified_prediction)

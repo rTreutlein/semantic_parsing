@@ -26,7 +26,7 @@ def restore_from_editing(value: Any) -> Any:
         return [restore_from_editing(v) for v in value]
     return value
 
-def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> tuple[dspy.Prediction, dict]:
+def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> dspy.Prediction:
     while True:
         # Display current state
         print("\nOriginal input:", input_text)
@@ -43,7 +43,7 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
         user_input = input("\nIs this prediction correct? (y/n): ").lower()
         
         if user_input == 'y':
-            return prediction, kwargs
+            return prediction
         elif user_input == 'n':
             # Create a temporary file with JSON structure for editing
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp_file:
@@ -101,7 +101,7 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                 
                 confirm = input("\nSave these changes? (y/n): ").lower()
                 if confirm == 'y':
-                    return corrected_prediction, restored_kwargs
+                    return corrected_prediction
                 # If not confirmed, loop continues
                 
             except json.JSONDecodeError as e:
