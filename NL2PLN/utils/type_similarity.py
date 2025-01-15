@@ -1,16 +1,26 @@
 from typing import List, Dict, Any
 from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
-from .cache_handler import CacheHandler
+from .verifier import VerifiedPredictor
 
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
     
-    def __init__(self, collection_name: str = "type_definitions", cache_file: str = "analyzer_cache.json"):
+    def __init__(self, collection_name: str = "type_definitions"):
         self.rag = RAG(collection_name=collection_name)
-        self.analyzer = TypeAnalyzer()
-        self.analyzer.load("claude_optimized_type_analyzer2.json")
-        self.cache = CacheHandler(cache_file)
+        analyzer = TypeAnalyzer()
+        analyzer.load("claude_optimized_type_analyzer2.json")
+        
+        def verify_analysis(prediction, input_data):
+            # Simple pass-through verification for now
+            # Could be enhanced with specific verification logic
+            return prediction
+            
+        self.analyzer = VerifiedPredictor(
+            predictor=analyzer,
+            verify_func=verify_analysis,
+            cache_file="verified_type_analysis_cache.json"
+        )
     
     def extract_type_name(self, typedef: str) -> str | None:
         """Extract type name from definition (e.g., "(: Person EntityType)" -> "Person")"""
@@ -27,15 +37,7 @@ class TypeSimilarityHandler:
             return []
             
         similar_type_defs = [t['full_type'] for t in similar_types]
-        analysis_signature = str({"new_types": sorted(new_types), "similar_types": sorted(similar_type_defs)})
-        
-        cached_result = self.cache.get(analysis_signature)
-        if cached_result is not None:
-            return [s.strip() for s in cached_result if s.strip()]
-        
-        prediction = self.analyzer(new_types=new_types, similar_types=similar_type_defs)
-        self.cache.set(analysis_signature, prediction.statements)
-        
+        prediction = self.analyzer.predict(new_types=new_types, similar_types=similar_type_defs)
         return [s.strip() for s in prediction.statements if s.strip()]
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
