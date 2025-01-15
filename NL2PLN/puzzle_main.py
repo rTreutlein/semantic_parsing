@@ -28,14 +28,14 @@ class PuzzleProcessor:
             cache_file=f"{output_base}_verified_nl2pln.json"
         )
 
-    def store_sentence_results(self, sentence: str, pln_data: dict):
+    def store_sentence_results(self, sentence: str, pln_data: dspy.Prediction):
         """Store processed sentence results in RAG."""
         self.rag.store_embedding({
             "sentence": sentence,
-            "from_context": pln_data["from_context"],
-            "type_definitions": pln_data["type_definitions"],
-            "statements": pln_data["statements"]
-        }, ["sentence", "statements"])
+            "from_context": pln_data.context,
+            "type_definitions": pln_data.typedefs,
+            "statements": pln_data.statements,
+        }, embedding_fields=["sentence", "statements"])
 
     def process_type_definitions(self, pln_data) -> bool:
         """Process and validate type definitions."""
@@ -107,7 +107,7 @@ class PuzzleProcessor:
             return
             
         print(f"\nAttempting to prove conclusion: {conclusion}")
-        for query in pln_data["questions"]:
+        for query in pln_data.questions:
             proof_steps, proven = self.metta_handler.bc(query)
             print(f"\nConclusion statement: {query}")
             print(f"Proven: {proven}")
