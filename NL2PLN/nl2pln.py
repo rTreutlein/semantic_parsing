@@ -1,4 +1,5 @@
 import dspy
+from .utils.prompts import NL2PLN_Signature
 
 class NL2PLN(dspy.Module):
     def __init__(self, rag):
