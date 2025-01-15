@@ -27,13 +27,17 @@ class TypeSimilarityHandler:
             return None
 
 
-    def analyze_type_similarities(self, new_types: List[str], similar_types: List[Dict]) -> List[str]:
-        """Analyze similarities between new and existing types."""
+    def analyze_type_similarities(self, new_types: List[str], similar_types: List[str]) -> List[str]:
+        """Analyze similarities between new and existing types.
+        
+        Args:
+            new_types: List of full type definitions for new types
+            similar_types: List of full type definitions for similar existing types
+        """
         if not new_types:
             return []
             
-        similar_type_defs = [t['full_type'] for t in similar_types]
-        prediction = self.analyzer.predict(new_types=new_types, similar_types=similar_type_defs)
+        prediction = self.analyzer.predict(new_types=new_types, similar_types=similar_types)
         return [s.strip() for s in prediction.statements if s.strip()]
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
@@ -71,4 +75,7 @@ class TypeSimilarityHandler:
 
         print(f"Found similar types: {unique_similar_types}")
         
-        return self.analyze_type_similarities(type_names, unique_similar_types)
+        # Pass full type definitions instead of just names
+        new_type_defs = list(type_mapping.values())
+        similar_type_defs = [t['full_type'] for t in unique_similar_types]
+        return self.analyze_type_similarities(new_type_defs, similar_type_defs)
