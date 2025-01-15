@@ -20,7 +20,7 @@ class PuzzleProcessor:
         self.metta_handler.load_kb_from_file()
         
         self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
-        self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types")
+        self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db)
         
         self.nl2pln = VerifiedPredictor(
             predictor=NL2PLN(self.rag),
@@ -39,9 +39,6 @@ class PuzzleProcessor:
 
     def process_type_definitions(self, pln_data) -> bool:
         """Process and validate type definitions."""
-        linking_statements = self.type_handler.process_new_typedefs(pln_data.typedefs)
-        print(f"Found {len(linking_statements)} linking statements")
-        print(linking_statements)
         
         # Add type definitions
         for type_def in pln_data.typedefs:
@@ -51,11 +48,17 @@ class PuzzleProcessor:
                 input("Press Enter to continue...")
                 return False
                 
+        linking_statements = self.type_handler.process_new_typedefs(pln_data.typedefs)
+        print(f"Found {len(linking_statements)} linking statements")
+        print(linking_statements)
+
         # Add type relationships
         for linking_stmt in linking_statements:
             conflict = self.metta_handler.add_to_context(linking_stmt)
             if isinstance(conflict, str):
                 print(f"WARNING: Type relationship {linking_stmt} conflicts with existing atom: {conflict}")
+                input("Press Enter to continue...")
+                return False
         
         return True
 
