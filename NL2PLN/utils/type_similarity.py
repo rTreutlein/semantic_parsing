@@ -53,10 +53,17 @@ class TypeSimilarityHandler:
         
         # Find and deduplicate similar types before storing new ones
         seen = set()
-        unique_similar_types = [
-            t for types in (self.rag.search_similar(name, limit=5) for name in type_names)
-            for t in types if t['type_name'] not in seen and not seen.add(t['type_name'])
-        ]
+        unique_similar_types = []
+        
+        # Search for similar types for each type name
+        for type_name in type_names:
+            similar_types = self.rag.search_similar(type_name, limit=5)
+            
+            # Add only unseen types to results
+            for type_info in similar_types:
+                if type_info['type_name'] not in seen:
+                    seen.add(type_info['type_name'])
+                    unique_similar_types.append(type_info)
 
         # Store new types after finding similar ones
         for type_name, typedef in type_mapping.items():
