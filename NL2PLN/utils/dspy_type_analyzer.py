@@ -1,7 +1,7 @@
 import dspy
 import os
 from typing import List, Dict
-from dspy.teleprompt import MIPROv2
+from dspy.teleprompt import MIPROv2, BootstrapFewShot, COPRO
 from dspy.evaluate import Evaluate
 from hyperon import MeTTa
 
@@ -39,7 +39,7 @@ class TypeAnalyzerSignature(dspy.Signature):
 class TypeAnalyzer(dspy.Module):
     def __init__(self):
         super().__init__()
-        self.analyze = dspy.Predict(TypeAnalyzerSignature)
+        self.analyze = dspy.ChainOfThought(TypeAnalyzerSignature)
     
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 
@@ -185,22 +185,6 @@ def create_training_data():
                 "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $work_prf (WorksAs $person_obj $prof_obj)) (: $req_prf (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj)))"
             ]
         ),
-        # Food and ingredient relationships
-        dspy.Example(
-            new_types=[
-                "(: Food (-> (: $f Object) Type))",
-                "(: CookingIngredient (-> (: $i Object) Type))",
-                "(: ContainsIngredient (-> (: $mixture Object) (: $ingredient Object) Type))"
-            ],
-            similar_types=[
-                "(: Recipe (-> (: $r Object) Type))",
-                "(: Tool (-> (: $t Object) Type))",       # Unrelated kitchen item
-                "(: CookingMethod (-> (: $m Object) Type))" # Unrelated cooking concept
-            ],
-            statements=[
-                "(: IngredientIsFood (-> (: $ing_prf (CookingIngredient $ing_obj)) (Food $ing_obj)))"
-            ]
-        ),
         # Time relationships
         dspy.Example(
             new_types=[
@@ -215,6 +199,8 @@ def create_training_data():
             statements=[
                 "(: BeforeToAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
                 "(: AfterToBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
+                '(: BeforeNotAfter (-> (: $before_prf (Before $t1 $t2)) (Not (After $t1 $t2))))',
+                '(: AfterNotBefore (-> (: $after_prf (After $t1 $t2)) (Not (Before $t1 $t2))))',
                 "(: BeforToNotSimultaneous (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
                 "(: AfterToNotSimultaneous (-> (: $after_prf (After $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
                 "(: SimultaneousToNotBefore (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (Before $t1_obj $t2_obj))))",
@@ -236,6 +222,7 @@ def create_training_data():
             ],
             statements=[
                 "(: MammalIsAnimal (-> (: $mammal_prf (Mammal $mammal_obj)) (Animal $mammal_obj)))",
+                '(: MammalIsVertebrate (-> (: $m_prf (Mammal $mammal_obj)) (Vertebrate $mammal_obj)))',
                 "(: CarnivoreEatsMeat (-> (: $carn_prf (Carnivore $carn_obj)) (EatsMeat $carn_obj)))",
                 "(: HerbivoreEatsPlants (-> (: $herb_prf (Herbivore $herb_obj)) (EatsPlants $herb_obj)))",
             ]
@@ -297,19 +284,20 @@ def create_training_data():
         # Family Relationships
         dspy.Example(
             new_types=[
-                "(: Parent (-> (: $parent Object) (: $child Object) Type))",
-                "(: Sibling (-> (: $sib1 Object) (: $sib2 Object) Type))",
-                "(: Grandparent (-> (: $gparent Object) (: $gchild Object) Type))"
+                "(: ParentOf (-> (: $parent Object) (: $child Object) Type))",
+                "(: SiblingOf (-> (: $sib1 Object) (: $sib2 Object) Type))",
+                "(: GrandparentOf (-> (: $gparent Object) (: $gchild Object) Type))"
             ],
             similar_types=[
                 "(: Related (-> (: $person1 Object) (: $person2 Object) Type))",
                 "(: SameGeneration (-> (: $p1 Object) (: $p2 Object) Type))"
             ],
             statements=[
-                "(: ParentToRelated (-> (: $parent_prf (Parent $parent_obj $child_obj)) (Related $parent_obj $child_obj)))",
-                "(: GrandparentFromParent (-> (: $parent1_prf (Parent $gparent_obj $parent_obj)) (: $parent2_prf (Parent $parent_obj $gchild_obj)) (Grandparent $gparent_obj $gchild_obj)))",
-                "(: SiblingsAreSymmetric (-> (: $sib_prf (Sibling $sib1_obj $sib2_obj)) (Sibling $sib2_obj $sib1_obj)))",
-                "(: SiblingsAreSameGeneration (-> (: $sib_prf (Sibling $sib1_obj $sib2_obj)) (SameGeneration $sib1_obj $sib2_obj)))"
+                "(: ParentOfToRelated (-> (: $parent_prf (ParentOf $parent_obj $child_obj)) (Related $parent_obj $child_obj)))",
+                "(: SiblingOfToRelated (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (Related $sib1_obj $sib2_obj)))",
+                "(: GrandparentOfToRelated (-> (: $gparent_prf (GrandparentOf $gparent_obj $gchild_obj)) (Related $gparent_obj $gchild_obj)))",
+                "(: SiblingsAreSymmetric (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (SiblingOf $sib2_obj $sib1_obj)))",
+                "(: SiblingsAreSameGeneration (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (SameGeneration $sib1_obj $sib2_obj)))",
             ]
         ),
         # Chemical Reactions
@@ -318,7 +306,7 @@ def create_training_data():
                 "(: Chemical (-> (: $c Object) Type))",
                 "(: ReactsWith (-> (: $reactant1 Object) (: $reactant2 Object) (: $product Object) Type))",
                 "(: Catalyst (-> (: $catalyst Object) (: $reaction Object) Type))",
-                "(: Inhibits (-> (: $inhibitor Object) (: $reaction Object) Type))"
+                "(: Inhibitor (-> (: $inhibitor Object) (: $reaction Object) Type))"
             ],
             similar_types=[
                 "(: Element (-> (: $e Object) Type))",
@@ -327,14 +315,18 @@ def create_training_data():
             statements=[
                 "(: CompoundIsChemical (-> (: $compound_prf (Compound $compound_obj)) (Chemical $compound_obj)))",
                 "(: ElementIsChemical (-> (: $element_prf (Element $element_obj)) (Chemical $element_obj)))",
-                "(: ReactionNeedsChemicals (-> (: $reaction_prf (ReactsWith $r1_obj $r2_obj $p_obj)) (Chemical $r1_obj) (Chemical $r2_obj) (Chemical $p_obj)))",
-                "(: CatalystIsChemical (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Chemical $cat_obj)))"
+                '(: ReactantsAreChemical (-> (: $react_prf (ReactsWith $r1 $r2 $p)) (Chemical $r1)))',
+                '(: ReactantsAreChemical2 (-> (: $react_prf (ReactsWith $r1 $r2 $p)) (Chemical $r2)))',
+                "(: ReactionProducesChemical (-> (: $reaction_prf (ReactsWith $r1_obj $r2_obj $p_obj)) (Chemical $p_obj)))",
+                "(: CatalystIsChemical (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Chemical $cat_obj)))",
+                "(: InhibitorIsChemical (-> (: $inhibit_prf (Inhibitor $inhibit_obj $reaction_obj)) (Chemical $inhibit_obj)))",
+                "(: CatalystIsNotInhibitor (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Not (Inhibitor $cat_obj $reaction_obj))))",
+                "(: InhibitorIsNotCatalyst (-> (: $inhibit_prf (Inhibitor $inhibit_obj $reaction_obj)) (Not (Catalyst $inhibit_obj $reaction_obj))))",
             ]
         ),
         # Software Dependencies
         dspy.Example(
             new_types=[
-                "(: Package (-> (: $pkg Object) Type))",
                 "(: DependsOn (-> (: $pkg Object) (: $dep Object) Type))",
                 "(: VersionRange (-> (: $pkg Object) (: $min Object) (: $max Object) Type))",
                 "(: Incompatible (-> (: $pkg1 Object) (: $pkg2 Object) Type))"
@@ -354,10 +346,7 @@ def create_training_data():
     # Set inputs for all examples
     return [ex.with_inputs("new_types", "similar_types") for ex in examples]
 
-def optimize_prompt(program,trainset,mode="light",out="mipro_optimized_type_analyzer"):
-    # Set up evaluation
-    evaluate = Evaluate(devset=trainset, metric=my_metric)
-    
+def optimize_MIPRO(program,trainset,mode="light",out="mipro_optimized_type_analyzer"):
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
         metric=my_metric,
@@ -370,20 +359,77 @@ def optimize_prompt(program,trainset,mode="light",out="mipro_optimized_type_anal
     optimized_program = teleprompter.compile(
         program.deepcopy(),
         trainset=trainset,
-        num_trials=15,
-        minibatch_size=25,
-        minibatch=True,
         requires_permission_to_run=False
     )
-    
-    # Evaluate the optimized program
-    score = evaluate(optimized_program)
-    print(f"Optimized program score: {score}")
     
     # Save the optimized program
     optimized_program.save(f"{out}.json")
     
     return optimized_program
+
+def optimize_MIPRO_ZeroShot(program,trainset,mode="light",out="miprozs_optimized"):
+    # Initialize MIPROv2 optimizer with light optimization settings
+    teleprompter = MIPROv2(
+        metric=my_metric,
+        auto=mode,  # light/medium/heavy optimization run
+        verbose=True
+    )
+    
+    # Optimize the program
+    print("Optimizing program with MIPROv2...")
+    optimized_program = teleprompter.compile(
+        program.deepcopy(),
+        trainset=trainset,
+        max_bootstrapped_demos=0,
+        max_labeled_demos=0,
+        requires_permission_to_run=False
+    )
+    
+    # Save the optimized program
+    optimized_program.save(f"{out}.json")
+    
+    return optimized_program
+
+
+
+
+def optimize_BFS(program, dataset, out):
+
+    optimizer = BootstrapFewShot(
+            metric=my_metric,
+            max_bootstrapped_demos=5,
+            max_labeled_demos=5,
+            max_rounds=10,
+    )
+
+    optimized_program = optimizer.compile(program.deepcopy(), trainset=dataset)
+
+    optimized_program.save(f"{out}.json")
+    
+    return optimized_program
+
+def optimize_COPRO(program,trainset,out="copro_optimized_type_analyzer"):
+    # Set up evaluation
+    teleprompter = COPRO(
+        metric=my_metric,
+        verbose=True
+    )
+
+    kwargs = dict(display_progress=True, display_table=0)
+
+    # Optimize the program
+    print("Optimizing program with COPRO...")
+    optimized_program = teleprompter.compile(
+        program.deepcopy(),
+        trainset=trainset,
+        eval_kwargs=kwargs
+    )
+
+    # Save the optimized program
+    optimized_program.save(f"{out}.json")
+    
+    return optimized_program
+
 
 from pprint import pprint
 
@@ -395,6 +441,9 @@ def eval(program, dataset):
         prediction = program(new_types=example.new_types, 
                                      similar_types=example.similar_types)
         
+        print(prediction.items())
+        exit()
+
         metric = my_metric(example, prediction, trace=None)
         total += metric
 
@@ -415,19 +464,24 @@ def eval(program, dataset):
 
 def main():
     program = TypeAnalyzer()
-    #lm = dspy.LM('deepseek/deepseek-chat', temperature=0.5)
+    #lm = dspy.LM('deepseek/deepseek-chat')
     #lm = dspy.LM('openrouter/qwen/qwq-32b-preview', temperature=0.5, max_tokens=10000)
     #lm = dspy.LM('openai/o1-mini', temperature = 1, max_tokens = 5000)
     lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    #lm = dspy.LM('gemini/gemini-exp-1206')
     dspy.configure(lm=lm)
 
     # Load the training set
     trainset = create_training_data()
 
+    #program.load("claude_optimized_type_analyzer.json")
+    program.load("claude_mipro.json")
     # Optimize the program
-    #program = optimize_prompt(program,trainset,"medium")
+    #program = optimize_MIPRO(program,trainset,"medium",out="claude_mipro")
+    #program = optimize_BFS(program,trainset, out="deepseekBFS")
+    #program = optimize_COPRO(program,trainset, out="copro_optimized_type_analyzer")
+    #program = optimize_MIPRO_ZeroShot(program,trainset,out="claude_miprozs")
 
-    program.load("claude_optimized_type_analyzer.json")
     eval(program, trainset)
     
 
