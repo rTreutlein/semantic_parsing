@@ -1,24 +1,20 @@
-from typing import List, Dict, Any
+from typing import List, Dict
 from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
 from .verifier import VerifiedPredictor
+from .checker import human_verify_prediction
 
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
     
-    def __init__(self, collection_name: str = "type_definitions"):
-        self.rag = RAG(collection_name=collection_name)
+    def __init__(self, collection_name: str = "type_definitions", reset_db: bool = False):
+        self.rag = RAG(collection_name=collection_name,reset_db=reset_db)
         analyzer = TypeAnalyzer()
-        analyzer.load("claude_optimized_type_analyzer2.json")
+        analyzer.load("claude_mipro.json")
         
-        def verify_analysis(prediction, input_data):
-            # Simple pass-through verification for now
-            # Could be enhanced with specific verification logic
-            return prediction
-            
         self.analyzer = VerifiedPredictor(
             predictor=analyzer,
-            verify_func=verify_analysis,
+            verify_func=human_verify_prediction,
             cache_file="verified_type_analysis_cache.json"
         )
     
