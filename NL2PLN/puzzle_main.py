@@ -1,8 +1,10 @@
 import argparse
 import os
 import dspy
+from NL2PLN.utils.prompts import NL2PLN_Signature
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.utils.prompts import NL2PLN_Signature
+from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.utils.ragclass import RAG
@@ -10,20 +12,6 @@ from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
 from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
-class NL2PLN(dspy.Module):
-    def __init__(self, rag):
-        self.convert = dspy.ChainOfThought(NL2PLN_Signature)
-        self.rag = rag
-
-    def forward(self, sentence, previous_sentences=None):
-
-        similar = self.rag.search_similar(sentence, limit=5)
-
-        similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
-                       for item in similar if 'sentence' in item]
-
-        prediction = self.convert(sentence=sentence, similar=similar_examples, previous=previous_sentences)
-        return prediction
 
 def nl2plnVerified(input_text, nl2pln, previous_sentences=None):
     prediction = nl2pln.forward(input_text, previous_sentences)
