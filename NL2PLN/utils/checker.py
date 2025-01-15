@@ -6,7 +6,27 @@ from typing import Any
 import dspy
 
 
-def human_verify_prediction(prediction: dspy.Prediction, input_text: str) -> dspy.Prediction:
+def format_for_editing(value: Any) -> Any:
+    """Format values for better readability in the editor."""
+    if isinstance(value, str) and ('\n' in value or len(value) > 80):
+        return value.split('\n')
+    elif isinstance(value, dict):
+        return {k: format_for_editing(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [format_for_editing(v) for v in value]
+    return value
+
+def restore_from_editing(value: Any) -> Any:
+    """Restore values from their edited format."""
+    if isinstance(value, list) and all(isinstance(x, str) for x in value):
+        return '\n'.join(value)
+    elif isinstance(value, dict):
+        return {k: restore_from_editing(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [restore_from_editing(v) for v in value]
+    return value
+
+def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> tuple[dspy.Prediction, dict]:
     while True:
         # Display current state
         print("\nOriginal input:", input_text)
@@ -14,25 +34,31 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str) -> dsp
         for field_name, field_value in prediction.items():
             print(f"\n{field_name}:")
             print(field_value)
+        if kwargs:
+            print("\nAdditional parameters:")
+            for k, v in kwargs.items():
+                print(f"\n{k}:")
+                print(v)
             
         user_input = input("\nIs this prediction correct? (y/n): ").lower()
         
         if user_input == 'y':
-            return prediction
+            return prediction, kwargs
         elif user_input == 'n':
             # Create a temporary file with JSON structure for editing
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp_file:
-                # Convert prediction to editable format
+                # Convert prediction and kwargs to editable format
                 editable_content = {
                     "input_text": input_text,  # For reference
-                    "prediction": {
-                        k: v for k, v in prediction.items()
-                    }
+                    "prediction": format_for_editing({k: v for k, v in prediction.items()}),
+                    "parameters": format_for_editing(kwargs) if kwargs else {}
                 }
                 
-                # Add some helpful comments
-                temp_file.write("// Edit the prediction values below.\n")
+                # Add helpful comments
+                temp_file.write("// Edit the prediction values and parameters below.\n")
                 temp_file.write("// The input_text field is for reference only.\n")
+                temp_file.write("// Long strings are split into arrays for better readability.\n")
+                temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
                 temp_file.write(json.dumps(editable_content, indent=2))
                 temp_file_path = temp_file.name
 
@@ -53,8 +79,12 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str) -> dsp
                     
                 # Create new prediction with edited values
                 corrected_prediction = dspy.Prediction()
-                for k, v in edited_content["prediction"].items():
+                restored_prediction = restore_from_editing(edited_content["prediction"])
+                for k, v in restored_prediction.items():
                     corrected_prediction[k] = v
+                
+                # Restore kwargs
+                restored_kwargs = restore_from_editing(edited_content["parameters"])
                 
                 # Clean up
                 os.unlink(temp_file_path)
@@ -63,10 +93,15 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str) -> dsp
                 for field_name, field_value in corrected_prediction.items():
                     print(f"\n{field_name}:")
                     print(field_value)
+                if restored_kwargs:
+                    print("\nUpdated parameters:")
+                    for k, v in restored_kwargs.items():
+                        print(f"\n{k}:")
+                        print(v)
                 
                 confirm = input("\nSave these changes? (y/n): ").lower()
                 if confirm == 'y':
-                    return corrected_prediction
+                    return corrected_prediction, restored_kwargs
                 # If not confirmed, loop continues
                 
             except json.JSONDecodeError as e:
