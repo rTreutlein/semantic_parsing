@@ -1,9 +1,6 @@
 import argparse
-import os
 import dspy
-from NL2PLN.utils.prompts import NL2PLN_Signature
 from NL2PLN.utils.query_utils import convert_to_english
-from NL2PLN.utils.prompts import NL2PLN_Signature
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import human_verify_prediction
@@ -146,11 +143,7 @@ def main():
         print("\nProcessing conclusion:")
         conclusion = puzzle_sections.get('conclusion', '').strip()
         if conclusion:
-            similar = rag.search_similar(conclusion, limit=5)
-            similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
-                              for item in similar if 'sentence' in item]
-            
-            pln_data = nl2plnVerified("Is it true that " + conclusion, nl2pln, similar_examples, previous_sentences)
+            pln_data = nl2plnVerified("Is it true that " + conclusion, nl2pln, previous_sentences)
             if pln_data != "Performative":
                 print(f"\nAttempting to prove conclusion: {conclusion}")
                 for query in pln_data["questions"]:
