@@ -1,5 +1,4 @@
 import argparse
-import dspy
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -9,9 +8,10 @@ from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.puzzle_generator import LogicPuzzleGenerator
 from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
+from NL2PLN.utils.lm_config import configure_lm
 
 class PuzzleProcessor:
-    def __init__(self, output_base: str, is_example: bool = False):
+    def __init__(self, output_base: str, reset_db: bool = False):
         self.output_base = output_base
         self.previous_sentences = []
         
@@ -19,21 +19,14 @@ class PuzzleProcessor:
         self.metta_handler = MeTTaHandler(f"{output_base}.metta")
         self.metta_handler.load_kb_from_file()
         
-        self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=is_example)
+        self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
         self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types")
-        
-        # Initialize DSPY components
-        lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
-        dspy.configure(lm=lm)
         
         self.nl2pln = VerifiedPredictor(
             predictor=NL2PLN(self.rag),
             verify_func=human_verify_prediction,
             cache_file=f"{output_base}_verified_nl2pln.json"
         )
-        
-        # Initialize puzzle generator
-        self.puzzle_gen = ExamplePuzzleGenerator() if is_example else LogicPuzzleGenerator()
 
     def store_sentence_results(self, sentence: str, pln_data: dict):
         """Store processed sentence results in RAG."""
@@ -123,9 +116,8 @@ class PuzzleProcessor:
                 for step in proof_steps:
                     print(f"  {step}")
 
-    def process_puzzle(self):
+    def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
-        puzzle_sections = self.puzzle_gen.generate_puzzle()
         print(puzzle_sections)
         
         # Process sections in order
@@ -142,11 +134,17 @@ def main():
     parser.add_argument("--example", action="store_true", help="Run the example puzzle")
     args = parser.parse_args()
 
-    processor = PuzzleProcessor(args.output, args.example)
+    # Configure LM
+    configure_lm()
+
+    # Initialize puzzle generator and processor
+    puzzle_gen = ExamplePuzzleGenerator() if args.example else LogicPuzzleGenerator()
+    processor = PuzzleProcessor(args.output, reset_db=args.example)
     
     for i in range(args.num_puzzles):
         print(f"\nGenerating puzzle {i+1}/{args.num_puzzles}")
-        processor.process_puzzle()
+        puzzle = puzzle_gen.generate_puzzle()
+        processor.process_puzzle(puzzle)
 
 if __name__ == "__main__":
     main()
