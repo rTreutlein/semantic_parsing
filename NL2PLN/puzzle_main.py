@@ -2,6 +2,7 @@ import argparse
 import dspy
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
+from NL2PLN.utils.verifier import VerifiedPredictor
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.utils.ragclass import RAG
@@ -10,10 +11,6 @@ from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
 
-def nl2plnVerified(input_text, nl2pln, previous_sentences=None):
-    prediction = nl2pln.forward(input_text, previous_sentences)
-    validated_data = human_verify_prediction(prediction, input_text)
-    return validated_data
 
 def run_forward_chaining(metta_handler, pln):
     fc_results = metta_handler.add_atom_and_run_fc(pln)
@@ -50,7 +47,7 @@ def process_sentence(line, nl2pln, metta_handler, type_handler, previous_sentenc
     previous_sentences = previous_sentences or []
 
     print(f"Processing line: {line}")
-    pln_data = nl2plnVerified(line, nl2pln, previous_sentences)
+    pln_data = nl2pln.predict(line, previous_sentences=previous_sentences)
     if pln_data.statements[0] == "Performative":
         return True
     
@@ -114,7 +111,11 @@ def main():
     lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
     dspy.configure(lm=lm)
 
-    nl2pln = NL2PLN(rag)
+    nl2pln = VerifiedPredictor(
+        predictor=NL2PLN(rag),
+        verify_func=human_verify_prediction,
+        cache_file=f"{args.output}_verified_nl2pln.json"
+    )
 
     previous_sentences = []
     for i in range(args.num_puzzles):
@@ -143,7 +144,7 @@ def main():
         print("\nProcessing conclusion:")
         conclusion = puzzle_sections.get('conclusion', '').strip()
         if conclusion:
-            pln_data = nl2plnVerified("Is it true that " + conclusion, nl2pln, previous_sentences)
+            pln_data = nl2pln.predict("Is it true that " + conclusion, previous_sentences=previous_sentences)
             if pln_data != "Performative":
                 print(f"\nAttempting to prove conclusion: {conclusion}")
                 for query in pln_data["questions"]:
