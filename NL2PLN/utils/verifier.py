@@ -44,11 +44,10 @@ class VerifiedPredictor:
         # Get initial prediction
         prediction = self.predictor.forward(*args, **kwargs)
         
-        # Combine first arg with verify_kwargs into a single string
+        # Get input text and verification kwargs
         input_text = args[0] if args else ""
         verify_args = {k: kwargs[k] for k in self.verify_kwargs if k in kwargs}
-        combined_input = f"{input_text}\n" + "\n".join(f"{k}: {v}" for k, v in verify_args.items())
-        verified_prediction = self.verify_func(prediction, combined_input)
+        verified_prediction, _ = self.verify_func(prediction, input_text, **verify_args)
         
         # Cache the verified result
         self.cache.set(cache_key, verified_prediction)
