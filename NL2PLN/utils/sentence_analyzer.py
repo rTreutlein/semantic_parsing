@@ -70,7 +70,7 @@ class SentenceAnalyzer(dspy.Module):
             })
             
         # Validate through inference
-        results = self._validate_inference(pln_conversions, qa_pln)
+        results = self._validate_inference(pln_conversions, qa_conversions)
         
         # Score and select best conversion
         best_conversion, score = self._score_conversions(results)
