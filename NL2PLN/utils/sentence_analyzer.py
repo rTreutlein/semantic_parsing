@@ -241,11 +241,13 @@ def main():
     lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022',temperature=0.5)
     dspy.configure(lm=lm)
         
-    # Test
-    print("\nRunning test with sentence: 'The sky is blue'")
-    #result = program("The sky is blue")
-    result = program("John always takes his umbrella with him when it rains.")
-    #load file data/johnnoperformative.txt as training data AI!
+    # Load training data
+    with open("data/johnnoperformative.txt", "r") as f:
+        training_data = f.read().strip().split("\n\n")
+    
+    # Test with first example
+    print("\nRunning test with training data")
+    result = program(training_data[0])
     print("\nFull result:")
     print(result)
     print("\nResult type:", type(result))
