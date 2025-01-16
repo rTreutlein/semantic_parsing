@@ -15,6 +15,19 @@ class QuestionAnswerSignature(dspy.Signature):
     sentence: str = dspy.InputField()
     qa_pairs: List[Dict[str, str]] = dspy.OutputField()
 
+class ProvenToEnglishSignature(dspy.Signature):
+    """Convert a proven PLN statement back to English"""
+    proven_statement: str = dspy.InputField()
+    english: str = dspy.OutputField()
+
+class ValidateAnswerSignature(dspy.Signature):
+    """Check if the proven statement answers the original question"""
+    question: str = dspy.InputField()
+    expected_answer: str = dspy.InputField()
+    proven_english: str = dspy.InputField()
+    is_valid: bool = dspy.OutputField()
+    explanation: str = dspy.OutputField()
+
 class SentenceAnalyzer(dspy.Module):
     """Enhanced NL2PLN module that validates conversions through Q&A consistency"""
     
@@ -23,6 +36,8 @@ class SentenceAnalyzer(dspy.Module):
         self.generate_similar = dspy.ChainOfThought(SimilarSentencesSignature)
         self.generate_qa = dspy.ChainOfThought(QuestionAnswerSignature)
         self.nl2pln = NL2PLN(rag if rag else RAG())
+        self.to_english = dspy.ChainOfThought(ProvenToEnglishSignature)
+        self.validate_answer = dspy.ChainOfThought(ValidateAnswerSignature)
         
     def forward(self, sentence: str, previous_sentences: Optional[List[str]] = None) -> Dict:
         """
@@ -121,18 +136,32 @@ class SentenceAnalyzer(dspy.Module):
             # Test each Q&A pair
             qa_results = []
             for qa in qa_conversions:
-                matched = False
                 try:
-                    # Add question statements
+                    # Add question statements and get proofs
                     print(f"Question conversion: {qa['question_conv']}")
+                    all_proven = []
                     for stmt in qa["question_conv"].questions:
                         res = metta.bc(stmt)
-                        proven_statements = [str(x) for x in res[0]]
-                        print(f"Proven statements: {proven_statements}")
-                        for ans_stmt in qa["answer_conv"].statements:
-                            print(f"Answer statement: {ans_stmt}")
-                            if str(ans_stmt) in proven_statements:
-                                matched = True
+                        if res[0]:  # If we got any proofs
+                            proven_statements = [str(x) for x in res[0]]
+                            print(f"Proven statements: {proven_statements}")
+                            all_proven.extend(proven_statements)
+                    
+                    # Convert proven statements back to English
+                    proven_english = []
+                    for stmt in all_proven:
+                        eng = self.to_english(proven_statement=stmt)
+                        proven_english.append(eng.english)
+                    
+                    # Validate using LLM
+                    validation = self.validate_answer(
+                        question=qa["original"]["question"],
+                        expected_answer=qa["original"]["answer"],
+                        proven_english="; ".join(proven_english)
+                    )
+                    matched = validation.is_valid
+                    if not matched:
+                        print(f"Validation failed: {validation.explanation}")
                         
                 except Exception as e:
                     print(f"Error during Q&A validation: {e}")
