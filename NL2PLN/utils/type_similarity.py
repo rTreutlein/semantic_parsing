@@ -15,7 +15,8 @@ class TypeSimilarityHandler:
         self.analyzer = VerifiedPredictor(
             predictor=analyzer,
             verify_func=human_verify_prediction,
-            cache_file="verified_type_analysis_cache.json"
+            cache_file="verified_type_analysis_cache.json",
+            verify_kwargs=["new_types", "similar_types"],
         )
     
     def extract_type_name(self, typedef: str) -> str | None:
@@ -36,6 +37,8 @@ class TypeSimilarityHandler:
         """
         if not new_types:
             return []
+
+        print(f"Analyzing similarities between\n{new_types}\nand\n{similar_types}")
             
         prediction = self.analyzer.predict(new_types=new_types, similar_types=similar_types)
         return [s.strip() for s in prediction.statements if s.strip()]
@@ -53,8 +56,6 @@ class TypeSimilarityHandler:
         if not type_names:
             return []
 
-        print(f"Extracted type names: {type_names}")
-        
         # Find and deduplicate similar types before storing new ones
         seen = set()
         unique_similar_types = []
@@ -73,8 +74,6 @@ class TypeSimilarityHandler:
         for type_name, typedef in type_mapping.items():
             self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
 
-        print(f"Found similar types: {unique_similar_types}")
-        
         # Pass full type definitions instead of just names
         new_type_defs = list(type_mapping.values())
         similar_type_defs = [t['full_type'] for t in unique_similar_types]
