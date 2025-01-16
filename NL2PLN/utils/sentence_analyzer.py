@@ -1,80 +1,56 @@
 import dspy
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from hyperon import MeTTa
+from .nl2pln import NL2PLN
+from .utils.ragclass import RAG
 
 class SimilarSentencesSignature(dspy.Signature):
-    """Generate semantically similar sentences to the input.
-    Make sure the generated sentences:
-    - Preserve the exact same meaning as the original
-    - Use different wording/structure where possible
-    - Are grammatically correct
-    - Are natural sounding
-    """
-    
-    original_sentence: str = dspy.InputField(desc="Original sentence to generate variations for")
-    similar_sentences: List[str] = dspy.OutputField(desc="List of sentences with same meaning")
+    """Generate semantically similar sentences to the input."""
+    original_sentence: str = dspy.InputField()
+    similar_sentences: List[str] = dspy.OutputField()
 
 class QuestionAnswerSignature(dspy.Signature):
-    """Generate question-answer pairs that can be answered using the input sentence.
-    Make sure:
-    - Questions are directly answerable from the sentence content
-    - Answers are concise and specific
-    - Both questions and answers use natural language
-    """
-    
-    sentence: str = dspy.InputField(desc="Sentence to generate QA pairs for")
-    qa_pairs: List[Dict[str, str]] = dspy.OutputField(desc="List of question-answer pairs")
-
-class PLNConversionSignature(dspy.Signature):
-    """Convert natural language to PLN format.
-    Ensure:
-    - All logical relationships are preserved
-    - Variables and predicates follow PLN syntax
-    - The conversion is complete and valid
-    """
-    
-    sentence: str = dspy.InputField(desc="Natural language sentence to convert")
-    pln: str = dspy.OutputField(desc="PLN conversion of the sentence")
+    """Generate question-answer pairs that can be answered using the input sentence."""
+    sentence: str = dspy.InputField()
+    qa_pairs: List[Dict[str, str]] = dspy.OutputField()
 
 class SentenceAnalyzer(dspy.Module):
-    """Pipeline for analyzing and converting sentences with validation through Q&A"""
+    """Enhanced NL2PLN module that validates conversions through Q&A consistency"""
     
-    def __init__(self):
+    def __init__(self, rag: Optional[RAG] = None):
         super().__init__()
         self.generate_similar = dspy.ChainOfThought(SimilarSentencesSignature)
         self.generate_qa = dspy.ChainOfThought(QuestionAnswerSignature)
-        self.convert_pln = dspy.ChainOfThought(PLNConversionSignature)
+        self.nl2pln = NL2PLN(rag if rag else RAG())
         self.metta = MeTTa()
         
-    def forward(self, sentence: str) -> Dict:
+    def forward(self, sentence: str, previous_sentences: Optional[List[str]] = None) -> Dict:
         """
-        Run the full analysis pipeline:
-        1. Generate similar sentences
-        2. Convert all sentences to PLN (multiple attempts per sentence)
-        3. Generate Q&A pairs for each sentence
-        4. Convert Q&A to PLN
-        5. Validate through inference
-        6. Score and rank conversions
+        Run the full analysis pipeline using NL2PLN for conversions.
+        Matches the NL2PLN interface with additional validation.
         
         Args:
-            sentence: Original sentence to analyze
+            sentence: Input sentence to convert
+            previous_sentences: Optional list of previous sentences for context
             
         Returns:
-            Dict containing:
-            - best_pln: Best PLN conversion
-            - score: Consistency score
-            - qa_results: Question answering results
+            Dict containing validated PLN conversion with type definitions and statements
         """
         # Generate similar sentences
         similar = self.generate_similar(original_sentence=sentence)
         all_sentences = [sentence] + similar.similar_sentences
         
-        # Convert each sentence to PLN multiple times
+        # Convert each sentence using NL2PLN
         pln_conversions = []
         for sent in all_sentences:
-            for _ in range(3):  # Try 3 conversions per sentence
-                pln = self.convert_pln(sentence=sent)
-                pln_conversions.append((sent, pln.pln))
+            for _ in range(3):  # Try multiple conversions
+                pln_data = self.nl2pln.forward(sent, previous_sentences)
+                pln_conversions.append({
+                    "sentence": sent,
+                    "typedefs": pln_data.typedefs,
+                    "statements": pln_data.statements,
+                    "context": pln_data.context
+                })
                 
         # Generate Q&A pairs for each sentence
         qa_pairs = []
@@ -97,12 +73,15 @@ class SentenceAnalyzer(dspy.Module):
         results = self._validate_inference(pln_conversions, qa_pln)
         
         # Score and select best conversion
-        best_pln, score = self._score_conversions(results)
+        best_conversion, score = self._score_conversions(results)
         
+        # Return in same format as NL2PLN with additional validation info
         return {
-            "best_pln": best_pln,
-            "score": score,
-            "qa_results": results
+            "typedefs": best_conversion["typedefs"],
+            "statements": best_conversion["statements"],
+            "context": best_conversion["context"],
+            "validation_score": score,
+            "validation_results": results
         }
         
     def _validate_inference(self, pln_conversions: List[Tuple[str, str]], 
