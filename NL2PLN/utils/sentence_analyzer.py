@@ -3,6 +3,7 @@ from typing import List, Dict, Tuple, Optional
 from hyperon import MeTTa
 from NL2PLN.nl2pln import NL2PLN
 from .ragclass import RAG
+from NL2PLN.metta.metta_handler import MeTTaHandler
 
 class SimilarSentencesSignature(dspy.Signature):
     """Generate semantically similar sentences to the input."""
