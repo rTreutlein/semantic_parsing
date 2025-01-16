@@ -99,13 +99,14 @@ class SentenceAnalyzer(dspy.Module):
         best_conversion, score = self._score_conversions(results)
         
         # Return in same format as NL2PLN with additional validation info
-        return {
-            "typedefs": best_conversion["typedefs"],
-            "statements": best_conversion["statements"],
-            "context": best_conversion["context"],
-            "validation_score": score,
-            "validation_results": results
-        }
+        result = dspy.Prediction(
+            typedefs=best_conversion["typedefs"],
+            statements=best_conversion["statements"],
+            context=best_conversion["context"],
+            validation_score=score,
+            validation_results=results
+        )
+        return result
         
     def _validate_inference(self, pln_conversions: List[Dict], 
                           qa_conversions: List[Dict]) -> List[Dict]:
