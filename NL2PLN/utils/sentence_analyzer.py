@@ -1,5 +1,6 @@
 import dspy
 from typing import List, Dict, Tuple, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from hyperon import MeTTa
 from NL2PLN.nl2pln import NL2PLN
 from .ragclass import RAG
@@ -109,64 +110,78 @@ class SentenceAnalyzer(dspy.Module):
         )
         return result
         
-    def _validate_inference(self, pln_conversions: List[Dict], 
-                          qa_conversions: List[Dict]) -> List[Dict]:
-        """Run inference validation for each PLN conversion"""
-        results = []
+    def _validate_single_conversion(self, conv: Dict, qa_conversions: List[Dict]) -> Dict:
+        """Process a single PLN conversion with its Q&A pairs"""
+        # Create a temporary MeTTa handler for validation
+        metta = MeTTaHandler("temp_kb.metta", read_only=True)
         
-        for conv in pln_conversions:
-            # Create a temporary MeTTa handler for validation
-            metta = MeTTaHandler("temp_kb.metta", read_only=True)
+        # Add type definitions and statements
+        try:
+            for typedef in conv["typedefs"]:
+                metta.add_to_context(typedef)
+            for stmt in conv["statements"]:
+                metta.add_atom_and_run_fc(stmt)
+        except Exception:
+            return None
             
-            # Add type definitions and statements
+        # Test each Q&A pair
+        qa_results = []
+        for qa in qa_conversions:
+            matched = False
             try:
-                for typedef in conv["typedefs"]:
-                    metta.add_to_context(typedef)
-                for stmt in conv["statements"]:
-                    metta.add_atom_and_run_fc(stmt)
-            except Exception as e:
-                continue
-                
-            # Test each Q&A pair
-            qa_results = []
-            for qa in qa_conversions:
-                matched = False
-                try:
-                    all_proven = []
-                    for stmt in qa["question_conv"].questions:
-                        res = metta.bc(stmt)
-                        if res[0]:  # If we got any proofs
-                            proven_statements = [str(x) for x in res[0]]
-                            
-                            # Convert proven statements back to English
-                            proven_english = []
-                            for stmt in proven_statements:
-                                eng = self.to_english(proven_statement=stmt)
-                                proven_english.append(eng.english)
-                            
-                            # Validate using LLM
-                            with dspy.context(lm=dspy.LM('openrouter/meta-llama/llama-3.2-3b-instruct')):
-                                validation = self.validate_answer(
-                                    question=qa["original"]["question"],
-                                    expected_answer=qa["original"]["answer"],
-                                    proven_english="; ".join(proven_english)
-                                )
-                            matched = validation.is_valid
+                all_proven = []
+                for stmt in qa["question_conv"].questions:
+                    res = metta.bc(stmt)
+                    if res[0]:  # If we got any proofs
+                        proven_statements = [str(x) for x in res[0]]
                         
-                except Exception as e:
-                    matched = False
+                        # Convert proven statements back to English
+                        proven_english = []
+                        for stmt in proven_statements:
+                            eng = self.to_english(proven_statement=stmt)
+                            proven_english.append(eng.english)
+                        
+                        # Validate using LLM
+                        with dspy.context(lm=dspy.LM('openrouter/meta-llama/llama-3.2-3b-instruct')):
+                            validation = self.validate_answer(
+                                question=qa["original"]["question"],
+                                expected_answer=qa["original"]["answer"],
+                                proven_english="; ".join(proven_english)
+                            )
+                        matched = validation.is_valid
                     
-                qa_results.append({
-                    "qa": qa["original"],
-                    "matched": matched
-                })
+            except Exception:
+                matched = False
                 
-            results.append({
-                "sentence": conv["sentence"],
-                "conversion": conv,
-                "qa_results": qa_results
+            qa_results.append({
+                "qa": qa["original"],
+                "matched": matched
             })
             
+        return {
+            "sentence": conv["sentence"],
+            "conversion": conv,
+            "qa_results": qa_results
+        }
+
+    def _validate_inference(self, pln_conversions: List[Dict], 
+                          qa_conversions: List[Dict]) -> List[Dict]:
+        """Run inference validation for each PLN conversion in parallel"""
+        results = []
+        
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Submit all conversions to the thread pool
+            future_to_conv = {
+                executor.submit(self._validate_single_conversion, conv, qa_conversions): conv 
+                for conv in pln_conversions
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_conv):
+                result = future.result()
+                if result is not None:
+                    results.append(result)
+        
         return results
         
     def _score_conversions(self, results: List[Dict]) -> Tuple[Dict, float]:
