@@ -213,9 +213,10 @@ def create_training_data():
 def optimize_program(program, trainset, mode="light", out="optimized_sentence_analyzer"):
     """Optimize the program using MIPRO"""
     teleprompter = dspy.teleprompt.MIPROv2(
-        metric=lambda _, pred: pred.score,  # Use Q&A success rate as metric
+        metric=lambda _, pred: pred.validation_score,  # Use Q&A success rate as metric
         auto=mode,
-        verbose=True
+        verbose=True,
+        num_threads=2,
     )
     
     optimized = teleprompter.compile(
@@ -237,9 +238,25 @@ def main():
     # Load training data
     with open("NL2PLN/data/johnnoperformative.txt", "r") as f:
         training_data = f.read().strip().split("\n")
+        training_data = [dspy.Example(sentence=s).with_inputs('sentence') for s in training_data]
+
+    program = optimize_program(program, training_data)
 
     # Test with first example
-    result = program(training_data[0])
+    result = program(training_data[3])
+
+    print("\nValidation Results:")                                                                                                                                                   
+    for r in result.get("validation_results", []):                                                                                                                                   
+        print(f"\n- Sentence: {r.get('sentence')}")                                                                                                                                  
+        qa_results = r.get('qa_results', [])                                                                                                                                         
+        matches = sum(1 for qa in qa_results if qa["matched"])                                                                                                                       
+        score = matches / len(qa_results) if qa_results else 0                                                                                                                       
+        print(f"  Score: {score:.2f} ({matches}/{len(qa_results)} Q&A pairs matched)")                                                                                               
+        print("  QA Results:")                                                                                                                                                       
+        #for qa in qa_results:                                                                                                                                                        
+        #    print(f"    Q: {qa['qa']['question']}")                                                                                                                                  
+        #    print(f"    A: {qa['qa']['answer']}")                                                                                                                                    
+        #    print(f"    Matched: {qa['matched']}")
         
 
 if __name__ == "__main__":
