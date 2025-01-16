@@ -26,7 +26,6 @@ class ValidateAnswerSignature(dspy.Signature):
     expected_answer: str = dspy.InputField()
     proven_english: str = dspy.InputField()
     is_valid: bool = dspy.OutputField()
-    explanation: str = dspy.OutputField()
 
 class SentenceAnalyzer(dspy.Module):
     """Enhanced NL2PLN module that validates conversions through Q&A consistency"""
@@ -53,7 +52,8 @@ class SentenceAnalyzer(dspy.Module):
         """
         # Generate similar sentences
         similar = self.generate_similar(original_sentence=sentence)
-        all_sentences = [sentence] #+ similar.similar_sentences
+        all_sentences = [sentence] + similar.similar_sentences
+        all_sentences = all_sentences[:5]
 
         print(f"All sentences: {all_sentences}")
         
@@ -86,7 +86,7 @@ class SentenceAnalyzer(dspy.Module):
         for sent in all_sentences:
             qa = self.generate_qa(sentence=sent)
             print(f"QA pairs: {qa.qa_pairs}")
-            qa_pairs.extend(qa.qa_pairs)
+            qa_pairs.extend(qa.qa_pairs[:3])
             
         # Convert Q&A pairs using NL2PLN
         qa_conversions = []
@@ -136,6 +136,7 @@ class SentenceAnalyzer(dspy.Module):
             # Test each Q&A pair
             qa_results = []
             for qa in qa_conversions:
+                matched = False
                 try:
                     # Add question statements and get proofs
                     print(f"Question conversion: {qa['question_conv']}")
@@ -145,23 +146,24 @@ class SentenceAnalyzer(dspy.Module):
                         if res[0]:  # If we got any proofs
                             proven_statements = [str(x) for x in res[0]]
                             print(f"Proven statements: {proven_statements}")
-                            all_proven.extend(proven_statements)
                     
-                    # Convert proven statements back to English
-                    proven_english = []
-                    for stmt in all_proven:
-                        eng = self.to_english(proven_statement=stmt)
-                        proven_english.append(eng.english)
-                    
-                    # Validate using LLM
-                    validation = self.validate_answer(
-                        question=qa["original"]["question"],
-                        expected_answer=qa["original"]["answer"],
-                        proven_english="; ".join(proven_english)
-                    )
-                    matched = validation.is_valid
-                    if not matched:
-                        print(f"Validation failed: {validation.explanation}")
+                            # Convert proven statements back to English
+                            proven_english = []
+                            for stmt in proven_statements:
+                                eng = self.to_english(proven_statement=stmt)
+                                proven_english.append(eng.english)
+                            
+                            # Validate using LLM
+                            with dspy.context(lm=dspy.LM('openrouter/meta-llama/llama-3.2-3b-instruct')):
+                                print("Validating answer...")
+                                print(f"Question: {qa['original']['question']}")
+                                print(f"Expected answer: {qa['original']['answer']}")
+                                validation = self.validate_answer(
+                                    question=qa["original"]["question"],
+                                    expected_answer=qa["original"]["answer"],
+                                    proven_english="; ".join(proven_english)
+                                )
+                            matched = validation.is_valid
                         
                 except Exception as e:
                     print(f"Error during Q&A validation: {e}")
@@ -241,7 +243,9 @@ def main():
         
     # Test
     print("\nRunning test with sentence: 'The sky is blue'")
-    result = program("The sky is blue")
+    #result = program("The sky is blue")
+    result = program("John always takes his umbrella with him when it rains.")
+    #load file data/johnnoperformative.txt as training data AI!
     print("\nFull result:")
     print(result)
     print("\nResult type:", type(result))
