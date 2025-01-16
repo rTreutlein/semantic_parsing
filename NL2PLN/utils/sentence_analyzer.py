@@ -242,20 +242,15 @@ def main():
     dspy.configure(lm=lm)
         
     # Load training data
-    with open("data/johnnoperformative.txt", "r") as f:
-        training_data = f.read().strip().split("\n\n")
+    with open("NL2PLN/data/johnnoperformative.txt", "r") as f:
+        training_data = f.read().strip().split("\n")
+
+    print(f"Training data: {training_data}")
     
     # Test with first example
     print("\nRunning test with training data")
     result = program(training_data[0])
-    print("\nFull result:")
-    print(result)
-    print("\nResult type:", type(result))
         
-    print("\nTypedefs:", result.get("typedefs"))
-    print("Statements:", result.get("statements"))
-    print("Context:", result.get("context"))
-    print("Validation Score:", result.get("validation_score"))
     print("\nValidation Results:")
     for r in result.get("validation_results", []):
         print(f"- Sentence: {r.get('sentence')}")
