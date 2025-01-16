@@ -103,16 +103,15 @@ class SentenceAnalyzer(dspy.Module):
         results = []
         
         for conv in pln_conversions:
-            # Reset MeTTa space
-            metta = MeTTa()
-            metta.run("!(bind! &kb (new-space))")
+            # Create a temporary MeTTa handler for validation
+            metta = MeTTaHandler("temp_kb.metta", read_only=True)
             
             # Add type definitions and statements
             try:
                 for typedef in conv["typedefs"]:
-                    metta.run(f"!(add-atom &kb {typedef})")
+                    metta.add_to_context(typedef)
                 for stmt in conv["statements"]:
-                    metta.run(f"!(add-atom &kb {stmt})")
+                    metta.add_to_context(stmt)
             except Exception as e:
                 print(f"Error adding PLN to MeTTa: {e}")
                 continue
@@ -123,13 +122,13 @@ class SentenceAnalyzer(dspy.Module):
                 try:
                     # Add question statements
                     for stmt in qa["question_conv"].statements:
-                        metta.run(f"!(add-atom &kb {stmt})")
+                        metta.add_to_context(stmt)
                         
-                    # Try to prove each answer statement
+                    # Try to prove each answer statement using backward chaining
                     matches = []
                     for ans_stmt in qa["answer_conv"].statements:
-                        res = metta.run(f"!(match &kb {ans_stmt})")
-                        matches.append(len(res) > 0)
+                        _, proven = metta.bc(ans_stmt)
+                        matches.append(proven)
                         
                     matched = any(matches)
                 except Exception as e:
