@@ -22,7 +22,6 @@ class SentenceAnalyzer(dspy.Module):
         self.generate_similar = dspy.ChainOfThought(SimilarSentencesSignature)
         self.generate_qa = dspy.ChainOfThought(QuestionAnswerSignature)
         self.nl2pln = NL2PLN(rag if rag else RAG())
-        self.metta = MeTTa()
         
     def forward(self, sentence: str, previous_sentences: Optional[List[str]] = None) -> Dict:
         """
@@ -105,14 +104,15 @@ class SentenceAnalyzer(dspy.Module):
         
         for conv in pln_conversions:
             # Reset MeTTa space
-            self.metta.run("!(bind! &kb (new-space))")
+            metta = MeTTa()
+            metta.run("!(bind! &kb (new-space))")
             
             # Add type definitions and statements
             try:
                 for typedef in conv["typedefs"]:
-                    self.metta.run(f"!(add-atom &kb {typedef})")
+                    metta.run(f"!(add-atom &kb {typedef})")
                 for stmt in conv["statements"]:
-                    self.metta.run(f"!(add-atom &kb {stmt})")
+                    metta.run(f"!(add-atom &kb {stmt})")
             except Exception as e:
                 print(f"Error adding PLN to MeTTa: {e}")
                 continue
@@ -123,12 +123,12 @@ class SentenceAnalyzer(dspy.Module):
                 try:
                     # Add question statements
                     for stmt in qa["question_conv"].statements:
-                        self.metta.run(f"!(add-atom &kb {stmt})")
+                        metta.run(f"!(add-atom &kb {stmt})")
                         
                     # Try to prove each answer statement
                     matches = []
                     for ans_stmt in qa["answer_conv"].statements:
-                        res = self.metta.run(f"!(match &kb {ans_stmt})")
+                        res = metta.run(f"!(match &kb {ans_stmt})")
                         matches.append(len(res) > 0)
                         
                     matched = any(matches)
