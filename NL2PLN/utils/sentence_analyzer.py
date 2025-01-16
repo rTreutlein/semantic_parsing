@@ -55,17 +55,12 @@ class SentenceAnalyzer(dspy.Module):
         all_sentences = [sentence] + similar.similar_sentences
         all_sentences = all_sentences[:5]
 
-        print(f"All sentences: {all_sentences}")
-        
         # Convert each sentence using NL2PLN with multiple completions
         pln_conversions = []
         for sent in all_sentences:
-            print(f"\nProcessing sentence: {sent}")
             pln_data = self.nl2pln.forward(sent, previous_sentences, n=3)
             if hasattr(pln_data, 'completions'):
-                print(f"Number of completions: {len(pln_data.completions)}")
                 for completion in pln_data.completions:
-                    print(f"Completion: {completion.statements}")
                     pln_conversions.append({
                         "sentence": sent,
                         "typedefs": completion.typedefs,
@@ -73,7 +68,6 @@ class SentenceAnalyzer(dspy.Module):
                         "context": completion.context
                     })
             else:
-                print("No completions attribute found")
                 pln_conversions.append({
                     "sentence": sent,
                     "typedefs": pln_data.typedefs,
@@ -85,7 +79,6 @@ class SentenceAnalyzer(dspy.Module):
         qa_pairs = []
         for sent in all_sentences:
             qa = self.generate_qa(sentence=sent)
-            print(f"QA pairs: {qa.qa_pairs}")
             qa_pairs.extend(qa.qa_pairs[:3])
             
         # Convert Q&A pairs using NL2PLN
@@ -130,7 +123,6 @@ class SentenceAnalyzer(dspy.Module):
                 for stmt in conv["statements"]:
                     metta.add_atom_and_run_fc(stmt)
             except Exception as e:
-                print(f"Error adding PLN to MeTTa: {e}")
                 continue
                 
             # Test each Q&A pair
@@ -138,15 +130,12 @@ class SentenceAnalyzer(dspy.Module):
             for qa in qa_conversions:
                 matched = False
                 try:
-                    # Add question statements and get proofs
-                    print(f"Question conversion: {qa['question_conv']}")
                     all_proven = []
                     for stmt in qa["question_conv"].questions:
                         res = metta.bc(stmt)
                         if res[0]:  # If we got any proofs
                             proven_statements = [str(x) for x in res[0]]
-                            print(f"Proven statements: {proven_statements}")
-                    
+                            
                             # Convert proven statements back to English
                             proven_english = []
                             for stmt in proven_statements:
@@ -155,19 +144,14 @@ class SentenceAnalyzer(dspy.Module):
                             
                             # Validate using LLM
                             with dspy.context(lm=dspy.LM('openrouter/meta-llama/llama-3.2-3b-instruct')):
-                                print("Validating answer...")
-                                print(f"Question: {qa['original']['question']}")
-                                print(f"Expected answer: {qa['original']['answer']}")
                                 validation = self.validate_answer(
                                     question=qa["original"]["question"],
                                     expected_answer=qa["original"]["answer"],
                                     proven_english="; ".join(proven_english)
                                 )
-                                print(f"Validation result: {validation.is_valid}")
                             matched = validation.is_valid
                         
                 except Exception as e:
-                    print(f"Error during Q&A validation: {e}")
                     matched = False
                     
                 qa_results.append({
@@ -254,24 +238,9 @@ def main():
     with open("NL2PLN/data/johnnoperformative.txt", "r") as f:
         training_data = f.read().strip().split("\n")
 
-    print(f"Training data: {training_data}")
-    
     # Test with first example
-    print("\nRunning test with training data")
     result = program(training_data[0])
         
-    print("\nValidation Results:")
-    for r in result.get("validation_results", []):
-        print(f"\n- Sentence: {r.get('sentence')}")
-        qa_results = r.get('qa_results', [])
-        matches = sum(1 for qa in qa_results if qa["matched"])
-        score = matches / len(qa_results) if qa_results else 0
-        print(f"  Score: {score:.2f} ({matches}/{len(qa_results)} Q&A pairs matched)")
-        print("  QA Results:")
-        for qa in qa_results:
-            print(f"    Q: {qa['qa']['question']}")
-            print(f"    A: {qa['qa']['answer']}")
-            print(f"    Matched: {qa['matched']}")
 
 if __name__ == "__main__":
     main()
