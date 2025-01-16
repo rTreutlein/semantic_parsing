@@ -170,10 +170,10 @@ def create_training_data():
     ]
     return [ex.with_inputs("sentence") for ex in examples]
 
-def optimize_program(program, trainset, mode="medium", out="optimized_sentence_analyzer"):
+def optimize_program(program, trainset, mode="light", out="optimized_sentence_analyzer"):
     """Optimize the program using MIPRO"""
     teleprompter = dspy.teleprompt.MIPROv2(
-        metric=lambda ex, pred: pred.score,  # Use Q&A success rate as metric
+        metric=lambda _, pred: pred.score,  # Use Q&A success rate as metric
         auto=mode,
         verbose=True
     )
@@ -181,8 +181,6 @@ def optimize_program(program, trainset, mode="medium", out="optimized_sentence_a
     optimized = teleprompter.compile(
         program.deepcopy(),
         trainset=trainset,
-        max_bootstrapped_demos=5,
-        max_labeled_demos=5
     )
     
     optimized.save(f"{out}.json")
@@ -193,7 +191,7 @@ def main():
     program = SentenceAnalyzer()
     
     # Configure LM
-    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022',temperature=0.5)
     dspy.configure(lm=lm)
     
     # Create training data
