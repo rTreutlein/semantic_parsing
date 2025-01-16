@@ -253,8 +253,16 @@ def main():
         
     print("\nValidation Results:")
     for r in result.get("validation_results", []):
-        print(f"- Sentence: {r.get('sentence')}")
-        print(f"  QA Results: {r.get('qa_results')}")
+        print(f"\n- Sentence: {r.get('sentence')}")
+        qa_results = r.get('qa_results', [])
+        matches = sum(1 for qa in qa_results if qa["matched"])
+        score = matches / len(qa_results) if qa_results else 0
+        print(f"  Score: {score:.2f} ({matches}/{len(qa_results)} Q&A pairs matched)")
+        print("  QA Results:")
+        for qa in qa_results:
+            print(f"    Q: {qa['qa']['question']}")
+            print(f"    A: {qa['qa']['answer']}")
+            print(f"    Matched: {qa['matched']}")
 
 if __name__ == "__main__":
     main()
