@@ -38,7 +38,7 @@ class SentenceAnalyzer(dspy.Module):
         """
         # Generate similar sentences
         similar = self.generate_similar(original_sentence=sentence)
-        all_sentences = [sentence] + similar.similar_sentences
+        all_sentences = [sentence] #+ similar.similar_sentences
 
         print(f"All sentences: {all_sentences}")
         
@@ -70,6 +70,7 @@ class SentenceAnalyzer(dspy.Module):
         qa_pairs = []
         for sent in all_sentences:
             qa = self.generate_qa(sentence=sent)
+            print(f"QA pairs: {qa.qa_pairs}")
             qa_pairs.extend(qa.qa_pairs)
             
         # Convert Q&A pairs using NL2PLN
@@ -123,10 +124,13 @@ class SentenceAnalyzer(dspy.Module):
                 matched = False
                 try:
                     # Add question statements
-                    for stmt in qa["question_conv"].statements:
+                    print(f"Question conversion: {qa['question_conv']}")
+                    for stmt in qa["question_conv"].questions:
                         res = metta.bc(stmt)
                         proven_statements = [str(x) for x in res[0]]
+                        print(f"Proven statements: {proven_statements}")
                         for ans_stmt in qa["answer_conv"].statements:
+                            print(f"Answer statement: {ans_stmt}")
                             if str(ans_stmt) in proven_statements:
                                 matched = True
                         
