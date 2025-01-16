@@ -6,7 +6,7 @@ from .ragclass import RAG
 from NL2PLN.metta.metta_handler import MeTTaHandler
 
 class SimilarSentencesSignature(dspy.Signature):
-    """Generate semantically similar sentences to the input."""
+    """Generate semantically idential sentences to the input. That use a differnt structure or wording"""
     original_sentence: str = dspy.InputField()
     similar_sentences: List[str] = dspy.OutputField()
 
@@ -39,18 +39,18 @@ class SentenceAnalyzer(dspy.Module):
         # Generate similar sentences
         similar = self.generate_similar(original_sentence=sentence)
         all_sentences = [sentence] + similar.similar_sentences
+
+        print(f"All sentences: {all_sentences}")
         
         # Convert each sentence using NL2PLN with multiple completions
         pln_conversions = []
         for sent in all_sentences:
             print(f"\nProcessing sentence: {sent}")
             pln_data = self.nl2pln.forward(sent, previous_sentences, n=3)
-            print(f"PLN data: {pln_data}")
-            print(f"PLN data type: {type(pln_data)}")
             if hasattr(pln_data, 'completions'):
                 print(f"Number of completions: {len(pln_data.completions)}")
                 for completion in pln_data.completions:
-                    print(f"Completion: {completion}")
+                    print(f"Completion: {completion.statements}")
                     pln_conversions.append({
                         "sentence": sent,
                         "typedefs": completion.typedefs,
@@ -112,7 +112,7 @@ class SentenceAnalyzer(dspy.Module):
                 for typedef in conv["typedefs"]:
                     metta.add_to_context(typedef)
                 for stmt in conv["statements"]:
-                    metta.add_to_context(stmt)
+                    metta.add_atom_and_run_fc(stmt)
             except Exception as e:
                 print(f"Error adding PLN to MeTTa: {e}")
                 continue
@@ -120,18 +120,15 @@ class SentenceAnalyzer(dspy.Module):
             # Test each Q&A pair
             qa_results = []
             for qa in qa_conversions:
+                matched = False
                 try:
                     # Add question statements
                     for stmt in qa["question_conv"].statements:
-                        metta.add_to_context(stmt)
+                        res = metta.bc(stmt)
+                        for ans_stmt in qa["answer_conv"].statements:
+                            if ans_stmt in res[0]:
+                                matched = True
                         
-                    # Try to prove each answer statement using backward chaining
-                    matches = []
-                    for ans_stmt in qa["answer_conv"].statements:
-                        _, proven = metta.bc(ans_stmt)
-                        matches.append(proven)
-                        
-                    matched = any(matches)
                 except Exception as e:
                     print(f"Error during Q&A validation: {e}")
                     matched = False
