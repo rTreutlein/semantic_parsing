@@ -43,13 +43,27 @@ class SentenceAnalyzer(dspy.Module):
         # Convert each sentence using NL2PLN with multiple completions
         pln_conversions = []
         for sent in all_sentences:
+            print(f"\nProcessing sentence: {sent}")
             pln_data = self.nl2pln.forward(sent, previous_sentences, n=3)
-            for completion in pln_data.completions:
+            print(f"PLN data: {pln_data}")
+            print(f"PLN data type: {type(pln_data)}")
+            if hasattr(pln_data, 'completions'):
+                print(f"Number of completions: {len(pln_data.completions)}")
+                for completion in pln_data.completions:
+                    print(f"Completion: {completion}")
+                    pln_conversions.append({
+                        "sentence": sent,
+                        "typedefs": completion.typedefs,
+                        "statements": completion.statements,
+                        "context": completion.context
+                    })
+            else:
+                print("No completions attribute found")
                 pln_conversions.append({
                     "sentence": sent,
-                    "typedefs": completion.typedefs,
-                    "statements": completion.statements,
-                    "context": completion.context
+                    "typedefs": pln_data.typedefs,
+                    "statements": pln_data.statements,
+                    "context": pln_data.context
                 })
                 
         # Generate Q&A pairs for each sentence
@@ -189,24 +203,26 @@ def optimize_program(program, trainset, mode="light", out="optimized_sentence_an
 def main():
     # Initialize program
     program = SentenceAnalyzer()
-    
+        
     # Configure LM
     lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022',temperature=0.5)
     dspy.configure(lm=lm)
-    
-    # Create training data
-    #trainset = create_training_data()
-    
-    # Optimize
-    #program = optimize_program(program, trainset)
-    
+        
     # Test
+    print("\nRunning test with sentence: 'The sky is blue'")
     result = program("The sky is blue")
-    print(f"Best PLN: {result.best_pln}")
-    print(f"Score: {result.score}")
-    print("Q&A Results:")
-    for qa in result.qa_results:
-        print(f"- {qa}")
+    print("\nFull result:")
+    print(result)
+    print("\nResult type:", type(result))
+        
+    print("\nTypedefs:", result.get("typedefs"))
+    print("Statements:", result.get("statements"))
+    print("Context:", result.get("context"))
+    print("Validation Score:", result.get("validation_score"))
+    print("\nValidation Results:")
+    for r in result.get("validation_results", []):
+        print(f"- Sentence: {r.get('sentence')}")
+        print(f"  QA Results: {r.get('qa_results')}")
 
 if __name__ == "__main__":
     main()
