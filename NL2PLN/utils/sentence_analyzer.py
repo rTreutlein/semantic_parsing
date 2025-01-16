@@ -125,8 +125,9 @@ class SentenceAnalyzer(dspy.Module):
                     # Add question statements
                     for stmt in qa["question_conv"].statements:
                         res = metta.bc(stmt)
+                        proven_statements = [str(x) for x in res[0]]
                         for ans_stmt in qa["answer_conv"].statements:
-                            if ans_stmt in res[0]:
+                            if str(ans_stmt) in proven_statements:
                                 matched = True
                         
                 except Exception as e:
