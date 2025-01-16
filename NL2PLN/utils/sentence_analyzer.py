@@ -183,8 +183,9 @@ class SentenceAnalyzer(dspy.Module):
         return results
         
     def _score_conversions(self, results: List[Dict]) -> Tuple[Dict, float]:
-        """Score PLN conversions based on consistency and Q&A success"""
+        """Score PLN conversions based on consistency and Q&A success, with length as tie breaker"""
         best_score = 0
+        best_length = float('inf')  # Initialize with infinity for length comparison
         best_conversion = None
         
         for result in results:
@@ -192,8 +193,15 @@ class SentenceAnalyzer(dspy.Module):
             matches = sum(1 for qa in result["qa_results"] if qa["matched"])
             score = matches / len(result["qa_results"]) if result["qa_results"] else 0
             
-            if score > best_score:
+            # Get length of PLN conversion (total number of statements)
+            conv_length = len(result["conversion"]["statements"])
+            
+            # Update best if:
+            # 1. Score is better OR
+            # 2. Score is equal but conversion is shorter
+            if score > best_score or (score == best_score and conv_length < best_length):
                 best_score = score
+                best_length = conv_length
                 best_conversion = result["conversion"]
                 
         return best_conversion, best_score
