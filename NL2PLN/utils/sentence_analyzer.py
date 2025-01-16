@@ -163,6 +163,7 @@ class SentenceAnalyzer(dspy.Module):
                                     expected_answer=qa["original"]["answer"],
                                     proven_english="; ".join(proven_english)
                                 )
+                                print(f"Validation result: {validation.is_valid}")
                             matched = validation.is_valid
                         
                 except Exception as e:
