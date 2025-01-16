@@ -58,15 +58,15 @@ class SentenceAnalyzer(dspy.Module):
             qa = self.generate_qa(sentence=sent)
             qa_pairs.extend(qa.qa_pairs)
             
-        # Convert Q&A to PLN
-        qa_pln = []
+        # Convert Q&A pairs using NL2PLN
+        qa_conversions = []
         for qa in qa_pairs:
-            q_pln = self.convert_pln(sentence=qa["question"])
-            a_pln = self.convert_pln(sentence=qa["answer"])
-            qa_pln.append({
+            q_conv = self.nl2pln.forward(qa["question"], previous_sentences)
+            a_conv = self.nl2pln.forward(qa["answer"], previous_sentences)
+            qa_conversions.append({
                 "original": qa,
-                "question_pln": q_pln.pln,
-                "answer_pln": a_pln.pln
+                "question_conv": q_conv,
+                "answer_conv": a_conv
             })
             
         # Validate through inference
