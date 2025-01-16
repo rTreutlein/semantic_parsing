@@ -1,8 +1,8 @@
 import dspy
 from typing import List, Dict, Tuple, Optional
 from hyperon import MeTTa
-from .nl2pln import NL2PLN
-from .utils.ragclass import RAG
+from NL2PLN.nl2pln import NL2PLN
+from .ragclass import RAG
 
 class SimilarSentencesSignature(dspy.Signature):
     """Generate semantically similar sentences to the input."""
@@ -179,7 +179,7 @@ def optimize_program(program, trainset, mode="light", out="optimized_sentence_an
     )
     
     optimized = teleprompter.compile(
-        program.deepcopy(),
+        program,
         trainset=trainset,
     )
     
@@ -195,10 +195,10 @@ def main():
     dspy.configure(lm=lm)
     
     # Create training data
-    trainset = create_training_data()
+    #trainset = create_training_data()
     
     # Optimize
-    program = optimize_program(program, trainset)
+    #program = optimize_program(program, trainset)
     
     # Test
     result = program("The sky is blue")
