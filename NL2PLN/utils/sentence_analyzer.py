@@ -40,16 +40,16 @@ class SentenceAnalyzer(dspy.Module):
         similar = self.generate_similar(original_sentence=sentence)
         all_sentences = [sentence] + similar.similar_sentences
         
-        # Convert each sentence using NL2PLN
+        # Convert each sentence using NL2PLN with multiple completions
         pln_conversions = []
         for sent in all_sentences:
-            for _ in range(3):  # Try multiple conversions
-                pln_data = self.nl2pln.forward(sent, previous_sentences)
+            pln_data = self.nl2pln.forward(sent, previous_sentences, n=3)
+            for completion in pln_data.completions:
                 pln_conversions.append({
                     "sentence": sent,
-                    "typedefs": pln_data.typedefs,
-                    "statements": pln_data.statements,
-                    "context": pln_data.context
+                    "typedefs": completion.typedefs,
+                    "statements": completion.statements,
+                    "context": completion.context
                 })
                 
         # Generate Q&A pairs for each sentence
