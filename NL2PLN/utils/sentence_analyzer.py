@@ -84,35 +84,42 @@ class SentenceAnalyzer(dspy.Module):
             "validation_results": results
         }
         
-    def _validate_inference(self, pln_conversions: List[Tuple[str, str]], 
-                          qa_pln: List[Dict]) -> List[Dict]:
+    def _validate_inference(self, pln_conversions: List[Dict], 
+                          qa_conversions: List[Dict]) -> List[Dict]:
         """Run inference validation for each PLN conversion"""
         results = []
         
-        for orig_sent, pln in pln_conversions:
+        for conv in pln_conversions:
             # Reset MeTTa space
             self.metta.run("!(bind! &kb (new-space))")
             
-            # Add the sentence conversion
+            # Add type definitions and statements
             try:
-                self.metta.run(f"!(add-atom &kb {pln})")
-            except:
+                for typedef in conv["typedefs"]:
+                    self.metta.run(f"!(add-atom &kb {typedef})")
+                for stmt in conv["statements"]:
+                    self.metta.run(f"!(add-atom &kb {stmt})")
+            except Exception as e:
+                print(f"Error adding PLN to MeTTa: {e}")
                 continue
                 
             # Test each Q&A pair
             qa_results = []
-            for qa in qa_pln:
+            for qa in qa_conversions:
                 try:
-                    # Try to prove the answer from the question
-                    res = self.metta.run(f"""
-                        !(let* (
-                            ($question {qa['question_pln']})
-                            ($answer {qa['answer_pln']})
-                        )
-                        (if (= $question $answer) "true" "false"))
-                    """)
-                    matched = res[0] == "true"
-                except:
+                    # Add question statements
+                    for stmt in qa["question_conv"].statements:
+                        self.metta.run(f"!(add-atom &kb {stmt})")
+                        
+                    # Try to prove each answer statement
+                    matches = []
+                    for ans_stmt in qa["answer_conv"].statements:
+                        res = self.metta.run(f"!(match &kb {ans_stmt})")
+                        matches.append(len(res) > 0)
+                        
+                    matched = any(matches)
+                except Exception as e:
+                    print(f"Error during Q&A validation: {e}")
                     matched = False
                     
                 qa_results.append({
@@ -121,17 +128,17 @@ class SentenceAnalyzer(dspy.Module):
                 })
                 
             results.append({
-                "sentence": orig_sent,
-                "pln": pln,
+                "sentence": conv["sentence"],
+                "conversion": conv,
                 "qa_results": qa_results
             })
             
         return results
         
-    def _score_conversions(self, results: List[Dict]) -> Tuple[str, float]:
+    def _score_conversions(self, results: List[Dict]) -> Tuple[Dict, float]:
         """Score PLN conversions based on consistency and Q&A success"""
         best_score = 0
-        best_pln = None
+        best_conversion = None
         
         for result in results:
             # Calculate percentage of successful Q&A matches
@@ -140,9 +147,9 @@ class SentenceAnalyzer(dspy.Module):
             
             if score > best_score:
                 best_score = score
-                best_pln = result["pln"]
+                best_conversion = result["conversion"]
                 
-        return best_pln, best_score
+        return best_conversion, best_score
 
 def create_training_data():
     """Create training examples for optimization"""
