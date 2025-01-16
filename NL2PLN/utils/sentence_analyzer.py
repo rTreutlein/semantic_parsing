@@ -4,6 +4,7 @@ from hyperon import MeTTa
 from NL2PLN.nl2pln import NL2PLN
 from .ragclass import RAG
 from NL2PLN.metta.metta_handler import MeTTaHandler
+from .prompts import NL2PLN_Signature
 
 class SimilarSentencesSignature(dspy.Signature):
     """Generate semantically idential sentences to the input. That use a differnt structure or wording"""
@@ -34,7 +35,7 @@ class SentenceAnalyzer(dspy.Module):
         super().__init__()
         self.generate_similar = dspy.ChainOfThought(SimilarSentencesSignature)
         self.generate_qa = dspy.ChainOfThought(QuestionAnswerSignature)
-        self.nl2pln = NL2PLN(rag if rag else RAG())
+        self.nl2pln = NL2PLN(rag)
         self.to_english = dspy.ChainOfThought(ProvenToEnglishSignature)
         self.validate_answer = dspy.ChainOfThought(ValidateAnswerSignature)
         
@@ -241,13 +242,13 @@ def main():
         training_data = f.read().strip().split("\n")
         training_data = [dspy.Example(sentence=s).with_inputs('sentence') for s in training_data]
 
-    program = optimize_program(program, training_data)
+    #program = optimize_program(program, training_data)
 
     # Test with first example
     result = program(training_data[3])
 
     print("\nValidation Results:")                                                                                                                                                   
-    for r in result.get("validation_results", []):                                                                                                                                   
+    for r in result.validation_results:
         print(f"\n- Sentence: {r.get('sentence')}")                                                                                                                                  
         qa_results = r.get('qa_results', [])                                                                                                                                         
         matches = sum(1 for qa in qa_results if qa["matched"])                                                                                                                       
