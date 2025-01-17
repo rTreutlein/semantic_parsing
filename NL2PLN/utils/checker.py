@@ -56,7 +56,9 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
         elif user_input == 'n':
             # Create a temporary file with JSON structure for editing
             if not cont:
-                temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete_on_close=False)
+                temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
+                temp_file_path = temp_file.name
+                
                 # Convert prediction and kwargs to editable format
                 editable_content = {
                     "input_text": input_text,  # For reference
@@ -70,8 +72,10 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                 temp_file.write("// Long strings are split into arrays for better readability.\n")
                 temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
                 temp_file.write(json.dumps(editable_content, indent=2))
-
-            temp_file_path = temp_file.name
+                
+                # Make sure to flush and close before editing
+                temp_file.flush()
+                temp_file.close()
             # Open in default text editor
             editor = os.environ.get('EDITOR', 'nano')
             subprocess.call([editor, temp_file_path])
