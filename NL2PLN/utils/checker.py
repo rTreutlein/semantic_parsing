@@ -32,26 +32,31 @@ def restore_from_editing(value: Any) -> Any:
     return value
 
 def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> dspy.Prediction:
+    cont = False
     while True:
-        # Display current state
-        print("\nOriginal input:", input_text)
-        if kwargs:
-            print("\nAdditional parameters:")
-            for k, v in kwargs.items():
-                print(f"\n{k}:")
-                print(v)
-        print("\nCurrent prediction:")
-        for field_name, field_value in prediction.items():
-            print(f"\n{field_name}:")
-            print(field_value)
-            
-        user_input = input("\nIs this prediction correct? (y/n): ").lower()
+        if not cont:
+            # Display current state
+            print("\nOriginal input:", input_text)
+            if kwargs:
+                print("\nAdditional parameters:")
+                for k, v in kwargs.items():
+                    print(f"\n{k}:")
+                    print(v)
+            print("\nCurrent prediction:")
+            for field_name, field_value in prediction.items():
+                print(f"\n{field_name}:")
+                print(field_value)
+                
+            user_input = input("\nIs this prediction correct? (y/n): ").lower()
+        else:
+            user_input = "n"
         
         if user_input == 'y':
             return prediction
         elif user_input == 'n':
             # Create a temporary file with JSON structure for editing
-            with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp_file:
+            if not cont:
+                temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete_on_close=False)
                 # Convert prediction and kwargs to editable format
                 editable_content = {
                     "input_text": input_text,  # For reference
@@ -65,8 +70,8 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                 temp_file.write("// Long strings are split into arrays for better readability.\n")
                 temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
                 temp_file.write(json.dumps(editable_content, indent=2))
-                temp_file_path = temp_file.name
 
+            temp_file_path = temp_file.name
             # Open in default text editor
             editor = os.environ.get('EDITOR', 'nano')
             subprocess.call([editor, temp_file_path])
@@ -112,7 +117,7 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
             except json.JSONDecodeError as e:
                 print(f"\nError parsing edited content: {e}")
                 print("Please ensure the JSON structure remains valid.")
-                os.unlink(temp_file_path)
+                cont = True
                 continue
             except Exception as e:
                 print(f"\nAn error occurred: {e}")
