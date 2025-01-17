@@ -116,15 +116,22 @@ class SentenceAnalyzer(dspy.Module):
         metta = MeTTaHandler("temp_kb.metta", read_only=True)
         
         # Add type definitions and statements
-        try:
-            for typedef in conv["typedefs"]:
+        for typedef in conv["typedefs"]:
+            try:
                 metta.add_to_context(typedef)
-            for stmt in conv["statements"]:
+            except Exception as e:
+                print(f"Error adding typedef: {typedef}")
+                print(f"Error: {str(e)}")
+                return None
+
+        for stmt in conv["statements"]:
+            try:
                 metta.add_atom_and_run_fc(stmt)
-                print(f"Statments: {stmt}")
-        except Exception:
-            print("Error inserting statments")
-            return None
+                print(f"Added statement: {stmt}")
+            except Exception as e:
+                print(f"Error adding statement: {stmt}")
+                print(f"Error: {str(e)}")
+                return None
             
         # Test each Q&A pair
         qa_results = []
