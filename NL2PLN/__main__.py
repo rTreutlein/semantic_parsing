@@ -1,3 +1,4 @@
+import os
 import argparse
 import dspy
 from NL2PLN.nl2pln import NL2PLN
@@ -6,6 +7,7 @@ from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
+from NL2PLN.utils.common import process_file
 
 
 class Processor:
