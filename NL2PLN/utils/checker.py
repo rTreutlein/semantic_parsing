@@ -35,15 +35,15 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
     while True:
         # Display current state
         print("\nOriginal input:", input_text)
-        print("\nCurrent prediction:")
-        for field_name, field_value in prediction.items():
-            print(f"\n{field_name}:")
-            print(field_value)
         if kwargs:
             print("\nAdditional parameters:")
             for k, v in kwargs.items():
                 print(f"\n{k}:")
                 print(v)
+        print("\nCurrent prediction:")
+        for field_name, field_value in prediction.items():
+            print(f"\n{field_name}:")
+            print(field_value)
             
         user_input = input("\nIs this prediction correct? (y/n): ").lower()
         
@@ -55,8 +55,8 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                 # Convert prediction and kwargs to editable format
                 editable_content = {
                     "input_text": input_text,  # For reference
+                    "parameters": format_for_editing(kwargs) if kwargs else {},
                     "prediction": format_for_editing({k: v for k, v in prediction.items()}),
-                    "parameters": format_for_editing(kwargs) if kwargs else {}
                 }
                 
                 # Add helpful comments
