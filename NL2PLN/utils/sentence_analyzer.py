@@ -60,7 +60,7 @@ class SentenceAnalyzer(dspy.Module):
         # Convert each sentence using NL2PLN with multiple completions
         pln_conversions = []
         for sent in all_sentences:
-            pln_data = self.nl2pln.forward(sent, previous_sentences, n=3)
+            pln_data = self.nl2pln.forward(sent, previous_sentences, n=5)
             if hasattr(pln_data, 'completions'):
                 for completion in pln_data.completions:
                     pln_conversions.append({
@@ -121,17 +121,22 @@ class SentenceAnalyzer(dspy.Module):
                 metta.add_to_context(typedef)
             for stmt in conv["statements"]:
                 metta.add_atom_and_run_fc(stmt)
+                print(f"Statments: {stmt}")
         except Exception:
+            print("Error inserting statments")
             return None
             
         # Test each Q&A pair
         qa_results = []
         for qa in qa_conversions:
+            print(qa)
             matched = False
             try:
                 all_proven = []
                 for stmt in qa["question_conv"].questions:
+                    print(f"question {stmt}")
                     res = metta.bc(stmt)
+                    print(f"result {res}")
                     if res[0]:  # If we got any proofs
                         proven_statements = [str(x) for x in res[0]]
                         
@@ -169,6 +174,8 @@ class SentenceAnalyzer(dspy.Module):
         """Run inference validation for each PLN conversion in parallel"""
         results = []
         
+        print(pln_conversions)
+        print(qa_conversions)
         with ThreadPoolExecutor(max_workers=4) as executor:
             # Submit all conversions to the thread pool
             future_to_conv = {
@@ -233,7 +240,7 @@ def optimize_program(program, trainset, mode="light", out="optimized_sentence_an
         metric=lambda _, pred: pred.validation_score,  # Use Q&A success rate as metric
         auto=mode,
         verbose=True,
-        num_threads=2,
+        num_threads=1,
     )
     
     optimized = teleprompter.compile(
@@ -250,6 +257,7 @@ def main():
         
     # Configure LM
     lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022',temperature=0.5)
+    #lm = dspy.LM('deepseek/deepseek-chat',temperature=1)
     dspy.configure(lm=lm)
         
     # Load training data
@@ -260,7 +268,7 @@ def main():
     #program = optimize_program(program, training_data)
 
     # Test with first example
-    result = program(training_data[3])
+    result = program("Every boy on vashon has a dog which every girl on vashon likes to call by a special pet name.")
 
     print("\nValidation Results:")                                                                                                                                                   
     for r in result.validation_results:
@@ -270,10 +278,10 @@ def main():
         score = matches / len(qa_results) if qa_results else 0                                                                                                                       
         print(f"  Score: {score:.2f} ({matches}/{len(qa_results)} Q&A pairs matched)")                                                                                               
         print("  QA Results:")                                                                                                                                                       
-        #for qa in qa_results:                                                                                                                                                        
-        #    print(f"    Q: {qa['qa']['question']}")                                                                                                                                  
-        #    print(f"    A: {qa['qa']['answer']}")                                                                                                                                    
-        #    print(f"    Matched: {qa['matched']}")
+        for qa in qa_results:                                                                                                                                                        
+            print(f"    Q: {qa['qa']['question']}")                                                                                                                                  
+            print(f"    A: {qa['qa']['answer']}")                                                                                                                                    
+            print(f"    Matched: {qa['matched']}")
         
 
 if __name__ == "__main__":
