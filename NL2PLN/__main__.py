@@ -1,93 +1,96 @@
 import argparse
-import os
-from NL2PLN.utils.common import process_file, create_openai_completion, extract_logic
-from NL2PLN.utils.prompts import nl2pln, pln2nl
+import dspy
+from NL2PLN.nl2pln import NL2PLN
+from NL2PLN.utils.verifier import VerifiedPredictor
 from NL2PLN.metta.metta_handler import MeTTaHandler
-from NL2PLN.utils.checker import HumanCheck
+from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.utils.ragclass import RAG
+from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
 
-def convert_logic(input_text, prompt_func, similar_examples, previous_sentences=None):
-    system_msg, user_msg = prompt_func(input_text, similar_examples, previous_sentences or [])
-    #print("--------------------------------------------------------------------------------")
-    #print(f"System Message: {system_msg}")
-    #print(f"User Message: {user_msg}")
-    
-    txt = create_openai_completion(system_msg, user_msg)
-    print("--------------------------------------------------------------------------------")
-    print("LLM output:")
-    print(txt)
-    logic_data = extract_logic(txt)
-
-    if logic_data is None:
-        raise RuntimeError("No output from LLM")
-
-    # Validate the entire output at once
-    validated_data = HumanCheck(txt, input_text)
-    logic_data = extract_logic(validated_data)
-    
-    if logic_data is None:
-        raise RuntimeError("No output from validation")
+class Processor:
+    def __init__(self, output_base: str, reset_db: bool = False):
+        self.output_base = output_base
+        self.previous_sentences = []
         
-    return logic_data
+        # Initialize components
+        self.metta_handler = MeTTaHandler(f"{output_base}.metta")
+        self.metta_handler.load_kb_from_file()
+        
+        self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
+        self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db)
+        
+        self.nl2pln = VerifiedPredictor(
+            predictor=NL2PLN(self.rag),
+            verify_func=human_verify_prediction,
+            cache_file=f"{output_base}_verified_nl2pln.json"
+        )
 
-def run_forward_chaining(metta_handler, pln):
-    fc_results = metta_handler.add_atom_and_run_fc(pln)
-    print(f"Forward chaining results: {fc_results}")
-    return fc_results
+    def store_sentence_results(self, sentence: str, pln_data: dspy.Prediction):
+        """Store processed sentence results in RAG."""
+        self.rag.store_embedding({
+            "sentence": sentence,
+            "from_context": pln_data.context,
+            "type_definitions": pln_data.typedefs,
+            "statements": pln_data.statements,
+        }, embedding_fields=["sentence", "statements"])
 
-def process_forward_chaining_results(rag, fc_results, pln, similar_examples):
-    english_results = [convert_logic(result, pln2nl, similar_examples) for result in fc_results]
-    print(f"Forward chaining results in English: {english_results}")
-    store_fc_results(rag, fc_results, english_results)
-    return pln, fc_results, english_results
+    def process_type_definitions(self, pln_data) -> bool:
+        """Process and validate type definitions."""
+        
+        # Add type definitions
+        for type_def in pln_data.typedefs:
+            conflict = self.metta_handler.add_to_context(type_def)
+            if isinstance(conflict, str):
+                print(f"ERROR: Conflict detected! Type definition {type_def} conflicts with existing atom: {conflict}")
+                input("Press Enter to continue...")
+                return False
+                
+        linking_statements = self.type_handler.process_new_typedefs(pln_data.typedefs)
+        print(f"Found {len(linking_statements)} linking statements")
+        print(linking_statements)
 
-def store_results(rag, sentence, pln_data):
-    rag.store_embedding({
-        "sentence": sentence,
-        "from_context": pln_data["from_context"],
-        "type_definitions": pln_data["type_definitions"],
-        "statements": pln_data["statements"]
-    })
-
-def store_fc_results(rag, fc_results, english_results):
-    for fc_result, english_result in zip(fc_results, english_results):
-        rag.store_embedding({
-            "sentence": english_result,
-            "pln": fc_result,
-            "preconditions": []  # Forward chaining results don't have preconditions
-        })
-
-def process_sentence(line, rag, metta_handler, previous_sentences=None) -> bool:
-    similar = rag.search_similar(line, limit=5)
-    previous_sentences = previous_sentences or []
-    similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
-                       for item in similar if 'sentence' in item]
-
-    print(f"Processing line: {line}")
-    pln_data = convert_logic(line, nl2pln, similar_examples, previous_sentences)
-    if pln_data == "Performative":
+        # Add type relationships
+        for linking_stmt in linking_statements:
+            conflict = self.metta_handler.add_to_context(linking_stmt)
+            if isinstance(conflict, str):
+                print(f"WARNING: Type relationship {linking_stmt} conflicts with existing atom: {conflict}")
+                input("Press Enter to continue...")
+                return False
+        
         return True
-    
-    # Add type definitions to MeTTa KB first
-    for type_def in pln_data["type_definitions"]:
-        conflict = metta_handler.add_to_context(type_def)
-        if isinstance(conflict, str):
-            print(f"ERROR: Conflict detected! Type definition {type_def} conflicts with existing atom: {conflict}")
+
+    def process_sentence(self, line: str) -> bool:
+        """Process a single sentence."""
+        print(f"Processing line: {line}")
+        
+        recent_context = self.previous_sentences[-10:] if self.previous_sentences else []
+        pln_data = self.nl2pln.predict(line, previous_sentences=recent_context)
+        
+        if pln_data.statements[0] == "Performative":
+            return True
+            
+        if not self.process_type_definitions(pln_data):
             return False
-    
-    # Then add and process all statements
-    store_results(rag, line, pln_data)
-    
-    # Run forward chaining on each statement
-    fc_results = []
-    for statement in pln_data["statements"]:
-        fc_result = run_forward_chaining(metta_handler, statement)
-        if fc_result:
-            fc_results.extend(fc_result)
-    if fc_results:
-        process_forward_chaining_results(rag, fc_results, pln_data, similar_examples)
-    return True
+            
+        self.store_sentence_results(line, pln_data)
+        
+        # Process forward chaining
+        for statement in pln_data.statements:
+            fc_results = self.metta_handler.add_atom_and_run_fc(statement)
+            if fc_results:
+                print(f"Forward chaining results: {fc_results}")
+        
+        self.previous_sentences.append(line)
+        if len(self.previous_sentences) > 10:
+            self.previous_sentences.pop(0)
+        
+        return True
+
+def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
+    """Configure the LM for DSPY."""
+    lm = dspy.LM(model_name)
+    dspy.configure(lm=lm)
 
 def main():
     parser = argparse.ArgumentParser(description="Process a file and convert sentences to OpenCog PLN.")
@@ -96,25 +99,18 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of lines to process")
     args = parser.parse_args()
 
-    metta_handler = MeTTaHandler(args.file_path + ".metta")
-    metta_handler.load_kb_from_file()
-    print("Loaded kb:")
-    print(metta_handler.run("!(kb)"))
+    # Configure LM
+    configure_lm()
 
-    collection_name = os.path.splitext(os.path.basename(args.file_path))[0]
-    rag = RAG(collection_name=f"{collection_name}_pln")
+    # Initialize processor
+    output_base = os.path.splitext(os.path.basename(args.file_path))[0]
+    processor = Processor(output_base)
 
-    previous_sentences = []
-    def process_sentence_wrapper(line, index):
+    def process_line(line, index):
         print(f"Current Index: {index}")
-        result = process_sentence(line, rag, metta_handler, previous_sentences[-10:] if previous_sentences else [])
-        if result:
-            previous_sentences.append(line)
-            if len(previous_sentences) > 10:
-                previous_sentences.pop(0)
-        return result
+        return processor.process_sentence(line)
 
-    process_file(args.file_path, process_sentence_wrapper, args.skip, args.limit)
+    process_file(args.file_path, process_line, args.skip, args.limit)
 
 if __name__ == "__main__":
     main()
