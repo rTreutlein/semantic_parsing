@@ -32,30 +32,20 @@ def restore_from_editing(value: Any) -> Any:
     return value
 
 def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> dspy.Prediction:
-    cont = False
     while True:
-        if not cont:
-            # Display current state
-            print("\nOriginal input:", input_text)
-            if kwargs:
-                print("\nAdditional parameters:")
-                for k, v in kwargs.items():
-                    print(f"\n{k}:")
-                    print(v)
-            print("\nCurrent prediction:")
-            for field_name, field_value in prediction.items():
-                print(f"\n{field_name}:")
-                print(field_value)
-                
-            user_input = input("\nIs this prediction correct? (y/n): ").lower()
-        else:
-            user_input = "n"
+        # Display current state
+        print("\nOriginal input:", input_text)
+        if kwargs:
+            print("\nAdditional parameters:")
+            for k, v in kwargs.items():
+                print(f"\n{k}:")
+                print(v)
+        print("\nCurrent prediction:")
+        for field_name, field_value in prediction.items():
+            print(f"\n{field_name}:")
+            print(field_value)
         
-        if user_input == 'y':
-            return prediction
-        elif user_input == 'n':
-            # Create a temporary file with JSON structure for editing
-            if not cont:
+        # Create a temporary file with JSON structure for editing
                 temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
                 temp_file_path = temp_file.name
                 
@@ -102,6 +92,10 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                 
                 # Clean up
                 os.unlink(temp_file_path)
+                
+                # Check if anything changed
+                if corrected_prediction == prediction and restored_kwargs == kwargs:
+                    return prediction
                 
                 print("\nUpdated prediction:")
                 for field_name, field_value in corrected_prediction.items():
