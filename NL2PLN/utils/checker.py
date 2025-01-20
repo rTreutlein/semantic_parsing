@@ -46,83 +46,80 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
             print(field_value)
         
         # Create a temporary file with JSON structure for editing
-                temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
-                temp_file_path = temp_file.name
-                
-                # Convert prediction and kwargs to editable format
-                editable_content = {
-                    "input_text": input_text,  # For reference
-                    "parameters": format_for_editing(kwargs) if kwargs else {},
-                    "prediction": format_for_editing({k: v for k, v in prediction.items()}),
-                }
-                
-                # Add helpful comments
-                temp_file.write("// Edit the prediction values and parameters below.\n")
-                temp_file.write("// The input_text field is for reference only.\n")
-                temp_file.write("// Long strings are split into arrays for better readability.\n")
-                temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
-                temp_file.write(json.dumps(editable_content, indent=2))
-                
-                # Make sure to flush and close before editing
-                temp_file.flush()
-                temp_file.close()
-            # Open in default text editor
-            editor = os.environ.get('EDITOR', 'nano')
-            subprocess.call([editor, temp_file_path])
+        temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
+        temp_file_path = temp_file.name
+        
+        # Convert prediction and kwargs to editable format
+        editable_content = {
+            "input_text": input_text,  # For reference
+            "parameters": format_for_editing(kwargs) if kwargs else {},
+            "prediction": format_for_editing({k: v for k, v in prediction.items()}),
+        }
+        
+        # Add helpful comments
+        temp_file.write("// Edit the prediction values and parameters below.\n")
+        temp_file.write("// The input_text field is for reference only.\n")
+        temp_file.write("// Long strings are split into arrays for better readability.\n")
+        temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
+        temp_file.write(json.dumps(editable_content, indent=2))
+        
+        # Make sure to flush and close before editing
+        temp_file.flush()
+        temp_file.close()
+        # Open in default text editor
+        editor = os.environ.get('EDITOR', 'nano')
+        subprocess.call([editor, temp_file_path])
 
-            try:
-                # Read and parse the edited content
-                with open(temp_file_path, 'r') as temp_file:
-                    # Skip comment lines
-                    content = ""
-                    for line in temp_file:
-                        if not line.strip().startswith("//"):
-                            content += line
-                    
-                    edited_content = json.loads(content)
-                    
-                # Create new prediction with edited values
-                corrected_prediction = dspy.Prediction()
-                restored_prediction = restore_from_editing(edited_content["prediction"])
-                for k, v in restored_prediction.items():
-                    corrected_prediction[k] = v
+        try:
+            # Read and parse the edited content
+            with open(temp_file_path, 'r') as temp_file:
+                # Skip comment lines
+                content = ""
+                for line in temp_file:
+                    if not line.strip().startswith("//"):
+                        content += line
                 
-                # Restore kwargs
-                restored_kwargs = restore_from_editing(edited_content["parameters"])
+                edited_content = json.loads(content)
                 
-                # Clean up
-                os.unlink(temp_file_path)
+            # Create new prediction with edited values
+            corrected_prediction = dspy.Prediction()
+            restored_prediction = restore_from_editing(edited_content["prediction"])
+            for k, v in restored_prediction.items():
+                corrected_prediction[k] = v
+            
+            # Restore kwargs
+            restored_kwargs = restore_from_editing(edited_content["parameters"])
                 
-                # Check if anything changed
-                if corrected_prediction == prediction and restored_kwargs == kwargs:
-                    return prediction
-                
-                print("\nUpdated prediction:")
-                for field_name, field_value in corrected_prediction.items():
-                    print(f"\n{field_name}:")
-                    print(field_value)
-                if restored_kwargs:
-                    print("\nUpdated parameters:")
-                    for k, v in restored_kwargs.items():
-                        print(f"\n{k}:")
-                        print(v)
-                
-                confirm = input("\nSave these changes? (y/n): ").lower()
-                if confirm == 'y':
-                    return corrected_prediction
-                # If not confirmed, loop continues
-                
-            except json.JSONDecodeError as e:
-                print(f"\nError parsing edited content: {e}")
-                print("Please ensure the JSON structure remains valid.")
-                cont = True
-                continue
-            except Exception as e:
-                print(f"\nAn error occurred: {e}")
-                os.unlink(temp_file_path)
-                continue
-        else:
-            print("Invalid input. Please enter 'y' or 'n'.")
+            # Clean up
+            os.unlink(temp_file_path)
+            
+            # Check if anything changed
+            if corrected_prediction == prediction and restored_kwargs == kwargs:
+                return prediction
+            
+            print("\nUpdated prediction:")
+            for field_name, field_value in corrected_prediction.items():
+                print(f"\n{field_name}:")
+                print(field_value)
+            if restored_kwargs:
+                print("\nUpdated parameters:")
+                for k, v in restored_kwargs.items():
+                    print(f"\n{k}:")
+                    print(v)
+            
+            confirm = input("\nSave these changes? (y/n): ").lower()
+            if confirm == 'y':
+                return corrected_prediction
+            # If not confirmed, loop continues
+            
+        except json.JSONDecodeError as e:
+            print(f"\nError parsing edited content: {e}")
+            print("Please ensure the JSON structure remains valid.")
+            continue
+        except Exception as e:
+            print(f"\nAn error occurred: {e}")
+            os.unlink(temp_file_path)
+            continue
 
 
 def check_predicate_logic(pred_logic: str, fix_function=None) -> str|None:
