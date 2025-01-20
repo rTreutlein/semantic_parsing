@@ -33,18 +33,6 @@ def restore_from_editing(value: Any) -> Any:
 
 def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> dspy.Prediction:
     while True:
-        # Display current state
-        print("\nOriginal input:", input_text)
-        if kwargs:
-            print("\nAdditional parameters:")
-            for k, v in kwargs.items():
-                print(f"\n{k}:")
-                print(v)
-        print("\nCurrent prediction:")
-        for field_name, field_value in prediction.items():
-            print(f"\n{field_name}:")
-            print(field_value)
-        
         # Create a temporary file with JSON structure for editing
         temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
         temp_file_path = temp_file.name
