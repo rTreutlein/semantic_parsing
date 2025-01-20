@@ -32,24 +32,24 @@ def restore_from_editing(value: Any) -> Any:
     return value
 
 def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwargs) -> dspy.Prediction:
+    # Initialize with original content
+    last_content = {
+        "input_text": input_text,  # For reference
+        "parameters": format_for_editing(kwargs) if kwargs else {},
+        "prediction": format_for_editing({k: v for k, v in prediction.items()}),
+    }
+    
     while True:
         # Create a temporary file with JSON structure for editing
         temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False)
         temp_file_path = temp_file.name
-        
-        # Convert prediction and kwargs to editable format
-        editable_content = {
-            "input_text": input_text,  # For reference
-            "parameters": format_for_editing(kwargs) if kwargs else {},
-            "prediction": format_for_editing({k: v for k, v in prediction.items()}),
-        }
         
         # Add helpful comments
         temp_file.write("// Edit the prediction values and parameters below.\n")
         temp_file.write("// The input_text field is for reference only.\n")
         temp_file.write("// Long strings are split into arrays for better readability.\n")
         temp_file.write("// Arrays of strings will be joined with newlines when saved.\n")
-        temp_file.write(json.dumps(editable_content, indent=2))
+        temp_file.write(json.dumps(last_content, indent=2))
         
         # Make sure to flush and close before editing
         temp_file.flush()
@@ -81,7 +81,7 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
             # Clean up
             os.unlink(temp_file_path)
             
-            # Check if anything changed
+            # Check if anything changed from original
             if corrected_prediction == prediction and restored_kwargs == kwargs:
                 return prediction
             
@@ -98,7 +98,10 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
             confirm = input("\nSave these changes? (y/n): ").lower()
             if confirm == 'y':
                 return corrected_prediction
-            # If not confirmed, loop continues
+            
+            # If not confirmed, preserve the edited content for next iteration
+            last_content = edited_content
+            # Loop continues
             
         except json.JSONDecodeError as e:
             print(f"\nError parsing edited content: {e}")
