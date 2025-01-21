@@ -7,12 +7,18 @@ from ..nl2pln import NL2PLN
 from .cache_handler import CacheHandler
 from .prompts import NL2PLN_Signature
 
+class SemanticSimilaritySignature(dspy.Signature):
+    """Signature for scoring semantic similarity between predicted and expected outputs"""
+    predicted = dspy.InputField(desc="The predicted output from the model")
+    expected = dspy.InputField(desc="The expected correct output")
+    similarity_score = dspy.OutputField(desc="A float between 0 and 1 indicating how semantically similar the outputs are")
+
 class SemanticSimilarityMetric(dspy.Module):
     """Standalone LLM-based semantic similarity metric"""
     
     def __init__(self):
         super().__init__()
-        self.scorer = dspy.Predict('predicted, expected -> similarity_score: float')
+        self.scorer = dspy.Predict(SemanticSimilaritySignature)
     
     def forward(self, example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
         """Score semantic similarity between predicted and expected outputs"""
