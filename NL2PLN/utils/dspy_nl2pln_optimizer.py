@@ -1,11 +1,35 @@
 import dspy
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dspy.teleprompt import MIPROv2, BootstrapFewShot, COPRO
 from dspy.evaluate import Evaluate
 from ..nl2pln import NL2PLN
 from .cache_handler import CacheHandler
 from .prompts import NL2PLN_Signature
+
+class SemanticSimilarityMetric(dspy.Module):
+    """Standalone LLM-based semantic similarity metric"""
+    
+    def __init__(self):
+        super().__init__()
+        self.scorer = dspy.Predict('predicted, expected -> similarity_score: float between 0 and 1')
+    
+    def forward(self, example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
+        """Score semantic similarity between predicted and expected outputs"""
+        # Combine statements and typedefs into single strings
+        predicted_str = "\n".join(prediction.statements + prediction.typedefs)
+        expected_str = "\n".join(example.statements + example.typedefs)
+        
+        # Get LLM-based similarity score
+        result = self.scorer(
+            predicted=predicted_str,
+            expected=expected_str
+        )
+        
+        try:
+            return float(result.similarity_score)
+        except (ValueError, AttributeError):
+            return 0.0
 
 def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
     """
@@ -98,9 +122,19 @@ def optimize_MIPRO_ZeroShot(program,trainset,mode="light",out="miprozs_optimized
     
     return optimized_program
 
-def evaluate(program, dataset):
-    """Evaluate program performance on dataset"""
-    print("\nRunning optimized program on training set and comparing results:")
+def evaluate(program, dataset, metric_name="semantic"):
+    """Evaluate program performance on dataset using specified metric"""
+    print(f"\nRunning optimized program on training set using {metric_name} metric:")
+    
+    # Initialize metrics
+    metrics = {
+        "exact": my_metric,
+        "semantic": SemanticSimilarityMetric()
+    }
+    
+    # Get selected metric
+    metric = metrics.get(metric_name, metrics["semantic"])
+    
     total = 0
     for example in dataset:
         prediction = program(
@@ -108,11 +142,11 @@ def evaluate(program, dataset):
             previous=example.previous
         )
         
-        metric = my_metric(example, prediction)
-        total += metric
+        score = metric(example, prediction)
+        total += score
 
-        if metric != 1.0:
-            print(f"\nExample mismatch (metric {metric}):")
+        if score != 1.0:
+            print(f"\nExample mismatch (score {score}):")
             print(f"Input sentence: {example.sentence}")
             print(f"\nExpected statements:")
             print("\n".join(example.statements))
@@ -124,7 +158,7 @@ def evaluate(program, dataset):
             print("\n".join(prediction.typedefs))
             print("="*80)
             
-    print(f"\nTotal metric: {total/len(dataset)}")
+    print(f"\nAverage {metric_name} score: {total/len(dataset)}")
 
 def main():
     # Configure LM
