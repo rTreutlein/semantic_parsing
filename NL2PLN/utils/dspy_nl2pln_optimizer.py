@@ -12,7 +12,7 @@ class SemanticSimilarityMetric(dspy.Module):
     
     def __init__(self):
         super().__init__()
-        self.scorer = dspy.Predict('predicted, expected -> similarity_score: float between 0 and 1')
+        self.scorer = dspy.Predict('predicted, expected -> similarity_score: float')
     
     def forward(self, example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
         """Score semantic similarity between predicted and expected outputs"""
@@ -73,7 +73,6 @@ def create_training_data(cache_file: str) -> List[dspy.Example]:
                 statements=value.get("statements", []),
                 typedefs=value.get("typedefs", [])
             )
-            print(example)
             examples.append(example)
         except:
             continue
@@ -139,12 +138,12 @@ def evaluate(program, dataset, metric_name="semantic"):
     for example in dataset:
         prediction = program(
             sentence=example.sentence,
-            previous=example.previous
+            previous=example.previous,
+            similar=[]
         )
         
         score = metric(example, prediction)
         total += score
-
         if score != 1.0:
             print(f"\nExample mismatch (score {score}):")
             print(f"Input sentence: {example.sentence}")
@@ -157,6 +156,8 @@ def evaluate(program, dataset, metric_name="semantic"):
             print(f"\nActual type definitions:")
             print("\n".join(prediction.typedefs))
             print("="*80)
+            dspy.inspect_history(n=1)
+            exit()
             
     print(f"\nAverage {metric_name} score: {total/len(dataset)}")
 
@@ -166,7 +167,7 @@ def main():
     dspy.configure(lm=lm)
 
     # Initialize program
-    program = NL2PLN(rag=None)  # No RAG needed for optimization
+    program = dspy.ChainOfThought(NL2PLN_Signature) # No RAG needed for optimization
 
     # Load training data from cache
     trainset = create_training_data("johnnoperformative_verified_nl2pln.json")
