@@ -18,8 +18,18 @@
 
 !(count_alpha_equivalent &s1 &s2)
 
-(= ((recmatch $p $t) $e)
-    (unify $e $p $t (map (recmatch $p $t) $e)))
+;; Map function using car-atom/cdr-atom
+(= (map $f ()) ())
+(= (map $f $expr)
+    (let* (($head (car-atom $expr))
+           ($tail (cdr-atom $expr)))
+      (:: ($f $head) (map $f $tail))))
 
-!((recmatch x y) x)
-!((recmatch x y) (P x))
+;; Test cases for map function
+!(assertEqual
+    (map (lambda ($x) (* $x 2)) (:: 1 (:: 2 (:: 3 ())))) 
+    (:: 2 (:: 4 (:: 6 ()))))
+
+!(assertEqual
+    (map (lambda ($x) (cons-atom $x $x)) (:: "a" (:: "b" ())))
+    (:: ("a" "a") (:: ("b" "b") ())))
