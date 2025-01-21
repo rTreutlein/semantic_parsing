@@ -9,8 +9,10 @@ from .prompts import NL2PLN_Signature
 
 class SemanticSimilaritySignature(dspy.Signature):
     """Signature for scoring semantic similarity between predicted and expected outputs"""
-    predicted = dspy.InputField(desc="The predicted output from the model")
-    expected = dspy.InputField(desc="The expected correct output")
+    predicted_statements = dspy.InputField(desc="The predicted logical statements from the model")
+    predicted_typedefs = dspy.InputField(desc="The predicted type definitions from the model")
+    expected_statements = dspy.InputField(desc="The expected correct logical statements")
+    expected_typedefs = dspy.InputField(desc="The expected correct type definitions")
     similarity_score = dspy.OutputField(desc="A float between 0 and 1 indicating how semantically similar the outputs are")
 
 class SemanticSimilarityMetric(dspy.Module):
@@ -22,14 +24,12 @@ class SemanticSimilarityMetric(dspy.Module):
     
     def forward(self, example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
         """Score semantic similarity between predicted and expected outputs"""
-        # Combine statements and typedefs into single strings
-        predicted_str = "\n".join(prediction.statements + prediction.typedefs)
-        expected_str = "\n".join(example.statements + example.typedefs)
-        
-        # Get LLM-based similarity score
+        # Get LLM-based similarity score with separate inputs
         result = self.scorer(
-            predicted=predicted_str,
-            expected=expected_str
+            predicted_statements="\n".join(prediction.statements),
+            predicted_typedefs="\n".join(prediction.typedefs),
+            expected_statements="\n".join(example.statements),
+            expected_typedefs="\n".join(example.typedefs)
         )
         
         try:
