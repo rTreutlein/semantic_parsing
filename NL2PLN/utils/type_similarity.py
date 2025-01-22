@@ -7,17 +7,18 @@ from .checker import human_verify_prediction
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
     
-    def __init__(self, collection_name: str = "type_definitions", reset_db: bool = False):
+    def __init__(self, collection_name: str = "type_definitions", reset_db: bool = False, verify: bool = False):
         self.rag = RAG(collection_name=collection_name,reset_db=reset_db)
-        analyzer = TypeAnalyzer()
-        analyzer.load("claude_mipro.json")
+        self.analyzer = TypeAnalyzer()
+        self.analyzer.load("claude_mipro.json")
         
-        self.analyzer = VerifiedPredictor(
-            predictor=analyzer,
-            verify_func=human_verify_prediction,
-            cache_file="verified_type_analysis_cache.json",
-            verify_kwargs=["new_types", "similar_types"],
-        )
+        if verify:
+            self.analyzer = VerifiedPredictor(
+                predictor=self.analyzer,
+                verify_func=human_verify_prediction,
+                cache_file="verified_type_analysis_cache.json",
+                verify_kwargs=["new_types", "similar_types"],
+            )
     
     def extract_type_name(self, typedef: str) -> str | None:
         """Extract type name from definition (e.g., "(: Person EntityType)" -> "Person")"""
@@ -40,7 +41,7 @@ class TypeSimilarityHandler:
 
         print(f"Analyzing similarities between\n{new_types}\nand\n{similar_types}")
             
-        prediction = self.analyzer.predict(new_types=new_types, similar_types=similar_types)
+        prediction = self.analyzer(new_types=new_types, similar_types=similar_types)
         return [s.strip() for s in prediction.statements if s.strip()]
 
     def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
