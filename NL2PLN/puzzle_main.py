@@ -14,6 +14,7 @@ class PuzzleProcessor:
     def __init__(self, output_base: str, reset_db: bool = False, verify: bool = False):
         self.output_base = output_base
         self.previous_sentences = []
+        self.processed_premises = set()
         
         # Initialize components
         self.metta_handler = MeTTaHandler(f"{output_base}.metta")
@@ -127,13 +128,20 @@ class PuzzleProcessor:
         """Process a complete puzzle."""
         print(puzzle_sections)
         
-        # Process sections in order
-        #self.process_section("premises", puzzle_sections.get('premises', ''))
-        #self.process_conclusion(puzzle_sections.get('conclusion', ''))
-
-        self.deductions = puzzle_sections.get('deduction', [])
-        for premise, conclusion in self.deductions:
-            self.process_section("premises", premise)
+        all_premises = puzzle_sections.get('premises', [])
+        deductions = puzzle_sections.get('deduction', [])
+        
+        # Process each deduction step
+        for required_premises, conclusion in deductions:
+            # Only process premises we haven't seen yet
+            new_premises = [p for p in required_premises if p not in self.processed_premises]
+            if new_premises:
+                if not self.process_section("premises", new_premises):
+                    print("Failed to process premises, stopping early")
+                    return
+                self.processed_premises.update(new_premises)
+            
+            # Try to prove the conclusion
             self.process_conclusion(conclusion)
 
 def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
