@@ -36,6 +36,7 @@ class RAG:
     def store_embedding(self, data, embedding_fields):
         """
         Store the embedding of a JSON object in Qdrant.
+        Checks for duplicates before storing.
         
         Args:
             data: Dictionary containing the data to store
@@ -45,6 +46,10 @@ class RAG:
         if not isinstance(data, dict):
             raise ValueError("Input must be a dictionary (JSON object)")
         
+        # Check for exact duplicate if 'sentence' field exists
+        if 'sentence' in data and self.search_exact(data['sentence']):
+            return  # Skip if duplicate found
+            
         def format_field(field):
             value = data.get(field, '')
             if isinstance(value, list):
