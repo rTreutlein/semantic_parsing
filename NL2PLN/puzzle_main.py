@@ -15,6 +15,7 @@ class PuzzleProcessor:
         self.output_base = output_base
         self.previous_sentences = []
         self.processed_premises = set()
+        self.pending_rag_entries = []
         
         # Initialize components
         self.metta_handler = MeTTaHandler(f"{output_base}.metta")
@@ -80,7 +81,8 @@ class PuzzleProcessor:
         if not self.process_type_definitions(pln_data):
             return False
             
-        self.store_sentence_results(line, pln_data)
+        # Save for later storage if proof succeeds
+        self.pending_rag_entries.append((line, pln_data))
         
         # Process forward chaining
         for statement in pln_data.statements:
@@ -123,6 +125,12 @@ class PuzzleProcessor:
                 print("Proof steps:")
                 for step in proof_steps:
                     print(f"  {step}")
+                # Store all pending entries in RAG since proof succeeded
+                for sentence, pln_data in self.pending_rag_entries:
+                    self.store_sentence_results(sentence, pln_data)
+                self.pending_rag_entries = []
+                return True
+        return False
 
     def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
@@ -142,7 +150,10 @@ class PuzzleProcessor:
                 self.processed_premises.update(new_premises)
             
             # Try to prove the conclusion
-            self.process_conclusion(conclusion)
+            if not self.process_conclusion(conclusion):
+                print("Failed to prove conclusion, discarding pending RAG entries")
+                self.pending_rag_entries = []
+                return
 
 def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
     """Configure the LM for DSPY."""
