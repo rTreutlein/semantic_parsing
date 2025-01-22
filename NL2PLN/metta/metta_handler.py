@@ -39,9 +39,22 @@ class MeTTaHandler:
             # Add missing closing parentheses
             return expr + ')' * (open_count - close_count)
         elif close_count > open_count:
-            # Remove extra closing parentheses from the end
+            # Remove only excess closing parentheses from the end
             excess = close_count - open_count
-            return expr.rstrip(')') + ')' * (close_count - excess)
+            i = len(expr) - 1
+            
+            # First verify the end of string contains only closing parentheses
+            while i >= 0 and excess > 0:
+                if expr[i] != ')':
+                    # Found non-parenthesis - give up and return original
+                    return expr
+                i -= 1
+                excess -= 1
+                
+            # If we got here, we found enough closing parentheses at the end
+            # Now remove the exact number of excess ones
+            excess = close_count - open_count
+            return expr[:-excess]
         return expr
                                                                              
     @property
