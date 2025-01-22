@@ -18,9 +18,8 @@ class PuzzleProcessor:
         self.pending_rag_entries = []
         
         # Initialize components
-        self.metta_handler = MeTTaHandler(f"{output_base}.metta")
-        self.metta_handler.load_kb_from_file()
-        
+        self.output_base = output_base
+        self.metta_handler = None
         self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
         self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db, verify=verify)
         
@@ -138,6 +137,13 @@ class PuzzleProcessor:
     def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
         print(puzzle_sections)
+        
+        # Create new MeTTaHandler for this puzzle
+        if self.metta_handler:
+            self.metta_handler = None  # Allow previous handler to be garbage collected
+            
+        self.metta_handler = MeTTaHandler(f"{self.output_base}.metta")
+        self.metta_handler.load_kb_from_file()
         
         deductions = puzzle_sections.get('deduction', [])
         
