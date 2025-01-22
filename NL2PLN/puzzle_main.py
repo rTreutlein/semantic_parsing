@@ -16,6 +16,7 @@ class PuzzleProcessor:
         self.previous_sentences = []
         self.processed_premises = set()
         self.pending_rag_entries = []
+        self.puzzle_counter = 0
         
         # Initialize components
         self.output_base = output_base
@@ -138,11 +139,12 @@ class PuzzleProcessor:
         """Process a complete puzzle."""
         print(puzzle_sections)
         
-        # Create new MeTTaHandler for this puzzle
+        # Create new MeTTaHandler for this puzzle with unique file name
         if self.metta_handler:
             self.metta_handler = None  # Allow previous handler to be garbage collected
-            
-        self.metta_handler = MeTTaHandler(f"{self.output_base}.metta")
+        
+        self.puzzle_counter += 1    
+        self.metta_handler = MeTTaHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
         self.metta_handler.load_kb_from_file()
         
         deductions = puzzle_sections.get('deduction', [])
