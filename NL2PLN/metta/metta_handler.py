@@ -28,14 +28,30 @@ class MeTTaHandler:
         """Remove #numbers from variable names like $var#1234"""
         import re
         return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
+
+    @staticmethod
+    def balance_parentheses(expr: str) -> str:
+        """Balance parentheses in an expression by adding or removing at the end."""
+        open_count = expr.count('(')
+        close_count = expr.count(')')
+        
+        if open_count > close_count:
+            # Add missing closing parentheses
+            return expr + ')' * (open_count - close_count)
+        elif close_count > open_count:
+            # Remove extra closing parentheses from the end
+            excess = close_count - open_count
+            return expr.rstrip(')') + ')' * (close_count - excess)
+        return expr
                                                                              
     @property
     def read_only(self) -> bool:
         return self._read_only
 
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
-        self.metta.run(f'!(add-atom &kb {atom})')                  
-        res = self.metta.run(f'!(ddfc &kb {atom})')
+        balanced_atom = self.balance_parentheses(atom)
+        self.metta.run(f'!(add-atom &kb {balanced_atom})')                  
+        res = self.metta.run(f'!(ddfc &kb {balanced_atom})')
         out = [self.clean_variable_names(str(elem)) for elem in res[0]]
         if not self.read_only:
             self.append_to_file(f"{atom}")
@@ -62,7 +78,8 @@ class MeTTaHandler:
             None if atom was added successfully
             The conflicting atom string if a conflict was found
         """
-        exp = self.metta.parse_single(atom)
+        balanced_atom = self.balance_parentheses(atom)
+        exp = self.metta.parse_single(balanced_atom)
         inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")[0]
 
         
