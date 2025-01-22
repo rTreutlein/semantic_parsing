@@ -63,17 +63,20 @@ class MeTTaHandler:
             The conflicting atom string if a conflict was found
         """
         exp = self.metta.parse_single(atom)
-        inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")
+        inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")[0]
+
         
-        if len(inctx[0]) == 0:
+        if len(inctx) == 0:
             self.metta.run("!(add-atom &kb " + atom + ")")
             return None
-            
-        existing_atom = str(inctx[0][0])
-        if str(exp.get_children()[2]) == existing_atom:
+
+        unify = self.metta.run("!(unify " + str(exp.get_children()[2]) + " (match &kb (: " + str(exp.get_children()[1]) + " $a) $a)  same diff)")
+
+        if str(unify[0][0]) == "same":
+            self.metta.run("!(add-atom &kb " + atom + ")")
             return None
         else:
-            return existing_atom
+            return inctx
 
         
     def run(self, atom: str):
