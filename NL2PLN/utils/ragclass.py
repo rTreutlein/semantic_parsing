@@ -1,4 +1,4 @@
-import uuid
+import hashlib
 import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -46,10 +46,6 @@ class RAG:
         if not isinstance(data, dict):
             raise ValueError("Input must be a dictionary (JSON object)")
         
-        # Check for exact duplicate if 'sentence' field exists
-        if 'sentence' in data and self.search_exact(data['sentence']):
-            return  # Skip if duplicate found
-            
         def format_field(field):
             value = data.get(field, '')
             if isinstance(value, list):
@@ -57,13 +53,28 @@ class RAG:
             return str(value)
             
         text = ' '.join(format_field(field) for field in embedding_fields)
+        
+        # Create deterministic ID from content
+        content_hash = hashlib.sha256(text.encode()).hexdigest()
+        
+        # Search if point with this ID exists
+        try:
+            existing_point = self.qdrant_client.retrieve(
+                collection_name=self.collection_name,
+                ids=[content_hash]
+            )
+            if existing_point:
+                return  # Skip if duplicate found
+        except Exception:
+            pass  # Continue if point doesn't exist
+            
         embedding = self.get_embedding(text)
         
         self.qdrant_client.upsert(
             collection_name=self.collection_name,
             points=[
                 models.PointStruct(
-                    id=str(uuid.uuid4()),
+                    id=content_hash,
                     vector=embedding,
                     payload=data
                 )
