@@ -102,7 +102,9 @@ class PuzzleProcessor:
         print(f"\nProcessing {section_name}:")
         for sentence in sentences:
             if sentence.strip():
-                self.process_sentence(sentence)
+                if not self.process_sentence(sentence):
+                    return False
+        return True
 
     def process_conclusion(self, conclusion: str):
         """Process and verify the conclusion."""
@@ -112,6 +114,7 @@ class PuzzleProcessor:
         print("\nProcessing conclusion:")
         recent_context = self.previous_sentences[-10:] if self.previous_sentences else []
         pln_data = self.nl2pln("Is it true that " + conclusion, previous_sentences=recent_context)
+        print(pln_data)
         
         if pln_data == "Performative":
             return
@@ -136,7 +139,6 @@ class PuzzleProcessor:
         """Process a complete puzzle."""
         print(puzzle_sections)
         
-        all_premises = puzzle_sections.get('premises', [])
         deductions = puzzle_sections.get('deduction', [])
         
         try:
@@ -147,6 +149,7 @@ class PuzzleProcessor:
                 if new_premises:
                     if not self.process_section("premises", new_premises):
                         print("Failed to process premises, stopping early")
+                        print(f"Premises: {new_premises}")
                         self.type_handler.clear_pending_types()
                         return
                     self.processed_premises.update(new_premises)
@@ -154,6 +157,7 @@ class PuzzleProcessor:
                 # Try to prove the conclusion
                 if not self.process_conclusion(conclusion):
                     print("Failed to prove conclusion, discarding pending entries")
+                    print(f"Conclusion: {conclusion}")
                     self.pending_rag_entries = []
                     self.type_handler.clear_pending_types()
                     return
