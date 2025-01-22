@@ -11,6 +11,7 @@ class TypeSimilarityHandler:
         self.rag = RAG(collection_name=collection_name,reset_db=reset_db)
         self.analyzer = TypeAnalyzer()
         self.analyzer.load("claude_mipro.json")
+        self.pending_types = []  # Store staged type definitions
         
         if verify:
             self.analyzer = VerifiedPredictor(
@@ -44,8 +45,8 @@ class TypeSimilarityHandler:
         prediction = self.analyzer(new_types=new_types, similar_types=similar_types)
         return [s.strip() for s in prediction.statements if s.strip()]
 
-    def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
-        """Process new type definitions and return linking statements."""
+    def stage_new_typedefs(self, typedefs: List[str]) -> List[str]:
+        """Stage new type definitions without committing them and return linking statements."""
         # Extract type names
         type_names = []
         type_mapping = {}  # Store mapping of names to full typedefs
@@ -57,7 +58,7 @@ class TypeSimilarityHandler:
         if not type_names:
             return []
 
-        # Find and deduplicate similar types before storing new ones
+        # Find and deduplicate similar types
         seen = set()
         unique_similar_types = []
         
@@ -71,11 +72,27 @@ class TypeSimilarityHandler:
                     seen.add(type_info['type_name'])
                     unique_similar_types.append(type_info)
 
-        # Store new types after finding similar ones
-        for type_name, typedef in type_mapping.items():
-            self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
+        # Stage new types for later commitment
+        self.pending_types.extend(list(type_mapping.values()))
 
-        # Pass full type definitions instead of just names
+        # Pass full type definitions including both staged and existing types
         new_type_defs = list(type_mapping.values())
         similar_type_defs = [t['full_type'] for t in unique_similar_types]
         return self.analyze_type_similarities(new_type_defs, similar_type_defs)
+
+    def commit_pending_types(self):
+        """Commit staged types to RAG database."""
+        for typedef in self.pending_types:
+            if type_name := self.extract_type_name(typedef):
+                self.rag.store_embedding({"type_name": type_name, "full_type": typedef}, ["type_name"])
+        self.pending_types.clear()
+
+    def clear_pending_types(self):
+        """Discard all staged types."""
+        self.pending_types.clear()
+
+    def process_new_typedefs(self, typedefs: List[str]) -> List[str]:
+        """Legacy method that immediately commits types. Use stage_new_typedefs instead."""
+        linking_statements = self.stage_new_typedefs(typedefs)
+        self.commit_pending_types()
+        return linking_statements

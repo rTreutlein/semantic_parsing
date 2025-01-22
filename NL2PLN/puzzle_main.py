@@ -53,7 +53,7 @@ class PuzzleProcessor:
                 input("Press Enter to continue...")
                 return False
                 
-        linking_statements = self.type_handler.process_new_typedefs(pln_data.typedefs)
+        linking_statements = self.type_handler.stage_new_typedefs(pln_data.typedefs)
         print(f"Found {len(linking_statements)} linking statements")
         print(linking_statements)
 
@@ -139,21 +139,33 @@ class PuzzleProcessor:
         all_premises = puzzle_sections.get('premises', [])
         deductions = puzzle_sections.get('deduction', [])
         
-        # Process each deduction step
-        for required_premises, conclusion in deductions:
-            # Only process premises we haven't seen yet
-            new_premises = [p for p in required_premises if p not in self.processed_premises]
-            if new_premises:
-                if not self.process_section("premises", new_premises):
-                    print("Failed to process premises, stopping early")
+        try:
+            # Process each deduction step
+            for required_premises, conclusion in deductions:
+                # Only process premises we haven't seen yet
+                new_premises = [p for p in required_premises if p not in self.processed_premises]
+                if new_premises:
+                    if not self.process_section("premises", new_premises):
+                        print("Failed to process premises, stopping early")
+                        self.type_handler.clear_pending_types()
+                        return
+                    self.processed_premises.update(new_premises)
+                
+                # Try to prove the conclusion
+                if not self.process_conclusion(conclusion):
+                    print("Failed to prove conclusion, discarding pending entries")
+                    self.pending_rag_entries = []
+                    self.type_handler.clear_pending_types()
                     return
-                self.processed_premises.update(new_premises)
             
-            # Try to prove the conclusion
-            if not self.process_conclusion(conclusion):
-                print("Failed to prove conclusion, discarding pending RAG entries")
-                self.pending_rag_entries = []
-                return
+            # If we get here, puzzle succeeded - commit everything
+            self.type_handler.commit_pending_types()
+            
+        except Exception as e:
+            print(f"Error processing puzzle: {e}")
+            self.pending_rag_entries = []
+            self.type_handler.clear_pending_types()
+            raise
 
 def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
     """Configure the LM for DSPY."""
