@@ -441,9 +441,6 @@ def eval(program, dataset):
         prediction = program(new_types=example.new_types, 
                                      similar_types=example.similar_types)
         
-        print(prediction.items())
-        exit()
-
         metric = my_metric(example, prediction, trace=None)
         total += metric
 
@@ -465,9 +462,11 @@ def eval(program, dataset):
 def main():
     program = TypeAnalyzer()
     #lm = dspy.LM('deepseek/deepseek-chat')
+    lm = dspy.LM('deepseek/deepseek-reasoner', temperature=None)
     #lm = dspy.LM('openrouter/qwen/qwq-32b-preview', temperature=0.5, max_tokens=10000)
     #lm = dspy.LM('openai/o1-mini', temperature = 1, max_tokens = 5000)
-    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    #lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    #lm = dspy.LM('openai/gpt-4o')
     #lm = dspy.LM('gemini/gemini-exp-1206')
     dspy.configure(lm=lm)
 
@@ -477,7 +476,7 @@ def main():
     #program.load("claude_optimized_type_analyzer.json")
     program.load("claude_mipro.json")
     # Optimize the program
-    #program = optimize_MIPRO(program,trainset,"medium",out="claude_mipro")
+    #program = optimize_MIPRO(program,trainset,"light",out="4o_mipro")
     #program = optimize_BFS(program,trainset, out="deepseekBFS")
     #program = optimize_COPRO(program,trainset, out="copro_optimized_type_analyzer")
     #program = optimize_MIPRO_ZeroShot(program,trainset,out="claude_miprozs")

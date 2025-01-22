@@ -2,10 +2,7 @@ import os
 import argparse
 import dspy
 from NL2PLN.nl2pln import NL2PLN
-from NL2PLN.utils.verifier import VerifiedPredictor
 from NL2PLN.metta.metta_handler import MeTTaHandler
-from NL2PLN.utils.checker import human_verify_prediction
-from NL2PLN.utils.ragclass import RAG
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 from NL2PLN.utils.common import process_file
 
@@ -19,14 +16,9 @@ class Processor:
         self.metta_handler = MeTTaHandler(f"{output_base}.metta")
         self.metta_handler.load_kb_from_file()
         
-        self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
         self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db)
         
-        self.nl2pln = VerifiedPredictor(
-            predictor=NL2PLN(self.rag),
-            verify_func=human_verify_prediction,
-            cache_file=f"{output_base}_verified_nl2pln.json"
-        )
+        self.nl2pln = NL2PLN(output_base,verify=True,reset_db=reset_db)
 
     def store_sentence_results(self, sentence: str, pln_data: dspy.Prediction):
         """Store processed sentence results in RAG."""
@@ -69,7 +61,7 @@ class Processor:
         recent_context = self.previous_sentences[-10:] if self.previous_sentences else []
         pln_data = self.nl2pln.predict(line, previous_sentences=recent_context)
         
-        if pln_data.statements[0] == "Performative":
+        if pln_data.statements[0] and pln_data.statements[0] == "Performative":
             return True
             
         if not self.process_type_definitions(pln_data):
@@ -106,7 +98,7 @@ def main():
 
     # Initialize processor
     output_base = os.path.splitext(os.path.basename(args.file_path))[0]
-    processor = Processor(output_base)
+    processor = Processor(output_base,reset_db=True)
 
     def process_line(line, index):
         print(f"Current Index: {index}")

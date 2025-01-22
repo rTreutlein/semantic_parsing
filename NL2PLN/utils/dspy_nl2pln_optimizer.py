@@ -9,10 +9,11 @@ from .prompts import NL2PLN_Signature
 
 class SemanticSimilaritySignature(dspy.Signature):
     """Signature for scoring semantic similarity between predicted and expected outputs"""
-    predicted_statements = dspy.InputField(desc="The predicted logical statements from the model")
+    sentence = dspy.InputField(desc="The Sentencec that was converted to logic")
+    expected_typedefs = dspy.InputField(desc="The expected correct type definitions")
     predicted_typedefs = dspy.InputField(desc="The predicted type definitions from the model")
     expected_statements = dspy.InputField(desc="The expected correct logical statements")
-    expected_typedefs = dspy.InputField(desc="The expected correct type definitions")
+    predicted_statements = dspy.InputField(desc="The predicted logical statements from the model")
     similarity_score = dspy.OutputField(desc="A float between 0 and 1 indicating how semantically similar the outputs are")
 
 class SemanticSimilarityMetric(dspy.Module):
@@ -20,15 +21,16 @@ class SemanticSimilarityMetric(dspy.Module):
     
     def __init__(self):
         super().__init__()
-        self.scorer = dspy.Predict(SemanticSimilaritySignature)
+        self.scorer = dspy.ChainOfThought(SemanticSimilaritySignature)
     
     def forward(self, example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
         """Score semantic similarity between predicted and expected outputs"""
         # Get LLM-based similarity score with separate inputs
         result = self.scorer(
-            predicted_statements="\n".join(prediction.statements),
+            sentence=example.sentence,
+            predicted_statements="\n".join(prediction.statements + prediction.context),
             predicted_typedefs="\n".join(prediction.typedefs),
-            expected_statements="\n".join(example.statements),
+            expected_statements="\n".join(example.statements + example.context),
             expected_typedefs="\n".join(example.typedefs)
         )
         
@@ -37,7 +39,7 @@ class SemanticSimilarityMetric(dspy.Module):
         except (ValueError, AttributeError):
             return 0.0
 
-def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
+def my_metric_old(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
     """
     Compute similarity metric between predicted and expected outputs.
     Returns a score between 0 and 1.
@@ -77,19 +79,21 @@ def create_training_data(cache_file: str) -> List[dspy.Example]:
                 sentence=key_dict["args"][0],
                 previous=key_dict["kwargs"].get("previous_sentences", []),
                 statements=value.get("statements", []),
-                typedefs=value.get("typedefs", [])
+                typedefs=value.get("typedefs", []),
+                context=value.get("context", []),
+                similar=value.get("similar", []),
             )
             examples.append(example)
         except:
             continue
             
     # Set inputs for all examples
-    return [ex.with_inputs("sentence", "previous") for ex in examples]
+    return [ex.with_inputs("sentence", "previous", "similar") for ex in examples]
 
 def optimize_MIPRO(program, trainset, mode="light", out="mipro_optimized_nl2pln"):
     """Optimize using MIPROv2"""
     teleprompter = MIPROv2(
-        metric=my_metric,
+        metric=SemanticSimilarityMetric(),
         auto=mode,
         verbose=True
     )
@@ -107,7 +111,7 @@ def optimize_MIPRO(program, trainset, mode="light", out="mipro_optimized_nl2pln"
 def optimize_MIPRO_ZeroShot(program,trainset,mode="light",out="miprozs_optimized"):
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
-        metric=my_metric,
+        metric=SemanticSimilarityMetric(),
         auto=mode,  # light/medium/heavy optimization run
         verbose=True
     )
@@ -133,7 +137,7 @@ def evaluate(program, dataset, metric_name="semantic"):
     
     # Initialize metrics
     metrics = {
-        "exact": my_metric,
+        #"exact": my_metric,
         "semantic": SemanticSimilarityMetric()
     }
     
@@ -145,25 +149,13 @@ def evaluate(program, dataset, metric_name="semantic"):
         prediction = program(
             sentence=example.sentence,
             previous=example.previous,
-            similar=[]
+            similar=example.similar,
         )
         
         score = metric(example, prediction)
         total += score
         if score != 1.0:
-            print(f"\nExample mismatch (score {score}):")
-            print(f"Input sentence: {example.sentence}")
-            print(f"\nExpected statements:")
-            print("\n".join(example.statements))
-            print(f"\nActual statements:")
-            print("\n".join(prediction.statements))
-            print(f"\nExpected type definitions:")
-            print("\n".join(example.typedefs))
-            print(f"\nActual type definitions:")
-            print("\n".join(prediction.typedefs))
-            print("="*80)
             dspy.inspect_history(n=1)
-            exit()
             
     print(f"\nAverage {metric_name} score: {total/len(dataset)}")
 
@@ -179,12 +171,12 @@ def main():
     trainset = create_training_data("johnnoperformative_verified_nl2pln.json")
 
     # Optimize using different methods
-    #program = optimize_MIPRO(program, trainset)
+    program = optimize_MIPRO(program, trainset)
     #program = optimize_BFS(program, trainset)
     #program = optimize_COPRO(program, trainset)
 
     # Evaluate results
-    evaluate(program, trainset)
+    #evaluate(program, trainset)
 
 if __name__ == "__main__":
     main()

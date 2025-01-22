@@ -23,6 +23,9 @@ class VerifiedPredictor:
         self.verify_func = verify_func
         self.cache = CacheHandler(cache_file)
         self.verify_kwargs = verify_kwargs or []
+
+    def __call__(self, *args, **kwargs) -> dspy.Prediction:
+        return self.predict(*args, **kwargs)
     
     def predict(self, *args, **kwargs) -> dspy.Prediction:
         """
