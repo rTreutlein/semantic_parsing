@@ -78,7 +78,9 @@ class TypeSimilarityHandler:
         # Pass full type definitions including both staged and existing types
         new_type_defs = list(type_mapping.values())
         similar_type_defs = [t['full_type'] for t in unique_similar_types]
-        return self.analyze_type_similarities(new_type_defs, similar_type_defs)
+        # Include pending types in similarity analysis
+        all_similar_types = similar_type_defs + self.pending_types
+        return self.analyze_type_similarities(new_type_defs, all_similar_types)
 
     def commit_pending_types(self):
         """Commit staged types to RAG database."""
