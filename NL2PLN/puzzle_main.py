@@ -11,7 +11,7 @@ from NL2PLN.tests.example_puzzle import ExamplePuzzleGenerator
 from NL2PLN.utils.type_similarity import TypeSimilarityHandler
 
 class PuzzleProcessor:
-    def __init__(self, output_base: str, reset_db: bool = False):
+    def __init__(self, output_base: str, reset_db: bool = False, verify: bool = False):
         self.output_base = output_base
         self.previous_sentences = []
         
@@ -20,13 +20,16 @@ class PuzzleProcessor:
         self.metta_handler.load_kb_from_file()
         
         self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
-        self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db)
+        self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db, verify=verify)
         
-        self.nl2pln = VerifiedPredictor(
-            predictor=NL2PLN(self.rag),
-            verify_func=human_verify_prediction,
-            cache_file=f"{output_base}_verified_nl2pln.json"
-        )
+        if verify:
+            self.nl2pln = VerifiedPredictor(
+                predictor=NL2PLN(self.rag),
+                verify_func=human_verify_prediction,
+                cache_file=f"{output_base}_verified_nl2pln.json"
+            )
+        else:
+            self.nl2pln = NL2PLN(self.rag)
 
     def store_sentence_results(self, sentence: str, pln_data: dspy.Prediction):
         """Store processed sentence results in RAG."""
@@ -67,7 +70,8 @@ class PuzzleProcessor:
         print(f"Processing line: {line}")
         
         recent_context = self.previous_sentences[-10:] if self.previous_sentences else []
-        pln_data = self.nl2pln.predict(line, previous_sentences=recent_context)
+        pln_data = self.nl2pln(line, previous_sentences=recent_context)
+        print(pln_data)
         
         if pln_data.statements[0] == "Performative":
             return True
@@ -80,9 +84,9 @@ class PuzzleProcessor:
         # Process forward chaining
         for statement in pln_data.statements:
             fc_results = self.metta_handler.add_atom_and_run_fc(statement)
-            if fc_results:
-                print(f"Forward chaining results: {fc_results}")
-                print("Fix conversion to english by checking if the generated statement is interesting.")
+            #if fc_results:
+            #    print(f"Forward chaining results: {fc_results}")
+            #    print("Fix conversion to english by checking if the generated statement is interesting.")
         
         self.previous_sentences.append(line)
         if len(self.previous_sentences) > 10:
@@ -104,7 +108,7 @@ class PuzzleProcessor:
             
         print("\nProcessing conclusion:")
         recent_context = self.previous_sentences[-10:] if self.previous_sentences else []
-        pln_data = self.nl2pln.predict("Is it true that " + conclusion, previous_sentences=recent_context)
+        pln_data = self.nl2pln("Is it true that " + conclusion, previous_sentences=recent_context)
         
         if pln_data == "Performative":
             return
@@ -124,11 +128,13 @@ class PuzzleProcessor:
         print(puzzle_sections)
         
         # Process sections in order
-        self.process_section("common sense knowledge", 
-                           puzzle_sections.get('common_sense', '').split('\n'))
-        self.process_section("premises", 
-                           puzzle_sections.get('premises', '').split('\n'))
-        self.process_conclusion(puzzle_sections.get('conclusion', ''))
+        #self.process_section("premises", puzzle_sections.get('premises', ''))
+        #self.process_conclusion(puzzle_sections.get('conclusion', ''))
+
+        self.deductions = puzzle_sections.get('deduction', [])
+        for premise, conclusion in self.deductions:
+            self.process_section("premises", premise)
+            self.process_conclusion(conclusion)
 
 def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
     """Configure the LM for DSPY."""
@@ -140,6 +146,7 @@ def main():
     parser.add_argument("--output", default="puzzle", help="Base name for output files")
     parser.add_argument("--num-puzzles", type=int, default=1, help="Number of puzzles to generate")
     parser.add_argument("--example", action="store_true", help="Run the example puzzle")
+    parser.add_argument("--verify", action="store_true", help="Verify the NL2PLN module")
     args = parser.parse_args()
 
     # Configure LM
@@ -147,11 +154,11 @@ def main():
 
     # Initialize puzzle generator and processor
     puzzle_gen = ExamplePuzzleGenerator() if args.example else LogicPuzzleGenerator()
-    processor = PuzzleProcessor(args.output, reset_db=args.example)
+    processor = PuzzleProcessor(args.output, reset_db=args.example, verify=args.verify)
     
     for i in range(args.num_puzzles):
         print(f"\nGenerating puzzle {i+1}/{args.num_puzzles}")
-        puzzle = puzzle_gen.generate_puzzle()
+        puzzle = puzzle_gen.generate_puzzle(numberOfPremises=2)
         processor.process_puzzle(puzzle)
 
 if __name__ == "__main__":
