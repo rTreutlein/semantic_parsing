@@ -1,12 +1,21 @@
 from sammo import Component, Data, Operator, Set, Text, Type, Runner
 from sammo.base import Template
+from sammo.components import Output, GenerateText, ForEach, Union
+from sammo.extractors import ExtractRegex
 import json
 
 class ProofAssistant:
+    """Assists in analyzing and fixing failed logical proofs using SAMMO components."""
+    
     def __init__(self, llm_runner: Runner):
-        self.analyze_failure = _build_analysis_pipeline(llm_runner)
+        """
+        Args:
+            llm_runner: SAMMO runner instance for executing language model operations
+        """
+        self.analyze_failure = self._build_analysis_pipeline(llm_runner)
 
     class Outputs(Type):
+        """Structured output type for proof analysis results."""
         action: str
         premise_index: int | None
         fixed_pln: str | None
@@ -14,30 +23,48 @@ class ProofAssistant:
         statement2: str | None
         combination_rule: str | None
 
-def _build_analysis_pipeline(runner: Runner) -> Operator:
-    return (
-        Component(
-            "AnalyzeProofFailure",
-            Template("""
-            Given this failed proof attempt:
-            Premises (English): {{premises_english}}
-            Premises (PLN): {{premises_pln}}
-            Conclusion (English): {{conclusion_english}} 
-            Conclusion (PLN): {{conclusion_pln}}
-            Existing Proof Steps: {{existing_proof_steps}}
+    @staticmethod
+    def _build_analysis_pipeline(runner: Runner) -> Operator:
+        """Build SAMMO pipeline for proof failure analysis.
+        
+        Returns:
+            Operator: Configured SAMMO pipeline for proof analysis
+        """
+        analysis_prompt = Template("""
+            Analyze this failed proof attempt and suggest the most appropriate fix:
             
-            Suggest exactly ONE of these fixes:
-            1. "fix_premise" with index and corrected PLN
-            2. "combine_statements" with two statements
+            ### Premises (English)
+            {{premises_english | join('\n')}}
             
-            Output as JSON with ONLY these keys: 
-            action, premise_index, fixed_pln, statement1, statement2, combination_rule
-            """)
+            ### Premises (PLN)
+            {{premises_pln | join('\n')}}
+            
+            ### Conclusion (English)
+            {{conclusion_english}}
+            
+            ### Conclusion (PLN)
+            {{conclusion_pln}}
+            
+            ### Existing Proof Steps
+            {{existing_proof_steps | join('\n')}}
+            
+            ### Instructions
+            1. Identify the root cause of the failure
+            2. Suggest exactly ONE of these fixes:
+               - "fix_premise": Provide index and corrected PLN
+               - "combine_statements": Identify two statements to combine
+            3. Output as JSON with ONLY these keys: 
+               action, premise_index, fixed_pln, statement1, statement2, combination_rule
+        """)
+        
+        return (
+            Output(
+                GenerateText(analysis_prompt)
+                .extract(ExtractRegex(r"\{.*\}"))
+            )
+            .with_expected_output(Set(ProofAssistant.Outputs))
+            .build(runner)
         )
-        .as_function()
-        .with_expected_output(Set(ProofAssistant.Outputs))
-        .build(runner)
-    )
 
 def _parse_suggestion(raw_output: str) -> dict:
     try:
