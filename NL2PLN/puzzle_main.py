@@ -1,4 +1,5 @@
 import argparse
+import random
 import dspy
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
@@ -91,7 +92,7 @@ class PuzzleProcessor:
             #    print(f"Forward chaining results: {fc_results}")
             #    print("Fix conversion to english by checking if the generated statement is interesting.")
         
-        self.previous_sentences.append(line)
+        self.previous_sentences.append(f"Converted Sentence:\n{line}\nTo:\n Context:\n{pln_data.context} TypeDefs:\n {pln_data.typedefs} Statements:\n{pln_data.statements} Questions:\n{pln_data.questions}")
         if len(self.previous_sentences) > 10:
             self.previous_sentences.pop(0)
         
