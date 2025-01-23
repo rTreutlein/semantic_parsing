@@ -1,6 +1,7 @@
 import argparse
 import random
 import dspy
+from sammo import Data
 from NL2PLN.utils.proof_assistant import ProofAssistant, _parse_suggestion
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
