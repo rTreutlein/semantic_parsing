@@ -14,18 +14,18 @@ class ProofAnalysisResult:
 
 class ProofAnalyzerSignature(dspy.Signature):
     """Signature for proof analysis module"""
-    premises_english = dspy.InputField(List[str])
-    premises_pln = dspy.InputField(List[str])
-    conclusion_english = dspy.InputField(str)
-    conclusion_pln = dspy.InputField(str)
-    existing_proof_steps = dspy.InputField(List[str])
+    premises_english = dspy.InputField(desc="List of premises in natural language")
+    premises_pln = dspy.InputField(desc="List of premises in PLN format")
+    conclusion_english = dspy.InputField(desc="The conclusion in natural language")
+    conclusion_pln = dspy.InputField(desc="The conclusion in PLN format")
+    existing_proof_steps = dspy.InputField(desc="List of current proof steps attempted")
     
-    action = dspy.OutputField(str, desc="Either 'fix_premise' or 'combine_statements'")
-    premise_index = dspy.OutputField(Optional[int], desc="Index of premise to fix")
-    fixed_pln = dspy.OutputField(Optional[str], desc="Corrected PLN statement")
-    statement1 = dspy.OutputField(Optional[str], desc="First statement to combine")
-    statement2 = dspy.OutputField(Optional[str], desc="Second statement to combine")
-    combination_rule = dspy.OutputField(Optional[str], desc="Rule for combining statements")
+    action = dspy.OutputField(desc="Either 'fix_premise' or 'combine_statements'")
+    premise_index = dspy.OutputField(desc="Index of premise to fix")
+    fixed_pln = dspy.OutputField(desc="Corrected PLN statement")
+    statement1 = dspy.OutputField(desc="First statement to combine")
+    statement2 = dspy.OutputField(desc="Second statement to combine")
+    combination_rule = dspy.OutputField(desc="Rule for combining statements")
 
 class ProofAnalyzer(dspy.Module):
     """DSPy module for analyzing failed proofs and suggesting fixes"""
