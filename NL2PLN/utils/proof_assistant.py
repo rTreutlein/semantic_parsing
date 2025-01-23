@@ -2,6 +2,7 @@ from sammo import Component, Data, Operator, Set, Text, Type, Runner
 from sammo.base import Template
 from sammo.components import Output, GenerateText, ForEach, Union
 from sammo.extractors import ExtractRegex
+from pydantic import BaseModel
 import json
 
 class ProofAssistant:
@@ -14,14 +15,19 @@ class ProofAssistant:
         """
         self.analyze_failure = self._build_analysis_pipeline(llm_runner)
 
-    class Outputs(Type):
-        """Structured output type for proof analysis results."""
+    class Outputs(BaseModel):
+        """Structured output type for proof analysis results using Pydantic."""
         action: str
-        premise_index: int | None
-        fixed_pln: str | None
-        statement1: str | None
-        statement2: str | None
-        combination_rule: str | None
+        premise_index: int | None = None
+        fixed_pln: str | None = None
+        statement1: str | None = None
+        statement2: str | None = None
+        combination_rule: str | None = None
+
+        @classmethod
+        def get_json_schema(cls):
+            """Get JSON schema for the output structure."""
+            return cls.model_json_schema()
 
     @staticmethod
     def _build_analysis_pipeline(runner: Runner) -> Operator:
@@ -59,8 +65,10 @@ class ProofAssistant:
         
         return (
             Output(
-                GenerateText(analysis_prompt)
-                .extract(ExtractRegex(r"\{.*\}"))
+                GenerateText(
+                    analysis_prompt,
+                    json_mode=ProofAssistant.Outputs.get_json_schema()
+                )
             )
             .with_expected_output(Set(ProofAssistant.Outputs))
             .build(runner)
@@ -68,8 +76,9 @@ class ProofAssistant:
 
 def _parse_suggestion(raw_output: str) -> dict:
     try:
-        return json.loads(raw_output)
-    except json.JSONDecodeError:
+        # Validate against Pydantic model
+        return ProofAssistant.Outputs.model_validate_json(raw_output).model_dump()
+    except Exception as e:
         # Fallback to text parsing
         return {
             key: None for key in [
