@@ -14,18 +14,18 @@ class ProofAnalysisResult:
 
 class ProofAnalyzerSignature(dspy.Signature):
     """Signature for proof analysis module"""
-    premises_english = dspy.InputField(desc="List of premises in natural language")
-    premises_pln = dspy.InputField(desc="List of premises in PLN format")
-    conclusion_english = dspy.InputField(desc="The conclusion in natural language")
-    conclusion_pln = dspy.InputField(desc="The conclusion in PLN format")
-    existing_proof_steps = dspy.InputField(desc="List of current proof steps attempted")
+    premises_english: List[str] = dspy.InputField(desc="List of premises in natural language")
+    premises_pln: List[str] = dspy.InputField(desc="List of premises in PLN format")
+    conclusion_english: str = dspy.InputField(desc="The conclusion in natural language")
+    conclusion_pln: str = dspy.InputField(desc="The conclusion in PLN format")
+    existing_proof_steps: List[str] = dspy.InputField(desc="List of current proof steps attempted")
     
-    action = dspy.OutputField(desc="Either 'fix_premise' or 'combine_statements'")
-    premise_index = dspy.OutputField(desc="Index of premise to fix")
-    fixed_pln = dspy.OutputField(desc="Corrected PLN statement")
-    statement1 = dspy.OutputField(desc="First statement to combine")
-    statement2 = dspy.OutputField(desc="Second statement to combine")
-    combination_rule = dspy.OutputField(desc="Rule for combining statements")
+    action: str = dspy.OutputField(desc="Either 'fix_premise' or 'combine_statements'")
+    premise_index: Optional[int] = dspy.OutputField(desc="Index of premise to fix")
+    fixed_pln: Optional[str] = dspy.OutputField(desc="Corrected PLN statement")
+    statement1: Optional[str] = dspy.OutputField(desc="First statement to combine")
+    statement2: Optional[str] = dspy.OutputField(desc="Second statement to combine")
+    combination_rule: Optional[str] = dspy.OutputField(desc="Rule for combining statements")
 
 class ProofAnalyzer(dspy.Module):
     """DSPy module for analyzing failed proofs and suggesting fixes"""
