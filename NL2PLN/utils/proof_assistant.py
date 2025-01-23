@@ -50,3 +50,31 @@ def _parse_suggestion(raw_output: str) -> dict:
                 "statement1", "statement2", "combination_rule"
             ]
         }
+
+def main():
+    """Simple test of ProofAssistant functionality"""
+    import dspy
+    from sammo import Data
+    
+    # Initialize with Claude model
+    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    assistant = ProofAssistant(lm)
+    
+    # Create simple test case
+    test_data = Data.from_dict({
+        "premises_english": ["All birds can fly", "Penguins are birds"],
+        "premises_pln": ["(ForAll $x (Implication (Bird $x) (CanFly $x)))", 
+                        "(ForAll $x (Implication (Penguin $x) (Bird $x)))"],
+        "conclusion_english": "Penguins can fly",
+        "conclusion_pln": ["(ForAll $x (Implication (Penguin $x) (CanFly $x)))"],
+        "existing_proof_steps": []
+    })
+    
+    # Run analysis
+    print("Running Proof Assistant test...")
+    result = assistant.analyze_failure(test_data)
+    print("\nProof Assistant Analysis Result:")
+    print(result)
+
+if __name__ == "__main__":
+    main()
