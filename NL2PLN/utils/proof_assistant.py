@@ -28,8 +28,7 @@ def _build_analysis_pipeline(runner: Runner) -> Operator:
             
             Suggest exactly ONE of these fixes:
             1. "fix_premise" with index and corrected PLN
-            2. "combine_statements" with two statements and combination rule
-            3. "human_intervention" if no clear fix
+            2. "combine_statements" with two statements
             
             Output as JSON with ONLY these keys: 
             action, premise_index, fixed_pln, statement1, statement2, combination_rule
