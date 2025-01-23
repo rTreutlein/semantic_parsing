@@ -1,31 +1,23 @@
 import dspy
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple
 from dataclasses import dataclass
 
 @dataclass 
 class ProofAnalysisResult:
     """Result structure for proof analysis"""
-    action: str
-    premise_index: Optional[int] = None
-    fixed_pln: Optional[str] = None
-    statement1: Optional[str] = None
-    statement2: Optional[str] = None
-    combination_rule: Optional[str] = None
+    action: str  # Either "fix" or "combine"
+    input_statements: List[str]  # Statements to be replaced/combined
+    output_statements: List[str]  # Replacement statements or expected conclusion
 
 class ProofAnalyzerSignature(dspy.Signature):
     """Signature for proof analysis module"""
-    premises_english: List[str] = dspy.InputField(desc="List of premises in natural language")
-    premises_pln: List[str] = dspy.InputField(desc="List of premises in PLN format")
-    conclusion_english: str = dspy.InputField(desc="The conclusion in natural language")
-    conclusion_pln: str = dspy.InputField(desc="The conclusion in PLN format")
-    existing_proof_steps: List[str] = dspy.InputField(desc="List of current proof steps attempted")
+    premises: List[Tuple[str, str]] = dspy.InputField(desc="List of (English, PLN) premise pairs")
+    conclusion: Tuple[str, str] = dspy.InputField(desc="(English, PLN) conclusion pair")
+    kb_statements: List[str] = dspy.InputField(desc="Additional PLN statements in the knowledge base")
     
-    action: str = dspy.OutputField(desc="Either 'fix_premise' or 'combine_statements'")
-    premise_index: Optional[int] = dspy.OutputField(desc="Index of premise to fix")
-    fixed_pln: Optional[str] = dspy.OutputField(desc="Corrected PLN statement")
-    statement1: Optional[str] = dspy.OutputField(desc="First statement to combine")
-    statement2: Optional[str] = dspy.OutputField(desc="Second statement to combine")
-    combination_rule: Optional[str] = dspy.OutputField(desc="Rule for combining statements")
+    action: str = dspy.OutputField(desc="Either 'fix' or 'combine'")
+    input_statements: List[str] = dspy.OutputField(desc="PLN statements to be replaced/combined")
+    output_statements: List[str] = dspy.OutputField(desc="Replacement PLN statements or expected conclusion")
 
 class ProofAnalyzer(dspy.Module):
     """DSPy module for analyzing failed proofs and suggesting fixes"""
@@ -34,36 +26,29 @@ class ProofAnalyzer(dspy.Module):
         super().__init__()
         self.analyzer = dspy.ChainOfThought(ProofAnalyzerSignature)
 
-    def forward(self, premises_english: List[str], premises_pln: List[str],
-                conclusion_english: str, conclusion_pln: str,
-                existing_proof_steps: List[str]) -> ProofAnalysisResult:
+    def forward(self, premises: List[Tuple[str, str]], 
+                conclusion: Tuple[str, str],
+                kb_statements: List[str]) -> ProofAnalysisResult:
         """Analyze proof failure and suggest fixes
         
         Args:
-            premises_english: List of premises in English
-            premises_pln: List of premises in PLN
-            conclusion_english: Conclusion in English
-            conclusion_pln: Conclusion in PLN
-            existing_proof_steps: Current proof steps
+            premises: List of (English, PLN) premise pairs
+            conclusion: (English, PLN) conclusion pair
+            kb_statements: Additional PLN statements in knowledge base
             
         Returns:
             ProofAnalysisResult with suggested fix
         """
         result = self.analyzer(
-            premises_english=premises_english,
-            premises_pln=premises_pln,
-            conclusion_english=conclusion_english,
-            conclusion_pln=conclusion_pln,
-            existing_proof_steps=existing_proof_steps
+            premises=premises,
+            conclusion=conclusion,
+            kb_statements=kb_statements
         )
         
         return ProofAnalysisResult(
             action=result.action,
-            premise_index=result.premise_index,
-            fixed_pln=result.fixed_pln,
-            statement1=result.statement1,
-            statement2=result.statement2,
-            combination_rule=result.combination_rule
+            input_statements=result.input_statements,
+            output_statements=result.output_statements
         )
 
 def main():
