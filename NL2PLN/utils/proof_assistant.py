@@ -53,11 +53,10 @@ def _parse_suggestion(raw_output: str) -> dict:
 
 def main():
     """Simple test of ProofAssistant functionality"""
-    import dspy
-    from sammo import Data
+    from sammo import Runner, Data
     
-    # Initialize with Claude model
-    lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    # Initialize with Claude model using SAMMO
+    lm = Runner('anthropic/claude-3-5-sonnet-20241022')
     assistant = ProofAssistant(lm)
     
     # Create simple test case
