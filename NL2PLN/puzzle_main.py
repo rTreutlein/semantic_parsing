@@ -1,6 +1,7 @@
 import argparse
 import random
 import dspy
+from NL2PLN.utils.proof_assistant import ProofAssistant, _parse_suggestion
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -18,6 +19,7 @@ class PuzzleProcessor:
         self.processed_premises = set()
         self.pending_rag_entries = []
         self.puzzle_counter = 0
+        self.proof_assistant = ProofAssistant(llm_runner=dspy.settings.lm)
         
         # Initialize components
         self.output_base = output_base
@@ -134,7 +136,37 @@ class PuzzleProcessor:
                     self.store_sentence_results(sentence, pln_data)
                 self.pending_rag_entries = []
                 return True
+            else:
+                return self.handle_failed_conclusion(
+                    premises=[s for s, _ in self.pending_rag_entries],
+                    conclusion=conclusion,
+                    pln_statements=pln_data.statements,
+                    proof_steps=proof_steps
+                )
         return False
+
+    def handle_failed_conclusion(self, premises, conclusion, pln_statements, proof_steps):
+        """Handle a failed proof attempt using SAMMO proof assistant."""
+        # SAMMO data preparation
+        input_data = Data.from_dict({
+            "premises_english": premises,
+            "premises_pln": [s for _, data in self.pending_rag_entries for s in data.statements],
+            "conclusion_english": conclusion,
+            "conclusion_pln": pln_statements,
+            "existing_proof_steps": proof_steps
+        })
+        
+        # Get structured suggestion
+        raw_suggestion = self.proof_assistant.analyze_failure(input_data)
+        suggestion = _parse_suggestion(raw_suggestion)
+        
+        # Rest of the handling remains the same
+        if suggestion["action"] == "fix_premise":
+            return self.retry_fixed_premise(suggestion)
+        elif suggestion["action"] == "combine_statements":
+            return self.try_combination(suggestion)
+        else:
+            return human_verify_prediction(...)
 
     def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
