@@ -1,4 +1,5 @@
-from sammo import Component, Data, Operator, Set, Text, Type, Runner
+from sammo import Component, Data, Operator, Set, Text, Type, Runner, Result
+from frozendict import frozendict
 from sammo.base import Template
 from sammo.components import Output, GenerateText, ForEach, Union
 from sammo.extractors import ExtractRegex
@@ -65,27 +66,35 @@ class ProofAssistant:
         
         return (
             Output(
-                GenerateText(
-                    analysis_prompt,
-                    json_mode=ProofAssistant.Outputs.get_json_schema()
+                ParseSuggestion(
+                    GenerateText(
+                        analysis_prompt,
+                        json_mode=ProofAssistant.Outputs.get_json_schema()
+                    )
                 )
             )
             .with_expected_output(Set(ProofAssistant.Outputs))
             .build(runner)
         )
 
-def _parse_suggestion(raw_output: str) -> dict:
-    try:
-        # Validate against Pydantic model
-        return ProofAssistant.Outputs.model_validate_json(raw_output).model_dump()
-    except Exception as e:
-        # Fallback to text parsing
-        return {
-            key: None for key in [
-                "action", "premise_index", "fixed_pln",
-                "statement1", "statement2", "combination_rule"
-            ]
-        }
+class ParseSuggestion(Component):
+    """Component to parse and validate proof analysis suggestions."""
+    
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
+        raw_output = await self._child(runner, context, dynamic_context)
+        
+        try:
+            parsed = ProofAssistant.Outputs.model_validate_json(raw_output.value[0])
+            return Result([parsed.model_dump()], parent=raw_output, op=self)
+        except Exception as e:
+            # Fallback to empty result
+            empty_result = {
+                key: None for key in [
+                    "action", "premise_index", "fixed_pln",
+                    "statement1", "statement2", "combination_rule"
+                ]
+            }
+            return Result([empty_result], parent=raw_output, op=self)
 
 def main():
     """Simple test of ProofAssistant functionality"""
