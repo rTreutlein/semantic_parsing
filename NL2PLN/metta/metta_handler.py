@@ -11,8 +11,10 @@ class MeTTaHandler:
         self._read_only = read_only
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.run("!(bind! &kb (new-space))")
+        self.run("!(bind! &rules (new-space))")
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
+        self.run("!(add-atom &kb (get-atoms &rules))")
 
     def run_metta_from_file(self, file_path):                                
         with open(file_path, 'r') as file:                                   
@@ -67,7 +69,7 @@ class MeTTaHandler:
         res = self.metta.run(f'!(ddfc &kb {balanced_atom})')
         out = [self.clean_variable_names(str(elem)) for elem in res[0]]
         if not self.read_only:
-            self.append_to_file(f"{atom}")
+            self.append_to_file(f"{balanced_atom}")
             [self.append_to_file(elem) for elem in out]
         return out
 
@@ -79,7 +81,8 @@ class MeTTaHandler:
             - List of intermediate steps/proofs
             - Boolean indicating if the conclusion was proven
         """
-        results = self.metta.run('!(ddbc &kb ' + atom + ')')
+        balanced_atom = self.balance_parentheses(atom)
+        results = self.metta.run('!(ddbc &kb ' + balanced_atom + ')')
         # If we got any results back, the conclusion was proven
         proven = len(results[0]) > 0
         return [str(elem) for elem in results[0]], proven
@@ -97,13 +100,13 @@ class MeTTaHandler:
 
         
         if len(inctx) == 0:
-            self.metta.run("!(add-atom &kb " + atom + ")")
+            self.metta.run("!(add-atom &kb " + balanced_atom + ")")
             return None
 
         unify = self.metta.run("!(unify " + str(exp.get_children()[2]) + " (match &kb (: " + str(exp.get_children()[1]) + " $a) $a)  same diff)")
 
         if str(unify[0][0]) == "same":
-            self.metta.run("!(add-atom &kb " + atom + ")")
+            self.metta.run("!(add-atom &kb " + balanced_atom + ")")
             return None
         else:
             return inctx
