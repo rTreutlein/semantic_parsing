@@ -34,6 +34,10 @@ class MeTTaHandler:
     @staticmethod
     def balance_parentheses(expr: str) -> str:
         """Balance parentheses in an expression by adding or removing at the end."""
+        # Add opening parenthesis if expression starts with colon
+        if expr.startswith(':'):
+            expr = '(' + expr
+            
         open_count = expr.count('(')
         close_count = expr.count(')')
         
