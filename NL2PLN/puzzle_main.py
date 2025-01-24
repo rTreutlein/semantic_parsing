@@ -1,6 +1,7 @@
 import argparse
 import random
 import dspy
+from typing import List, Tuple
 from sammo import Data
 from NL2PLN.utils.proof_assistant import ProofAnalyzer, ProofAnalysisResult
 from NL2PLN.utils.query_utils import convert_to_english
