@@ -2,7 +2,7 @@ import argparse
 import random
 import dspy
 from sammo import Data
-from NL2PLN.utils.proof_assistant import ProofAssistant, _parse_suggestion
+from NL2PLN.utils.proof_assistant import ProofAnalyzer, ProofAnalysisResult
 from NL2PLN.utils.query_utils import convert_to_english
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -21,7 +21,7 @@ class PuzzleProcessor:
         self.pending_rag_entries = []
         self.pending_statements = []
         self.puzzle_counter = 0
-        self.proof_assistant = ProofAssistant(llm_runner=dspy.settings.lm)
+        self.proof_analyzer = ProofAnalyzer()
         
         # Initialize components
         self.output_base = output_base
@@ -123,8 +123,8 @@ class PuzzleProcessor:
             print(f"Error expection only a single question")
             return
 
-        if (not self.try_to_proof(pln_data.questions[0])):
-            self.handle_failed_conclusion(pln_data.questions[0])
+        if (not self.try_to_proof(conclusion, pln_data.questions[0])):
+            print("Failed to prove conclusion")
             
         self.pending_statements = []
         for sentence, pln_data in self.pending_rag_entries:
@@ -133,36 +133,68 @@ class PuzzleProcessor:
 
         return False
 
-    def try_to_proof(self, conclusion):
-        for statement in self.pending_statements:
-            self.metta_handler.add_atom_and_run_fc(statement)
-
-        proof_steps, proven = self.metta_handler.bc(query)
+    def try_to_proof(self, conclusion_english: str, conclusion_pln: str) -> bool:
+        """Attempt to prove conclusion using current KB"""
+        # Store pending statements first
+        for stmt in self.pending_statements:
+            self.metta_handler.add_atom_and_run_fc(stmt)
+        
+        # Run backward chaining
+        proof_steps, proven = self.metta_handler.bc(conclusion_pln)
+        
+        if not proven:
+            # Collect English/PLN premise pairs for proof analysis
+            premises = [
+                (sent, data.statements[0])  # (English, PLN)
+                for sent, data in self.pending_rag_entries
+            ]
+            self.handle_failed_conclusion(
+                conclusion_english, 
+                conclusion_pln,
+                premises,
+                proof_steps
+            )
         return proven
 
 
-    def handle_failed_conclusion(self, conclusion):
-        """Handle a failed proof attempt using SAMMO proof assistant."""
-        # SAMMO data preparation
-        input_data = Data.from_dict({
-            "premises_english": premises,
-            "premises_pln": [s for _, data in self.pending_rag_entries for s in data.statements],
-            "conclusion_english": conclusion,
-            "conclusion_pln": pln_statements,
-            "existing_proof_steps": proof_steps
-        })
+    def handle_failed_conclusion(self, 
+                               conclusion_english: str,
+                               conclusion_pln: str,
+                               premises: List[Tuple[str, str]],
+                               proof_steps: List[str]):
+        """Handle failed proof using ProofAnalyzer"""
+        # Prepare inputs for proof analysis
+        premises_formatted = "\n".join([
+            f"English:\n{eng}\nPLN:\n{pln}" 
+            for eng, pln in premises
+        ])
         
-        # Get structured suggestion
-        raw_suggestion = self.proof_assistant.analyze_failure(input_data)
-        suggestion = _parse_suggestion(raw_suggestion)
+        analysis_result = self.proof_analyzer(
+            premises=premises_formatted,
+            conclusion=f"English:\n{conclusion_english}\nPLN:\n{conclusion_pln}",
+            kb_statements=self.metta_handler.get_all_statements()
+        )
+
+        print(f"Proof analysis suggests: {analysis_result.action}")
         
-        # Rest of the handling remains the same
-        if suggestion["action"] == "fix_premise":
-            return self.retry_fixed_premise(suggestion)
-        elif suggestion["action"] == "combine_statements":
-            return self.try_combination(suggestion)
+        if analysis_result.action == "fix":
+            self._handle_fix_action(analysis_result)
+        elif analysis_result.action == "combine":
+            self._handle_combine_action(analysis_result)
         else:
-            return human_verify_prediction(...)
+            print("Proof appears impossible. Needs human intervention")
+
+    def _handle_fix_action(self, result: ProofAnalysisResult):
+        """Handle premise fixing suggestions"""
+        print(f"Suggested fixes: {result.input_statements} => {result.output_statements}")
+        # Implement actual statement replacement logic
+        # This would modify pending_rag_entries and pending_statements
+
+    def _handle_combine_action(self, result: ProofAnalysisResult):
+        """Handle statement combination suggestions"""
+        print(f"Suggested combinations: {result.input_statements} => {result.output_statements}")
+        # Implement statement combination logic
+        # This would generate new derived statements
 
     def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
