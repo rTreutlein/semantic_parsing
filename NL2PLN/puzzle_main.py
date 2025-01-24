@@ -19,6 +19,7 @@ class PuzzleProcessor:
         self.previous_sentences = []
         self.processed_premises = set()
         self.pending_rag_entries = []
+        self.pending_statements = []
         self.puzzle_counter = 0
         self.proof_assistant = ProofAssistant(llm_runner=dspy.settings.lm)
         
@@ -88,12 +89,7 @@ class PuzzleProcessor:
         # Save for later storage if proof succeeds
         self.pending_rag_entries.append((line, pln_data))
         
-        # Process forward chaining
-        for statement in pln_data.statements:
-            fc_results = self.metta_handler.add_atom_and_run_fc(statement)
-            #if fc_results:
-            #    print(f"Forward chaining results: {fc_results}")
-            #    print("Fix conversion to english by checking if the generated statement is interesting.")
+        self.pending_statements.append(pln_data.statements)
         
         self.previous_sentences.append(f"Converted Sentence:\n{line}\nTo:\n Context:\n{pln_data.context} TypeDefs:\n {pln_data.typedefs} Statements:\n{pln_data.statements} Questions:\n{pln_data.questions}")
         if len(self.previous_sentences) > 10:
@@ -122,31 +118,30 @@ class PuzzleProcessor:
         
         if pln_data == "Performative":
             return
+
+        if len(pln_data.questions) > 1:
+            print(f"Error expection only a single question")
+            return
+
+        if (not self.try_to_proof(pln_data.questions[0])):
+            self.handle_failed_conclusion(pln_data.questions[0])
             
-        print(f"\nAttempting to prove conclusion: {conclusion}")
-        for query in pln_data.questions:
-            proof_steps, proven = self.metta_handler.bc(query)
-            print(f"\nConclusion statement: {query}")
-            print(f"Proven: {proven}")
-            if proof_steps:
-                print("Proof steps:")
-                for step in proof_steps:
-                    print(f"  {step}")
-                # Store all pending entries in RAG since proof succeeded
-                for sentence, pln_data in self.pending_rag_entries:
-                    self.store_sentence_results(sentence, pln_data)
-                self.pending_rag_entries = []
-                return True
-            else:
-                return self.handle_failed_conclusion(
-                    premises=[s for s, _ in self.pending_rag_entries],
-                    conclusion=conclusion,
-                    pln_statements=pln_data.statements,
-                    proof_steps=proof_steps
-                )
+        self.pending_statements = []
+        for sentence, pln_data in self.pending_rag_entries:
+            self.store_sentence_results(sentence, pln_data)
+        self.pending_rag_entries = []
+
         return False
 
-    def handle_failed_conclusion(self, premises, conclusion, pln_statements, proof_steps):
+    def try_to_proof(self, conclusion):
+        for statement in self.pending_statements:
+            self.metta_handler.add_atom_and_run_fc(statement)
+
+        proof_steps, proven = self.metta_handler.bc(query)
+        return proven
+
+
+    def handle_failed_conclusion(self, conclusion):
         """Handle a failed proof attempt using SAMMO proof assistant."""
         # SAMMO data preparation
         input_data = Data.from_dict({
