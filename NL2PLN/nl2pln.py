@@ -44,36 +44,31 @@ class NL2PLN(dspy.Module):
         if isinstance(sentences, str):
             sentences = [sentences]
             
-        # Collect similar examples for each sentence while maintaining the association
-        sentence_examples = []
+        # Collect similar examples for each sentence in separate lists
+        all_examples = []
         for sentence in sentences:
             similar = self.rag.search_similar(sentence, limit=3)
             examples = [
-                (sentence, f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}")
+                f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}"
                 for item in similar if 'sentence' in item
             ]
-            sentence_examples.extend(examples)
-
-        # First ensure we have at least one example per sentence
-        seen = set()
+            all_examples.append(examples)
+            
+        # Interleave examples from each sentence's similar results
         selected_examples = []
+        seen = set()
+        max_examples = max(len(examples) for examples in all_examples)
         
-        # First pass: select one example per sentence
-        for orig_sentence in sentences:
-            for sent, example in sentence_examples:
-                if sent == orig_sentence and example not in seen:
-                    selected_examples.append(example)
-                    seen.add(example)
-                    break
+        # Take examples in order: first example from each sentence, then second, etc.
+        for i in range(max_examples):
+            for sentence_examples in all_examples:
+                if i < len(sentence_examples) and sentence_examples[i] not in seen:
+                    selected_examples.append(sentence_examples[i])
+                    seen.add(sentence_examples[i])
                     
-        # Second pass: add additional unique examples up to max(5, len(sentences))
+        # Ensure we have at least max(5, len(sentences)) examples if available
         target_count = max(5, len(sentences))
-        for _, example in sentence_examples:
-            if len(selected_examples) >= target_count:
-                break
-            if example not in seen:
-                selected_examples.append(example)
-                seen.add(example)
+        selected_examples = selected_examples[:target_count]
 
         # Process as a batch with context
         joined_sentences = "\n".join([f"- {s}" for s in sentences])
