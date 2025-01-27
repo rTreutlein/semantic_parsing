@@ -213,9 +213,6 @@ class PuzzleProcessor:
         """Process a complete puzzle."""
         print(puzzle_sections)
         
-        if self.metta_handler:
-            self.metta_handler = None
-        
         self.puzzle_counter += 1    
         self.metta_handler = MeTTaHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
         self.metta_handler.load_kb_from_file()
