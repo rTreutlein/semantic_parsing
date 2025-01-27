@@ -209,6 +209,47 @@ class PuzzleProcessor:
 
         return False
 
+    def prepare_combined_text(self, premises: List[str], conclusion: str) -> str:
+        """Combine premises and conclusion into a single text."""
+        premises_text = " ".join(premises)
+        return f"{premises_text} Is it true that {conclusion}"
+
+    def process_batch(self, premises: List[str], conclusion: str) -> bool:
+        """Process a batch of premises and conclusion together."""
+        combined_text = self.prepare_combined_text(premises, conclusion)
+        
+        # Process combined text
+        recent_context = self.sentence_handler.previous_sentences[-10:] if self.sentence_handler.previous_sentences else []
+        pln_data = self.nl2pln(combined_text, previous_sentences=recent_context)
+        
+        if not self.sentence_handler.process_type_definitions(pln_data):
+            print("Failed to process type definitions, stopping early")
+            self.type_handler.clear_pending_types()
+            return False
+        
+        # Store all statements except the last one (conclusion)
+        self.sentence_handler.pending_statements.extend(pln_data.statements[:-1])
+        self.sentence_handler.pending_rag_entries.append((combined_text, pln_data))
+        
+        # Try to prove the conclusion (last statement)
+        if not self.proof_handler.try_to_proof(
+            conclusion,
+            pln_data.statements[-1],
+            self.sentence_handler.pending_statements,
+            self.sentence_handler.pending_rag_entries,
+            self.sentence_handler.linkingStatments
+        ):
+            print("Failed to prove conclusion, discarding pending entries")
+            self.sentence_handler.pending_rag_entries = []
+            self.type_handler.clear_pending_types()
+            return False
+        
+        # Store results
+        for sentence, pln_data in self.sentence_handler.pending_rag_entries:
+            self.store_sentence_results(sentence, pln_data)
+        self.sentence_handler.pending_rag_entries = []
+        return True
+
     def process_puzzle(self, puzzle_sections: dict):
         """Process a complete puzzle."""
         print(puzzle_sections)
@@ -227,19 +268,10 @@ class PuzzleProcessor:
             for required_premises, conclusion in deductions:
                 new_premises = [p for p in required_premises if p not in self.processed_premises]
                 if new_premises:
-                    if not self.sentence_handler.process_section("premises", new_premises):
-                        print("Failed to process premises, stopping early")
-                        print(f"Premises: {new_premises}")
-                        self.type_handler.clear_pending_types()
+                    if self.process_batch(new_premises, conclusion):
+                        self.processed_premises.update(new_premises)
+                    else:
                         return
-                    self.processed_premises.update(new_premises)
-                
-                if not self.process_conclusion(conclusion):
-                    print("Failed to prove conclusion, discarding pending entries")
-                    print(f"Conclusion: {conclusion}")
-                    self.sentence_handler.pending_rag_entries = []
-                    self.type_handler.clear_pending_types()
-                    return
             
             self.type_handler.commit_pending_types()
             
