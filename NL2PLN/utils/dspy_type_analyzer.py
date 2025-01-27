@@ -40,6 +40,9 @@ class TypeAnalyzer(dspy.Module):
     def __init__(self):
         super().__init__()
         self.analyze = dspy.ChainOfThought(TypeAnalyzerSignature)
+
+    def __call__(self, new_types: List[str], similar_types: List[str]):
+        return self.forward(new_types, similar_types)
     
     def forward(self, new_types: List[str], similar_types: List[str]):
         prediction = self.analyze(new_types="\n".join(new_types), 

@@ -1,5 +1,6 @@
 import hashlib
 import requests
+import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -45,6 +46,9 @@ class RAG:
         """
         if not isinstance(data, dict):
             raise ValueError("Input must be a dictionary (JSON object)")
+
+        if not self.search_exact(data, embedding_fields) == None:
+            return  # Skip if duplicate found
         
         def format_field(field):
             value = data.get(field, '')
@@ -53,28 +57,14 @@ class RAG:
             return str(value)
             
         text = ' '.join(format_field(field) for field in embedding_fields)
-        
-        # Create deterministic ID from content
-        content_hash = hashlib.sha256(text.encode()).hexdigest()
-        
-        # Search if point with this ID exists
-        try:
-            existing_point = self.qdrant_client.retrieve(
-                collection_name=self.collection_name,
-                ids=[content_hash]
-            )
-            if existing_point:
-                return  # Skip if duplicate found
-        except Exception:
-            pass  # Continue if point doesn't exist
-            
+
         embedding = self.get_embedding(text)
         
         self.qdrant_client.upsert(
             collection_name=self.collection_name,
             points=[
                 models.PointStruct(
-                    id=content_hash,
+                    id=str(uuid.uuid4()),
                     vector=embedding,
                     payload=data
                 )
@@ -123,19 +113,28 @@ class RAG:
             print(f"An unexpected error occurred: {str(e)}")
             return []
 
-    def search_exact(self, sentence):
+    def search_exact(self, data, embedding_fields):
         """
         Search for an exact match of the given sentence in Qdrant.
         """
         try:
-            query_vector = self.get_embedding(sentence)
+
+            def format_field(field):
+                value = data.get(field, '')
+                if isinstance(value, list):
+                    return ' '.join(value)
+                return str(value)
+                
+            text = ' '.join(format_field(field) for field in embedding_fields)
+
+            query_vector = self.get_embedding(text)
             search_result = self.qdrant_client.search(
                 collection_name=self.collection_name,
                 query_vector=query_vector,
-                limit=10  # Arbitrary limit to get a reasonable number of candidates
+                limit=3  # Arbitrary limit to get a reasonable number of candidates
             )
             for hit in search_result:
-                if hit.payload.get('sentence') == sentence:
+                if hit.payload.get('data') == data:
                     return hit.payload
             return None
         except Timeout:

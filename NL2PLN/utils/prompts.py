@@ -436,6 +436,15 @@ class NL2PLN_Signature(dspy.Signature):
   (: authorSpeaker Object) # The speaker or author of the statement
   (: readerLister Object) # The listener or reader of the statement
   (: placeTime Object) # The place or time of the statement
+
+
+  Very Important:
+  - Never introduce unnecessary Object declarations in dependent products
+    * INCORRECT: (-> (: $x Object) (-> (: $x_is_pred (Pred $x)) (Result $x))
+    * CORRECT: (-> (: $x_is_pred (Pred $x)) (Result $x))
+    * (Prex $x) already implies (: $x Object) so you don't need to add it.
+)
+
   """
 
   sentence: list[str] = dspy.InputField(desc="The sentence to be converted to PLN")

@@ -29,6 +29,37 @@ class TypeSimilarityHandler:
         except:
             return None
 
+    @staticmethod
+    def balance_parentheses(expr: str) -> str:
+        """Balance parentheses in an expression by adding or removing at the end."""
+        # Add opening parenthesis if expression starts with colon
+        if expr.startswith(':'):
+            expr = '(' + expr
+            
+        open_count = expr.count('(')
+        close_count = expr.count(')')
+        
+        if open_count > close_count:
+            # Add missing closing parentheses
+            return expr + ')' * (open_count - close_count)
+        elif close_count > open_count:
+            # Remove only excess closing parentheses from the end
+            excess = close_count - open_count
+            i = len(expr) - 1
+            
+            # First verify the end of string contains only closing parentheses
+            while i >= 0 and excess > 0:
+                if expr[i] != ')':
+                    # Found non-parenthesis - give up and return original
+                    return expr
+                i -= 1
+                excess -= 1
+                
+            # If we got here, we found enough closing parentheses at the end
+            # Now remove the exact number of excess ones
+            excess = close_count - open_count
+            return expr[:-excess]
+        return expr
 
     def analyze_type_similarities(self, new_types: List[str], similar_types: List[str]) -> List[str]:
         """Analyze similarities between new and existing types.
@@ -43,7 +74,8 @@ class TypeSimilarityHandler:
         print(f"Analyzing similarities between\n{new_types}\nand\n{similar_types}")
             
         prediction = self.analyzer(new_types=new_types, similar_types=similar_types)
-        return [s.strip() for s in prediction.statements if s.strip()]
+
+        return [self.balance_parentheses(x.strip()) for x in prediction.statements]
 
     def stage_new_typedefs(self, typedefs: List[str]) -> List[str]:
         """Stage new type definitions without committing them and return linking statements."""

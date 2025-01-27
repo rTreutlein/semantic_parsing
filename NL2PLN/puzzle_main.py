@@ -1,10 +1,7 @@
 import argparse
-import random
 import dspy
 from typing import List, Tuple
-from sammo import Data
-from NL2PLN.utils.proof_assistant import ProofAnalyzer, ProofAnalysisResult
-from NL2PLN.utils.query_utils import convert_to_english
+from NL2PLN.utils.proof_assistant import ProofAnalyzer 
 from NL2PLN.nl2pln import NL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
 from NL2PLN.metta.metta_handler import MeTTaHandler
@@ -22,11 +19,17 @@ class PuzzleProcessor:
         self.pending_rag_entries = []
         self.pending_statements = []
         self.puzzle_counter = 0
-        self.proof_analyzer = ProofAnalyzer()
+        self.proof_analyzer = VerifiedPredictor(
+            predictor=ProofAnalyzer(),
+            verify_func=human_verify_prediction,
+            cache_file="verified_proof_analysis_cache.json",
+            verify_kwargs=["premises", "conclusion","kb_statements"],
+        )
+        self.linkingStatments = []
         
         # Initialize components
         self.output_base = output_base
-        self.metta_handler = None
+        self.metta_handler = MeTTaHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
         self.rag = RAG(collection_name=f"{output_base}_pln", reset_db=reset_db)
         self.type_handler = TypeSimilarityHandler(collection_name=f"{output_base}_types", reset_db=reset_db, verify=verify)
         
@@ -60,6 +63,7 @@ class PuzzleProcessor:
                 return False
                 
         linking_statements = self.type_handler.stage_new_typedefs(pln_data.typedefs)
+        self.linkingStatments.extend(linking_statements)
         print(f"Found {len(linking_statements)} linking statements")
         print(linking_statements)
 
@@ -90,7 +94,7 @@ class PuzzleProcessor:
         # Save for later storage if proof succeeds
         self.pending_rag_entries.append((line, pln_data))
         
-        self.pending_statements.append(pln_data.statements)
+        self.pending_statements.extend(pln_data.statements)
         
         self.previous_sentences.append(f"Converted Sentence:\n{line}\nTo:\n Context:\n{pln_data.context} TypeDefs:\n {pln_data.typedefs} Statements:\n{pln_data.statements} Questions:\n{pln_data.questions}")
         if len(self.previous_sentences) > 10:
@@ -124,29 +128,32 @@ class PuzzleProcessor:
             print(f"Error expection only a single question")
             return
 
-        if (not self.try_to_proof(conclusion, pln_data.questions[0])):
-            print("Failed to prove conclusion")
-            
-        self.pending_statements = []
-        for sentence, pln_data in self.pending_rag_entries:
-            self.store_sentence_results(sentence, pln_data)
-        self.pending_rag_entries = []
+        if self.try_to_proof(conclusion, pln_data.questions[0]):
+            print("Proved conclusion")
+            self.pending_statements = []
+            for sentence, pln_data in self.pending_rag_entries:
+                self.store_sentence_results(sentence, pln_data)
+            self.pending_rag_entries = []
+            return True
 
         return False
 
     def try_to_proof(self, conclusion_english: str, conclusion_pln: str) -> bool:
         """Attempt to prove conclusion using current KB"""
         # Store pending statements first
+        print("Trying to proof:")
         for stmt in self.pending_statements:
+            print(stmt)
             self.metta_handler.add_atom_and_run_fc(stmt)
         
         # Run backward chaining
         proof_steps, proven = self.metta_handler.bc(conclusion_pln)
         
         if not proven:
+            print("Handling failed conclusion")
             # Collect English/PLN premise pairs for proof analysis
             premises = [
-                (sent, data.statements[0])  # (English, PLN)
+                (sent, data.statements)  # (English, PLN)
                 for sent, data in self.pending_rag_entries
             ]
             self.handle_failed_conclusion(
@@ -161,19 +168,22 @@ class PuzzleProcessor:
     def handle_failed_conclusion(self, 
                                conclusion_english: str,
                                conclusion_pln: str,
-                               premises: List[Tuple[str, str]],
+                               premises: List[Tuple[str, List[str]]],
                                proof_steps: List[str]):
         """Handle failed proof using ProofAnalyzer"""
         # Prepare inputs for proof analysis
         premises_formatted = "\n".join([
-            f"English:\n{eng}\nPLN:\n{pln}" 
+            f"English:\n{eng}\nPLN:\n{"\n".join(pln)}" 
             for eng, pln in premises
         ])
+
+        rules = self.metta_handler.get_rules()
+        kb_statements = rules + self.linkingStatments
         
         analysis_result = self.proof_analyzer(
             premises=premises_formatted,
             conclusion=f"English:\n{conclusion_english}\nPLN:\n{conclusion_pln}",
-            kb_statements=self.metta_handler.get_all_statements()
+            kb_statements=kb_statements
         )
 
         print(f"Proof analysis suggests: {analysis_result.action}")
@@ -185,13 +195,13 @@ class PuzzleProcessor:
         else:
             print("Proof appears impossible. Needs human intervention")
 
-    def _handle_fix_action(self, result: ProofAnalysisResult):
+    def _handle_fix_action(self, result: dspy.Prediction):
         """Handle premise fixing suggestions"""
         print(f"Suggested fixes: {result.input_statements} => {result.output_statements}")
         # Implement actual statement replacement logic
         # This would modify pending_rag_entries and pending_statements
 
-    def _handle_combine_action(self, result: ProofAnalysisResult):
+    def _handle_combine_action(self, result: dspy.Prediction):
         """Handle statement combination suggestions"""
         print(f"Suggested combinations: {result.input_statements} => {result.output_statements}")
         # Implement statement combination logic
@@ -255,7 +265,7 @@ def main():
     args = parser.parse_args()
 
     # Configure LM
-    configure_lm()
+    configure_lm('deepseek/deepseek-reasoner')
 
     # Initialize puzzle generator and processor
     puzzle_gen = ExamplePuzzleGenerator() if args.example else LogicPuzzleGenerator()

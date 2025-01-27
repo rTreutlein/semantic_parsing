@@ -31,49 +31,21 @@ class MeTTaHandler:
         import re
         return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
 
-    @staticmethod
-    def balance_parentheses(expr: str) -> str:
-        """Balance parentheses in an expression by adding or removing at the end."""
-        # Add opening parenthesis if expression starts with colon
-        if expr.startswith(':'):
-            expr = '(' + expr
-            
-        open_count = expr.count('(')
-        close_count = expr.count(')')
-        
-        if open_count > close_count:
-            # Add missing closing parentheses
-            return expr + ')' * (open_count - close_count)
-        elif close_count > open_count:
-            # Remove only excess closing parentheses from the end
-            excess = close_count - open_count
-            i = len(expr) - 1
-            
-            # First verify the end of string contains only closing parentheses
-            while i >= 0 and excess > 0:
-                if expr[i] != ')':
-                    # Found non-parenthesis - give up and return original
-                    return expr
-                i -= 1
-                excess -= 1
-                
-            # If we got here, we found enough closing parentheses at the end
-            # Now remove the exact number of excess ones
-            excess = close_count - open_count
-            return expr[:-excess]
-        return expr
-                                                                             
+    def get_rules(self) -> list[str]:
+        """Get the list of rules from the file"""
+        res = self.run("!(get-atoms &rules)")[0]
+        return [self.clean_variable_names(str(x)) for x in res]
+
     @property
     def read_only(self) -> bool:
         return self._read_only
 
     def add_atom_and_run_fc(self, atom: str) -> List[str]:
-        balanced_atom = self.balance_parentheses(atom)
-        self.metta.run(f'!(add-atom &kb {balanced_atom})')                  
-        res = self.metta.run(f'!(ddfc &kb {balanced_atom})')
+        self.metta.run(f'!(add-atom &kb {atom})')                  
+        res = self.metta.run(f'!(ddfc &kb {atom})')
         out = [self.clean_variable_names(str(elem)) for elem in res[0]]
         if not self.read_only:
-            self.append_to_file(f"{balanced_atom}")
+            self.append_to_file(f"{atom}")
             [self.append_to_file(elem) for elem in out]
         return out
 
@@ -85,8 +57,7 @@ class MeTTaHandler:
             - List of intermediate steps/proofs
             - Boolean indicating if the conclusion was proven
         """
-        balanced_atom = self.balance_parentheses(atom)
-        results = self.metta.run('!(ddbc &kb ' + balanced_atom + ')')
+        results = self.metta.run('!(ddbc &kb ' + atom + ')')
         # If we got any results back, the conclusion was proven
         proven = len(results[0]) > 0
         return [str(elem) for elem in results[0]], proven
@@ -98,19 +69,18 @@ class MeTTaHandler:
             None if atom was added successfully
             The conflicting atom string if a conflict was found
         """
-        balanced_atom = self.balance_parentheses(atom)
-        exp = self.metta.parse_single(balanced_atom)
+        exp = self.metta.parse_single(atom)
         inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")[0]
 
         
         if len(inctx) == 0:
-            self.metta.run("!(add-atom &kb " + balanced_atom + ")")
+            self.metta.run("!(add-atom &kb " + atom + ")")
             return None
 
         unify = self.metta.run("!(unify " + str(exp.get_children()[2]) + " (match &kb (: " + str(exp.get_children()[1]) + " $a) $a)  same diff)")
 
         if str(unify[0][0]) == "same":
-            self.metta.run("!(add-atom &kb " + balanced_atom + ")")
+            self.metta.run("!(add-atom &kb " + atom + ")")
             return None
         else:
             return inctx
