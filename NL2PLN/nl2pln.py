@@ -39,14 +39,39 @@ class NL2PLN(dspy.Module):
         return expr
  
 
-    def forward(self, sentence, previous_sentences=None, n=1):
-        similar = self.rag.search_similar(sentence, limit=5)
-        similar_examples = [f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}" 
-                       for item in similar if 'sentence' in item]
+    def forward(self, sentences, previous_sentences=None, n=1):
+        # Handle single sentence case
+        if isinstance(sentences, str):
+            sentences = [sentences]
+            
+        # Aggregate similar examples from all sentences
+        similar_examples = []
+        for sentence in sentences:
+            similar = self.rag.search_similar(sentence, limit=3)
+            similar_examples.extend([
+                f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}"
+                for item in similar if 'sentence' in item
+            ])
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_examples = [
+            ex for ex in similar_examples
+            if not (ex in seen or seen.add(ex))
+        ]
 
-        res = self.convert(sentence=sentence, similar=similar_examples, previous=previous_sentences, n=n)
+        # Process as a batch with context
+        joined_sentences = "\n".join([f"- {s}" for s in sentences])
+        res = self.convert(
+            sentences=joined_sentences,
+            similar=unique_examples[:5],  # Take top 5 unique examples
+            previous=previous_sentences,
+            n=n
+        )
 
+        # Post-process all outputs
         res.context = [self.balance_parentheses(x) for x in res.context]
         res.typedefs = [self.balance_parentheses(x) for x in res.typedefs]
         res.statements = [self.balance_parentheses(x) for x in res.statements]
+        
         return res
