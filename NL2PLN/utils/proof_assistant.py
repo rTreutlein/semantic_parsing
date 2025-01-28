@@ -3,24 +3,22 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 class ProofAnalyzerSignature(dspy.Signature):
-    """We have the following premises along with the Conclusion that we would like to proof
-       Doing so automatically has failed.
-       Your job is help us proof the conclusion.
-       Now the likely issue is that the translations from English to PLN are not consistent with each other.
-       Such that while individually correct it's not possible to derive the conclusion from the premises.
-       If that is the case you can try to fix the pln representation by replacing the the statements with new ones.
-       Another possibility is that we are missing some kind of rule/statement if so you can also fix this
-       by leaving the input statements empty and adding the missing statements to the output statements.
-       If it looks like you have everything to prove the conclusion provide the first proof step (the inputs of this step and the expected output).
-       If non of this is possible or the conclusion just doesn't follow from the premises you can say that the proof is impossible.
+    """Analyzes a failed proof attempt and suggests the next step towards proving the conclusion.
+       Given the premises and target conclusion, this will:
+       1. Identify which statements should be removed from the knowledge base
+       2. Suggest new statements that should be added
+       3. Propose an intermediate conclusion that should be proven next
+       
+       If the proof appears impossible, it will indicate this instead of suggesting changes.
     """
     premises: str = dspy.InputField(desc="List of (English, PLN) premise pairs",type=str)
     conclusion: str = dspy.InputField(desc="(English, PLN) conclusion pair",type=str)
     kb_statements: List[str] = dspy.InputField(desc="Additional PLN statements in the knowledge base",type=List[str])
     
-    action: str = dspy.OutputField(desc="Either 'fix' or 'combine' or 'impossible'",type=str)
-    input_statements: List[str] = dspy.OutputField(desc="PLN statements to be replaced/combined",type=List[str])
-    output_statements: List[str] = dspy.OutputField(desc="Replacement PLN statements or expected conclusion",type=List[str])
+    possible: bool = dspy.OutputField(desc="Whether the proof appears possible",type=bool)
+    statements_to_remove: List[str] = dspy.OutputField(desc="PLN statements that should be removed from KB",type=List[str])
+    statements_to_add: List[str] = dspy.OutputField(desc="New PLN statements that should be added to KB",type=List[str])
+    intermediate_conclusion: str = dspy.OutputField(desc="The next intermediate conclusion to prove",type=str)
 
 class ProofAnalyzer(dspy.Module):
     """DSPy module for analyzing failed proofs and suggesting fixes"""
