@@ -83,7 +83,7 @@
 
 ;;deduplicatig bc
 (= (ddbc $kb $query)
-    (let* (($out (bc $kb (S (S Z)) $query))
+    (let* (($out (bc $kb (S (S (S (S Z)))) $query))
            ($dummy (add-atom-nodup-nofail $kb $out))
           )
     $out
