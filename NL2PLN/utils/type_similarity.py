@@ -3,6 +3,7 @@ from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
 from .verifier import VerifiedPredictor
 from .checker import human_verify_prediction
+from .cleanPLN import cleanPLN
 
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
@@ -29,38 +30,6 @@ class TypeSimilarityHandler:
         except:
             return None
 
-    @staticmethod
-    def balance_parentheses(expr: str) -> str:
-        """Balance parentheses in an expression by adding or removing at the end."""
-        # Add opening parenthesis if expression starts with colon
-        if expr.startswith(':'):
-            expr = '(' + expr
-            
-        open_count = expr.count('(')
-        close_count = expr.count(')')
-        
-        if open_count > close_count:
-            # Add missing closing parentheses
-            return expr + ')' * (open_count - close_count)
-        elif close_count > open_count:
-            # Remove only excess closing parentheses from the end
-            excess = close_count - open_count
-            i = len(expr) - 1
-            
-            # First verify the end of string contains only closing parentheses
-            while i >= 0 and excess > 0:
-                if expr[i] != ')':
-                    # Found non-parenthesis - give up and return original
-                    return expr
-                i -= 1
-                excess -= 1
-                
-            # If we got here, we found enough closing parentheses at the end
-            # Now remove the exact number of excess ones
-            excess = close_count - open_count
-            return expr[:-excess]
-        return expr
-
     def analyze_type_similarities(self, new_types: List[str], similar_types: List[str]) -> List[str]:
         """Analyze similarities between new and existing types.
         
@@ -75,7 +44,7 @@ class TypeSimilarityHandler:
             
         prediction = self.analyzer(new_types=new_types, similar_types=similar_types)
 
-        return [self.balance_parentheses(x.strip()) for x in prediction.statements]
+        return [cleanPLN(x.strip()) for x in prediction.statements]
 
     def stage_new_typedefs(self, typedefs: List[str]) -> List[str]:
         """Stage new type definitions without committing them and return linking statements."""
