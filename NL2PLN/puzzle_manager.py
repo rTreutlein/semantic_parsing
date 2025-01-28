@@ -99,10 +99,10 @@ class ProofHandler:
         
         if not proven:
             print("Handling failed conclusion")
-            self._handle_failed_conclusion()
+            return self._handle_failed_conclusion()
         return proven
 
-    def _handle_failed_conclusion(self):
+    def _handle_failed_conclusion(self) -> bool:
         premises_formatted = "\n".join([
             f"English:\n{eng}\nPLN:\n{'\n'.join(pln)}" 
             for eng, pln in self.premises
@@ -121,16 +121,14 @@ class ProofHandler:
         print(f"Proof analysis suggests: {analysis_result.action}")
         
         if analysis_result.action == "fix":
-            if self._handle_fix_action(analysis_result):
-                print("Successfully fixed and proved!")
-            else:
-                print("Fix attempt unsuccessful")
+            return self._handle_fix_action(analysis_result)
         elif analysis_result.action == "combine":
-            self._handle_combine_action(analysis_result)
+            return self._handle_combine_action(analysis_result)
         else:
             print("Proof appears impossible. Needs human intervention")
+            return False
 
-    def _handle_fix_action(self, result: dspy.Prediction):
+    def _handle_fix_action(self, result: dspy.Prediction) -> bool:
         """Handle premise fixing suggestions by replacing statements with fixed versions"""
         print(f"Suggested fixes: {result.input_statements} => {result.output_statements}")
         
@@ -154,7 +152,7 @@ class ProofHandler:
             print("Proof still failed after fixes. Further analysis may be needed.")
             return False
 
-    def _handle_combine_action(self, result: dspy.Prediction):
+    def _handle_combine_action(self, result: dspy.Prediction) -> bool:
         """Handle statement combination suggestions"""
         print(f"Suggested combinations: {result.input_statements} => {result.output_statements}")
 
@@ -168,10 +166,7 @@ class ProofHandler:
                 print("Combination succeeded and proved the conclusion!")
                 return True
             else:
-                # Update the conclusion and try again
-                self.conclusion_pln = result.output_statements[0]
-                self._handle_failed_conclusion()
-                return False
+                return self._handle_failed_conclusion()
 
 class PuzzleProcessor:
     def __init__(self, output_base: str, reset_db: bool = False, verify: bool = False):
