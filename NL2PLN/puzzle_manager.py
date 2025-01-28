@@ -114,6 +114,7 @@ class ProofHandler:
         rules = self.metta_handler.get_rules()
         kb_statements = rules + linking_statements
         
+        print(f"Running proof analysis with premises:\n{premises_formatted}")
         analysis_result = self.proof_analyzer(
             premises=premises_formatted,
             conclusion=f"English:\n{conclusion_english}\nPLN:\n{conclusion_pln}",
@@ -221,20 +222,23 @@ class PuzzleProcessor:
         # Process combined text
         recent_context = self.sentence_handler.previous_sentences[-10:] if self.sentence_handler.previous_sentences else []
         pln_data = self.nl2pln(combined_text, previous_sentences=recent_context)
+        #premises will be the statements
+        #conclusion will be the question
+        print(pln_data)
         
         if not self.sentence_handler.process_type_definitions(pln_data):
             print("Failed to process type definitions, stopping early")
             self.type_handler.clear_pending_types()
             return False
         
-        # Store all statements except the last one (conclusion)
-        self.sentence_handler.pending_statements.extend(pln_data.statements[:-1])
+        # Store all statements
+        self.sentence_handler.pending_statements.extend(pln_data.statements)
         self.sentence_handler.pending_rag_entries.append((combined_text, pln_data))
         
         # Try to prove the conclusion (last statement)
         if not self.proof_handler.try_to_proof(
             conclusion,
-            pln_data.statements[-1],
+            pln_data.questions[0],
             self.sentence_handler.pending_statements,
             self.sentence_handler.pending_rag_entries,
             self.sentence_handler.linkingStatments
