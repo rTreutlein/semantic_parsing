@@ -52,5 +52,6 @@ class NL2PLN(dspy.Module):
         res.context = [cleanPLN(x) for x in res.context]
         res.typedefs = [cleanPLN(x) for x in res.typedefs]
         res.statements = [cleanPLN(x) for x in res.statements]
+        res.questions = [cleanPLN(x) for x in res.questions]
         
         return res
