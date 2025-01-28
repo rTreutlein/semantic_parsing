@@ -4,18 +4,19 @@ from dataclasses import dataclass
 
 class ProofAnalyzerSignature(dspy.Signature):
     """Analyzes a failed proof attempt and suggests the next step towards proving the conclusion.
-       Given the premises and target conclusion, this will:
-       1. Identify which statements should be removed from the knowledge base
-       2. Suggest new statements that should be added
-       3. Propose an intermediate conclusion that should be proven next
+
+       If one of the statements seems incorrect, remove it from the knowledge base and add a fixed version.
+       If there is some kind of rule/statement missing, add it to the knowledge base.
+
+       The finally suggest the next statement we should try to prove. (Posibily the final conclusion otherwise an intermediate step)
        
-       If the proof appears impossible, it will indicate this instead of suggesting changes.
+       If the proof appears impossible don't return an intermediate conclusion to proof.
+       Make sure to maintaing the same format as the input.
     """
     premises: str = dspy.InputField(desc="List of (English, PLN) premise pairs",type=str)
     conclusion: str = dspy.InputField(desc="(English, PLN) conclusion pair",type=str)
     kb_statements: List[str] = dspy.InputField(desc="Additional PLN statements in the knowledge base",type=List[str])
     
-    possible: bool = dspy.OutputField(desc="Whether the proof appears possible",type=bool)
     statements_to_remove: List[str] = dspy.OutputField(desc="PLN statements that should be removed from KB",type=List[str])
     statements_to_add: List[str] = dspy.OutputField(desc="New PLN statements that should be added to KB",type=List[str])
     intermediate_conclusion: str = dspy.OutputField(desc="The next intermediate conclusion to prove",type=str)

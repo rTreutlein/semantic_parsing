@@ -95,6 +95,8 @@ class ProofHandler:
             print(stmt)
             self.metta_handler.add_atom_and_run_fc(stmt)
         
+        print("Running backward chaining...")
+        print(self.conclusion_pln)
         proof_steps, proven = self.metta_handler.bc(self.conclusion_pln)
         
         if not proven:
@@ -118,51 +120,21 @@ class ProofHandler:
             kb_statements=kb_statements
         )
 
-        print(f"Proof analysis suggests: {analysis_result.action}")
-        
-        if analysis_result.action == "fix":
-            return self._handle_fix_action(analysis_result)
-        elif analysis_result.action == "combine":
-            return self._handle_combine_action(analysis_result)
-        else:
-            print("Proof appears impossible. Needs human intervention")
-            return False
-
-    def _handle_fix_action(self, result: dspy.Prediction) -> bool:
-        """Handle premise fixing suggestions by replacing statements with fixed versions"""
-        print(f"Suggested fixes: {result.input_statements} => {result.output_statements}")
-        
-        # Remove old statements
-        for stmt in result.input_statements:
+        for stmt in analysis_result.statements_to_remove:
             self.metta_handler.run(f'!(remove-atom &kb {stmt})')
         
         # Add fixed statements
-        for stmt in result.output_statements:
+        for stmt in analysis_result.statements_to_add:
             self.metta_handler.run(f'!(add-atom &kb {stmt})')
             
-        print("Statements replaced. Rerunning backward chaining...")
-        
         # Rerun backward chaining with the modified KB
-        proof_steps, proven = self.metta_handler.bc(self.conclusion_pln)
+        proof_steps, proven = self.metta_handler.bc(analysis_result.intermediate_conclusion)
         
-        if proven:
-            print("Proof succeeded after fixes!")
-            return True
-        else:
-            print("Proof still failed after fixes. Further analysis may be needed.")
-            return False
-
-    def _handle_combine_action(self, result: dspy.Prediction) -> bool:
-        """Handle statement combination suggestions"""
-        print(f"Suggested combinations: {result.input_statements} => {result.output_statements}")
-
-        proof_steps, proven = self.metta_handler.bc(result.output_statements[0])
-
         if not proven:
             print("Combination failed. Further analysis may be needed.")
             return False
         else:
-            if result.output_statements[0] == self.conclusion_pln:
+            if analysis_result.intermediate_conclusion == self.conclusion_pln:
                 print("Combination succeeded and proved the conclusion!")
                 return True
             else:
@@ -196,7 +168,6 @@ class PuzzleProcessor:
             self.nl2pln = NL2PLN(self.rag)
 
         self.sentence_handler = SentenceHandler(self.metta_handler, self.type_handler, self.nl2pln, self.rag)
-        self.proof_handler = ProofHandler(self.metta_handler, self.proof_analyzer)
 
     def store_sentence_results(self, sentence: str, pln_data: dspy.Prediction):
         """Store processed sentence results in RAG."""
@@ -245,8 +216,8 @@ class PuzzleProcessor:
 
     def prepare_combined_text(self, premises: List[str], conclusion: str) -> str:
         """Combine premises and conclusion into a single text."""
-        premises_text = " ".join(premises)
-        return f"{premises_text} Is it true that {conclusion}"
+        premises_text = "\n".join(premises)
+        return f"{premises_text}\nIs it true that {conclusion}"
 
     def process_batch(self, premises: List[str], conclusion: str) -> bool:
         """Process a batch of premises and conclusion together."""
@@ -268,19 +239,24 @@ class PuzzleProcessor:
         self.sentence_handler.pending_statements.extend(pln_data.statements)
         self.sentence_handler.pending_rag_entries.append((combined_text, pln_data))
         
-        # Try to prove the conclusion (last statement)
-        if not self.proof_handler.try_to_proof(
+
+        proof_handler = ProofHandler(
+            self.metta_handler,
+            self.proof_analyzer,
             conclusion,
             pln_data.questions[0],
             self.sentence_handler.pending_statements,
             self.sentence_handler.pending_rag_entries,
             self.sentence_handler.linkingStatments
-        ):
+        )
+        # Try to prove the conclusion (last statement)
+        if not proof_handler.try_to_proof():
             print("Failed to prove conclusion, discarding pending entries")
             self.sentence_handler.pending_rag_entries = []
             self.type_handler.clear_pending_types()
             return False
         
+        print("Proved conclusion!")
         # Store results
         for sentence, pln_data in self.sentence_handler.pending_rag_entries:
             self.store_sentence_results(sentence, pln_data)
@@ -297,7 +273,6 @@ class PuzzleProcessor:
         
         # Update handlers with new metta_handler
         self.sentence_handler.metta_handler = self.metta_handler
-        self.proof_handler.metta_handler = self.metta_handler
         
         deductions = puzzle_sections.get('deduction', [])
         
