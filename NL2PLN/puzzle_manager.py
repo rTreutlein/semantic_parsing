@@ -230,13 +230,16 @@ class PuzzleProcessor:
             print(f"Error expection only a single question")
             return
 
-        if self.proof_handler.try_to_proof(
-            conclusion, 
+        proof_handler = ProofHandler(
+            self.metta_handler,
+            self.proof_analyzer,
+            conclusion,
             pln_data.questions[0],
             self.sentence_handler.pending_statements,
             self.sentence_handler.pending_rag_entries,
             self.sentence_handler.linkingStatments
-        ):
+        )
+        if proof_handler.try_to_proof():
             print("Proved conclusion")
             self.sentence_handler.pending_statements = []
             for sentence, pln_data in self.sentence_handler.pending_rag_entries:
