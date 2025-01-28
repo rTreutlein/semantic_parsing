@@ -75,50 +75,46 @@ class SentenceHandler:
         return True
 
 class ProofHandler:
-    def __init__(self, metta_handler, proof_analyzer):
+    def __init__(self, metta_handler, proof_analyzer, 
+                 conclusion_english: str, conclusion_pln: str,
+                 pending_statements: List[str],
+                 pending_rag_entries: List[tuple],
+                 linking_statements: List[str]):
         self.metta_handler = metta_handler
         self.proof_analyzer = proof_analyzer
+        self.conclusion_english = conclusion_english
+        self.conclusion_pln = conclusion_pln
+        self.pending_statements = pending_statements
+        self.premises = [(sent, data.statements) for sent, data in pending_rag_entries]
+        self.linking_statements = linking_statements
 
-    def try_to_proof(self, conclusion_english: str, conclusion_pln: str, pending_statements: List[str], pending_rag_entries: List[tuple], linking_statements: List[str]) -> bool:
+    def try_to_proof(self) -> bool:
         """Attempt to prove conclusion using current KB"""
-        self.current_conclusion = conclusion_pln  # Store the current conclusion
         print("Trying to proof:")
-        for stmt in pending_statements:
+        for stmt in self.pending_statements:
             print(stmt)
             self.metta_handler.add_atom_and_run_fc(stmt)
         
-        proof_steps, proven = self.metta_handler.bc(conclusion_pln)
+        proof_steps, proven = self.metta_handler.bc(self.conclusion_pln)
         
         if not proven:
             print("Handling failed conclusion")
-            premises = [
-                (sent, data.statements)
-                for sent, data in pending_rag_entries
-            ]
-            self._handle_failed_conclusion(
-                conclusion_english, 
-                conclusion_pln,
-                premises,
-                proof_steps,
-                linking_statements
-            )
+            self._handle_failed_conclusion()
         return proven
 
-    def _handle_failed_conclusion(self, conclusion_english: str, conclusion_pln: str,
-                               premises: List[Tuple[str, List[str]]], proof_steps: List[str],
-                               linking_statements: List[str]):
+    def _handle_failed_conclusion(self):
         premises_formatted = "\n".join([
-            f"English:\n{eng}\nPLN:\n{"\n".join(pln)}" 
-            for eng, pln in premises
+            f"English:\n{eng}\nPLN:\n{'\n'.join(pln)}" 
+            for eng, pln in self.premises
         ])
 
         rules = self.metta_handler.get_rules()
-        kb_statements = rules + linking_statements
+        kb_statements = rules + self.linking_statements
         
         print(f"Running proof analysis with premises:\n{premises_formatted}")
         analysis_result = self.proof_analyzer(
             premises=premises_formatted,
-            conclusion=f"English:\n{conclusion_english}\nPLN:\n{conclusion_pln}",
+            conclusion=f"English:\n{self.conclusion_english}\nPLN:\n{self.conclusion_pln}",
             kb_statements=kb_statements
         )
 
@@ -149,7 +145,7 @@ class ProofHandler:
         print("Statements replaced. Rerunning backward chaining...")
         
         # Rerun backward chaining with the modified KB
-        proof_steps, proven = self.metta_handler.bc(self.current_conclusion)
+        proof_steps, proven = self.metta_handler.bc(self.conclusion_pln)
         
         if proven:
             print("Proof succeeded after fixes!")
@@ -168,11 +164,14 @@ class ProofHandler:
             print("Combination failed. Further analysis may be needed.")
             return False
         else:
-            if result.output_statements[0] == self.current_conclusion:
+            if result.output_statements[0] == self.conclusion_pln:
                 print("Combination succeeded and proved the conclusion!")
                 return True
             else:
-                return self._handle_failed_conclusion(...)
+                # Update the conclusion and try again
+                self.conclusion_pln = result.output_statements[0]
+                self._handle_failed_conclusion()
+                return False
 
 class PuzzleProcessor:
     def __init__(self, output_base: str, reset_db: bool = False, verify: bool = False):
