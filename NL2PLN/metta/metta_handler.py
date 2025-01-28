@@ -88,6 +88,10 @@ class MeTTaHandler:
         
     def run(self, atom: str):
         return self.metta.run(atom)
+
+    def run_clean(self, atom: str) -> List[str]:
+        res = self.metta.run(atom)
+        return [self.clean_variable_names(str(elem)) for elem in res[0]]
                                                                              
     def store_kb_to_file(self):
         if self.read_only:
