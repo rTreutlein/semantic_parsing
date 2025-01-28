@@ -81,6 +81,7 @@ class ProofHandler:
 
     def try_to_proof(self, conclusion_english: str, conclusion_pln: str, pending_statements: List[str], pending_rag_entries: List[tuple], linking_statements: List[str]) -> bool:
         """Attempt to prove conclusion using current KB"""
+        self.current_conclusion = conclusion_pln  # Store the current conclusion
         print("Trying to proof:")
         for stmt in pending_statements:
             print(stmt)
@@ -124,15 +125,38 @@ class ProofHandler:
         print(f"Proof analysis suggests: {analysis_result.action}")
         
         if analysis_result.action == "fix":
-            self._handle_fix_action(analysis_result)
+            if self._handle_fix_action(analysis_result):
+                print("Successfully fixed and proved!")
+            else:
+                print("Fix attempt unsuccessful")
         elif analysis_result.action == "combine":
             self._handle_combine_action(analysis_result)
         else:
             print("Proof appears impossible. Needs human intervention")
 
     def _handle_fix_action(self, result: dspy.Prediction):
-        """Handle premise fixing suggestions"""
+        """Handle premise fixing suggestions by replacing statements with fixed versions"""
         print(f"Suggested fixes: {result.input_statements} => {result.output_statements}")
+        
+        # Remove old statements
+        for stmt in result.input_statements:
+            self.metta_handler.run(f'!(remove-atom &kb {stmt})')
+        
+        # Add fixed statements
+        for stmt in result.output_statements:
+            self.metta_handler.run(f'!(add-atom &kb {stmt})')
+            
+        print("Statements replaced. Rerunning backward chaining...")
+        
+        # Rerun backward chaining with the modified KB
+        proof_steps, proven = self.metta_handler.bc(self.current_conclusion)
+        
+        if proven:
+            print("Proof succeeded after fixes!")
+            return True
+        else:
+            print("Proof still failed after fixes. Further analysis may be needed.")
+            return False
 
     def _handle_combine_action(self, result: dspy.Prediction):
         """Handle statement combination suggestions"""
