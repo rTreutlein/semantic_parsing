@@ -18,7 +18,8 @@ def main():
     args = parser.parse_args()
 
     # Configure LM
-    configure_lm('deepseek/deepseek-reasoner')
+    #configure_lm('deepseek/deepseek-reasoner')
+    configure_lm()
 
     # Initialize puzzle generator and processor
     puzzle_gen = ExamplePuzzleGenerator() if args.example else LogicPuzzleGenerator()

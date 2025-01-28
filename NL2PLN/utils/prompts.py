@@ -447,7 +447,7 @@ class NL2PLN_Signature(dspy.Signature):
 
   """
 
-  sentence: list[str] = dspy.InputField(desc="The sentence to be converted to PLN")
+  sentences: list[str] = dspy.InputField(desc="The sentences to be converted to PLN")
   similar: list[str] = dspy.InputField(desc="List of similar examples showing the NL to PLN conversion")
   previous: list[str] = dspy.InputField(desc="List of previous context")
 

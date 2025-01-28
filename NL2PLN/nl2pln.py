@@ -40,6 +40,8 @@ class NL2PLN(dspy.Module):
  
 
     def forward(self, sentences, previous_sentences=None, n=1):
+        if n > 1:
+            raise NotImplementedError("Only n=1 is supported")
         # Handle single sentence case
         if isinstance(sentences, str):
             sentences = [sentences]
@@ -76,7 +78,6 @@ class NL2PLN(dspy.Module):
             sentences=joined_sentences,
             similar=selected_examples,
             previous=previous_sentences,
-            n=n
         )
 
         # Post-process all outputs

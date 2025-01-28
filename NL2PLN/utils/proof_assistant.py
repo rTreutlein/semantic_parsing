@@ -42,12 +42,12 @@ class ProofAnalyzer(dspy.Module):
         Returns:
             ProofAnalysisResult with suggested fix
         """
-        with dspy.context(lm=dspy.LM('deepseek/deepseek-reasoner')):
-            return self.analyzer(
-                premises=premises,
-                conclusion=conclusion,
-                kb_statements=kb_statements
-            )
+        #with dspy.context(lm=dspy.LM('deepseek/deepseek-reasoner')):
+        return self.analyzer(
+            premises=premises,
+            conclusion=conclusion,
+            kb_statements=kb_statements
+        )
         
 def main():
     """Simple test of ProofAnalyzer functionality"""
