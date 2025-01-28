@@ -18,10 +18,27 @@ class NL2PLN(dspy.Module):
         all_examples = []
         for sentence in sentences:
             similar = self.rag.search_similar(sentence, limit=3)
-            examples = [
-                f"Sentence: {item['sentence']}\nFrom Context:\n{'\n'.join(item.get('from_context', []))}\nType Definitions:\n{'\n'.join(item.get('type_definitions', []))}\nStatements:\n{'\n'.join(item.get('statements', []))}"
-                for item in similar if 'sentence' in item
-            ]
+            examples = []
+            for item in similar:
+                if 'sentence' not in item:
+                    continue
+                    
+                example = []
+                example.append(f"Sentence: {item['sentence']}")
+                
+                if item.get('from_context'):
+                    example.append("From Context:")
+                    example.extend(f"  {ctx}" for ctx in item['from_context'])
+                    
+                if item.get('type_definitions'):
+                    example.append("Type Definitions:")
+                    example.extend(f"  {typedef}" for typedef in item['type_definitions'])
+                    
+                if item.get('statements'):
+                    example.append("Statements:")
+                    example.extend(f"  {stmt}" for stmt in item['statements'])
+                    
+                examples.append('\n'.join(example))
             all_examples.append(examples)
             
         # Interleave examples from each sentence's similar results
