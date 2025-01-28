@@ -162,6 +162,18 @@ class ProofHandler:
         """Handle statement combination suggestions"""
         print(f"Suggested combinations: {result.input_statements} => {result.output_statements}")
 
+        proof_steps, proven = self.metta_handler.bc(result.output_statements[0])
+
+        if not proven:
+            print("Combination failed. Further analysis may be needed.")
+            return False
+        else:
+            if result.output_statements[0] == self.current_conclusion:
+                print("Combination succeeded and proved the conclusion!")
+                return True
+            else:
+                return self._handle_failed_conclusion(...)
+
 class PuzzleProcessor:
     def __init__(self, output_base: str, reset_db: bool = False, verify: bool = False):
         self.output_base = output_base
