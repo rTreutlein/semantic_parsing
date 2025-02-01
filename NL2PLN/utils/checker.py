@@ -23,15 +23,15 @@ def check_predicate_logic(pred_logic: str, fix_function=None) -> str|None:
     return metta
 
 
-def HumanCheck(pln : str, sentence: str) -> str:
+def HumanCheck(model_output : str, sentence: str) -> str:
     while True:
-        user_input = input("Is this conversion correct? (y/n): ").lower()
+        user_input = input(f"Is this output correct? (y/n): ").lower()
         if user_input == 'y':
-            break
+            return model_output
         elif user_input == 'n':
             # Create a temporary file with the sentence as reference and the LLM output
             with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as temp_file:
-                temp_file.write(f"# Sentence: {sentence}\n{pln}")
+                temp_file.write(f"# Sentence: {sentence}\n{model_output}")
                 temp_file_path = temp_file.name
 
             # Open the default text editor for the user to make changes
@@ -41,17 +41,14 @@ def HumanCheck(pln : str, sentence: str) -> str:
             # Read the edited content
             with open(temp_file_path, 'r') as temp_file:
                 lines = temp_file.readlines()
-                pln = ''.join(lines[1:]).strip()  # Exclude the first line (sentence reference)
+                human_out = ''.join(lines[1:]).strip()  # Exclude the first line (sentence reference)
 
             # Remove the temporary file
             os.unlink(temp_file_path)
 
             print("--------------------------------------------------------------------------------")
-            print(f"Updated OpenCog PLN: {pln}")
-            break
+            print(f"Updated OpenCog PLN: {human_out}")
+            return human_out
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
-
-    return pln
-
 

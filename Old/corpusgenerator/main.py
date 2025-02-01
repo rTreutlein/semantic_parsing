@@ -31,9 +31,9 @@ def main() -> None:
 
     # Start the corpus generation process
     initial_seeds: List[str] = [
-        "If you take care of something, it will last longer",
+        "Animals eat food",
     ]
-    iterations: int = 100
+    iterations: int = 30
     parallel_iterations: int = 5  # Run 3 iterations in parallel after the first iteration
     sentences: List[str]
     graph: nx.DiGraph
