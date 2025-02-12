@@ -176,6 +176,7 @@ class PuzzleProcessor:
             "from_context": pln_data.context,
             "type_definitions": pln_data.typedefs,
             "statements": pln_data.statements,
+            "questions": pln_data.questions,
         }, embedding_fields=["sentence", "statements"])
 
     def process_conclusion(self, conclusion: str):
