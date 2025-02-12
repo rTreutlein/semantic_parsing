@@ -37,6 +37,10 @@ class NL2PLN(dspy.Module):
                 if item.get('statements'):
                     example.append("Statements:")
                     example.extend(f"  {stmt}" for stmt in item['statements'])
+
+                if item.get('questions'):
+                    example.append("Questions:")
+                    example.extend(f"  {stmt}" for stmt in item['questions'])
                     
                 examples.append('\n'.join(example))
             all_examples.append(examples)
