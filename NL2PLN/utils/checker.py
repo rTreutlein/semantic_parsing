@@ -95,9 +95,11 @@ def human_verify_prediction(prediction: dspy.Prediction, input_text: str, **kwar
                     print(f"\n{k}:")
                     print(v)
             
-            confirm = input("\nSave these changes? (y/n): ").lower()
+            confirm = input("\nSave these changes or abort? (y/n/a): ").lower()
             if confirm == 'y':
                 return corrected_prediction
+            if confirm == 'a':
+                exit()
             
             # If not confirmed, preserve the edited content for next iteration
             last_content = edited_content
