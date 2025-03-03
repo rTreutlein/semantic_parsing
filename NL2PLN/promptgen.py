@@ -1,4 +1,6 @@
 import dspy
+import json
+import os
 from utils.checker import human_verify_prediction
 
 
@@ -20,10 +22,18 @@ Statements:
 (: max_dog (WithTV (dog max) (STV 1.0 1.0)))
 """)]
 
+# Create samples directory if it doesn't exist
+os.makedirs("samples", exist_ok=True)
+
 for i in range(3):
     pred = gen_example(task=task, previous_examples=data_gen)
     checked_pred = human_verify_prediction(pred, "")
     data_gen.append(checked_pred)
+
+# Save generated samples to a file
+samples_data = [{"input": d.diverse_example_input, "output": d.diverse_example_output} for d in data_gen]
+with open("samples/generated_samples.json", "w") as f:
+    json.dump(samples_data, f, indent=2)
 
 data = [dspy.Example(input=d.diverse_example_input, output=d.diverse_example_output).with_inputs('input') for d in data_gen]
 
