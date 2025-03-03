@@ -15,10 +15,14 @@ gen_example = dspy.ChainOfThought('task: str, previous_examples -> diverse_examp
 os.makedirs("samples", exist_ok=True)
 
 samples = []
-with open("samples/generated_samples.json", "r") as f:
-    samples = json.load(f)
-
-samples_data = [dspy.Prediction(input=d["input"], output=d["output"]) for d in samples]
+samples_data = []
+try:
+    with open("samples/generated_samples.json", "r") as f:
+        samples = json.load(f)
+    samples_data = [dspy.Prediction(input=d["input"], output=d["output"]) for d in samples]
+except FileNotFoundError:
+    # File doesn't exist yet, that's okay
+    pass
 
 if len(samples_data) == 0:
     samples_data = [dspy.Prediction(input="Max is a Dog",
