@@ -11,7 +11,17 @@ task = "Convert English to Logic (MeTTa PLN Light)"
 
 gen_example = dspy.ChainOfThought('task: str, previous_examples -> diverse_example_input: str, diverse_example_output: str')
 
-data_gen = [dspy.Prediction(input="Max is a Dog",
+# Create samples directory if it doesn't exist
+os.makedirs("samples", exist_ok=True)
+
+samples = []
+with open("samples/generated_samples.json", "r") as f:
+    samples = json.load(f)
+
+samples_data = [dspy.Prediction(input=d["input"], output=d["output"]) for d in samples]
+
+if len(samples_data) == 0:
+    samples_data = [dspy.Prediction(input="Max is a Dog",
                             output="""Types:
 (: dog (-> (: $dog Object) Type))
 (: name (-> (: $named Object) (: $name String) Type))
@@ -22,20 +32,17 @@ Statements:
 (: max_dog (WithTV (dog max) (STV 1.0 1.0)))
 """)]
 
-# Create samples directory if it doesn't exist
-os.makedirs("samples", exist_ok=True)
-
 for i in range(3):
-    pred = gen_example(task=task, previous_examples=data_gen)
+    pred = gen_example(task=task, previous_examples=samples_data)
     checked_pred = human_verify_prediction(pred, "")
-    data_gen.append(checked_pred)
+    samples_data.append(checked_pred)
 
 # Save generated samples to a file
-samples_data = [{"input": d.diverse_example_input, "output": d.diverse_example_output} for d in data_gen]
+samples = [{"input": d.diverse_example_input, "output": d.diverse_example_output} for d in samples_data]
 with open("samples/generated_samples.json", "w") as f:
     json.dump(samples_data, f, indent=2)
 
-data = [dspy.Example(input=d.diverse_example_input, output=d.diverse_example_output).with_inputs('input') for d in data_gen]
+data = [dspy.Example(input=d.diverse_example_input, output=d.diverse_example_output).with_inputs('input') for d in samples_data]
 
 task = dspy.ChainOfThought('input -> output: str')
 
