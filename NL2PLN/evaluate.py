@@ -156,6 +156,7 @@ def main():
     print("Loading optimized task...")
     optimized_task = load_optimized_task()
     if optimized_task is None:  # Only return if explicitly None
+        print("optimized_task is none")
         return
     
     print("Evaluating model on samples...")
