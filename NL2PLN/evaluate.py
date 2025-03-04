@@ -25,10 +25,16 @@ def load_optimized_task():
     try:
         # Load the optimized task
         optimized_task = task.load("task.json")
+        print("Successfully loaded optimized task.")
         return optimized_task
     except FileNotFoundError:
         print("Error: task.json not found. Run promptgen.py first.")
         return None
+    except Exception as e:
+        print(f"Error loading task.json: {e}")
+        print("Falling back to basic task implementation.")
+        # Return a basic implementation as fallback
+        return task
 
 def evaluate_model(model, samples):
     """Evaluate the model on the samples and return metrics."""
@@ -128,7 +134,7 @@ def main():
     
     print("Loading optimized task...")
     optimized_task = load_optimized_task()
-    if not optimized_task:
+    if optimized_task is None:  # Only return if explicitly None
         return
     
     print("Evaluating model on samples...")
