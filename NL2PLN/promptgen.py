@@ -7,9 +7,14 @@ from utils.checker import human_verify_prediction
 lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
 dspy.configure(lm=lm)
 
-task = "Convert English to Logic (MeTTa PLN Light)"
+try:
+    with open("task.json", "r") as f:
+        task = json.load(f)["self"]["extended_signature"]["instructions"]
+except Exception as e:
+    print(e)
+    task = "Convert English to Logic (MeTTa PLN Light)"
 
-gen_example = dspy.ChainOfThought('task: str, previous_examples -> diverse_example_input: str, diverse_example_output: str')
+gen_example = dspy.ChainOfThought('task: str, previous_examples -> diverse_example_input: str, diverse_example_output_types: str, diverse_example_output_statements: str')
 
 # Create samples directory if it doesn't exist
 os.makedirs("samples", exist_ok=True)
@@ -19,14 +24,14 @@ samples_data = []
 try:
     with open("samples/generated_samples.json", "r") as f:
         samples = json.load(f)
-    samples_data = [dspy.Prediction(input=d["input"], output=d["output"]) for d in samples]
+    samples_data = [dspy.Prediction(diverse_example_input=d["input"], diverse_example_output=d["output"]) for d in samples]
 except FileNotFoundError:
     # File doesn't exist yet, that's okay
     pass
 
 if len(samples_data) == 0:
-    samples_data = [dspy.Prediction(input="Max is a Dog",
-                            output="""Types:
+    samples_data = [dspy.Prediction(diverse_example_input="Max is a Dog",
+                            diverse_example_output="""Types:
 (: dog (-> (: $dog Object) Type))
 (: name (-> (: $named Object) (: $name String) Type))
 
@@ -44,15 +49,15 @@ for i in range(3):
 # Save generated samples to a file
 samples = [{"input": d.diverse_example_input, "output": d.diverse_example_output} for d in samples_data]
 with open("samples/generated_samples.json", "w") as f:
-    json.dump(samples_data, f, indent=2)
+    json.dump(samples, f, indent=2)
 
-data = [dspy.Example(input=d.diverse_example_input, output=d.diverse_example_output).with_inputs('input') for d in samples_data]
+data = [dspy.Example(english=d.diverse_example_input, pln=d.diverse_example_output).with_inputs('english') for d in samples_data]
 
-task = dspy.ChainOfThought('input -> output: str')
+task = dspy.ChainOfThought('english -> pln: str')
 
 def metric(example, pred, trace=None):
     judge = dspy.ChainOfThought('true_output, predicted_output -> similarity: float')
-    return judge(true_output=example.output, predicted_output=pred.output)
+    return judge(true_output=example.pln, predicted_output=pred.pln).similarity
 
 optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data)
 
