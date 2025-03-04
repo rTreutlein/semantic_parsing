@@ -4,7 +4,8 @@ import os
 from utils.checker import human_verify_prediction
 
 
-lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
+#lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
+lm = dspy.LM('openrouter/anthropic/claude-3.7-sonnet')
 dspy.configure(lm=lm)
 
 try:
@@ -89,3 +90,4 @@ def metric(example, pred, trace=None):
 optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data)
 
 optimized_task.save("task.json",save_program=False)
+
