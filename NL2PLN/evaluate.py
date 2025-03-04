@@ -4,8 +4,11 @@ import os
 from tabulate import tabulate
 
 # Load the same LM as in promptgen.py
-lm = dspy.LM('openrouter/anthropic/claude-3.7-sonnet')
+#lm = dspy.LM('openrouter/anthropic/claude-3.7-sonnet')
+lm = dspy.LM('deepseek/deepseek-reasoner')
 dspy.configure(lm=lm)
+
+task = dspy.ChainOfThought('english -> pln_types: str, pln_statements: str, pln_questions: str')
 
 def load_samples():
     """Load the generated samples from the JSON file."""
@@ -21,7 +24,7 @@ def load_optimized_task():
     """Load the optimized task from the saved file."""
     try:
         # Load the optimized task
-        optimized_task = dspy.Module.load("task.json")
+        optimized_task = task.load("task.json")
         return optimized_task
     except FileNotFoundError:
         print("Error: task.json not found. Run promptgen.py first.")
