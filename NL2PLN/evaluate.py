@@ -44,33 +44,52 @@ def evaluate_model(model, samples):
     results = []
     
     for i, sample in enumerate(samples):
-        english = sample["input"]
-        expected_types = sample["types"]
-        expected_statements = sample["statements"]
-        expected_questions = sample.get("questions", "")
-        
-        # Run the model on the input
-        prediction = model(english=english)
-        
-        # Calculate simple similarity metrics (could be improved)
-        types_match = expected_types.strip() == prediction.pln_types.strip()
-        statements_match = expected_statements.strip() == prediction.pln_statements.strip()
-        questions_match = expected_questions.strip() == prediction.pln_questions.strip()
-        
-        # Store the results
-        results.append({
-            "sample_id": i,
-            "input": english,
-            "types_match": types_match,
-            "statements_match": statements_match,
-            "questions_match": questions_match,
-            "expected_types": expected_types,
-            "predicted_types": prediction.pln_types,
-            "expected_statements": expected_statements,
-            "predicted_statements": prediction.pln_statements,
-            "expected_questions": expected_questions,
-            "predicted_questions": prediction.pln_questions
-        })
+        try:
+            print(f"Evaluating sample {i+1}/{len(samples)}: {sample['input'][:50]}...")
+            english = sample["input"]
+            expected_types = sample["types"]
+            expected_statements = sample["statements"]
+            expected_questions = sample.get("questions", "")
+            
+            # Run the model on the input
+            prediction = model(english=english)
+            
+            # Calculate simple similarity metrics (could be improved)
+            types_match = expected_types.strip() == prediction.pln_types.strip()
+            statements_match = expected_statements.strip() == prediction.pln_statements.strip()
+            questions_match = expected_questions.strip() == prediction.pln_questions.strip()
+            
+            # Store the results
+            results.append({
+                "sample_id": i,
+                "input": english,
+                "types_match": types_match,
+                "statements_match": statements_match,
+                "questions_match": questions_match,
+                "expected_types": expected_types,
+                "predicted_types": prediction.pln_types,
+                "expected_statements": expected_statements,
+                "predicted_statements": prediction.pln_statements,
+                "expected_questions": expected_questions,
+                "predicted_questions": prediction.pln_questions
+            })
+        except Exception as e:
+            print(f"Error evaluating sample {i+1}: {e}")
+            # Add a failed result to maintain the count
+            results.append({
+                "sample_id": i,
+                "input": sample["input"],
+                "types_match": False,
+                "statements_match": False,
+                "questions_match": False,
+                "expected_types": sample["types"],
+                "predicted_types": "ERROR",
+                "expected_statements": sample["statements"],
+                "predicted_statements": "ERROR",
+                "expected_questions": sample.get("questions", ""),
+                "predicted_questions": "ERROR",
+                "error": str(e)
+            })
     
     return results
 
@@ -82,17 +101,19 @@ def print_evaluation_summary(results):
     
     # Calculate overall metrics
     total = len(results)
-    types_correct = sum(1 for r in results if r["types_match"])
-    statements_correct = sum(1 for r in results if r["statements_match"])
-    questions_correct = sum(1 for r in results if r["questions_match"])
-    all_correct = sum(1 for r in results if r["types_match"] and r["statements_match"] and r["questions_match"])
+    types_correct = sum(1 for r in results if r.get("types_match", False))
+    statements_correct = sum(1 for r in results if r.get("statements_match", False))
+    questions_correct = sum(1 for r in results if r.get("questions_match", False))
+    all_correct = sum(1 for r in results if r.get("types_match", False) and r.get("statements_match", False) and r.get("questions_match", False))
+    errors = sum(1 for r in results if "error" in r)
     
     # Print summary table
     summary_data = [
         ["Types Correct", f"{types_correct}/{total}", f"{types_correct/total:.2%}"],
         ["Statements Correct", f"{statements_correct}/{total}", f"{statements_correct/total:.2%}"],
         ["Questions Correct", f"{questions_correct}/{total}", f"{questions_correct/total:.2%}"],
-        ["All Components Correct", f"{all_correct}/{total}", f"{all_correct/total:.2%}"]
+        ["All Components Correct", f"{all_correct}/{total}", f"{all_correct/total:.2%}"],
+        ["Errors", f"{errors}/{total}", f"{errors/total:.2%}"]
     ]
     
     print("\n=== Evaluation Summary ===")
@@ -138,9 +159,13 @@ def main():
         return
     
     print("Evaluating model on samples...")
-    results = evaluate_model(optimized_task, samples)
-    
-    print_evaluation_summary(results)
+    try:
+        results = evaluate_model(optimized_task, samples)
+        print_evaluation_summary(results)
+    except Exception as e:
+        print(f"Error during evaluation: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
