@@ -1,77 +1,32 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-import json
-import os
-import sys
-import subprocess
-import threading
 from threading import Thread
-import dspy
-import time
+from .models import ModelManager
+from .samples import SampleManager
+from .optimization import Optimizer
+from . import routes  # Import the routes blueprint
 
-app = Flask(__name__)
+def create_app():
+    """Application factory function"""
+    app = Flask(__name__)
+    
+    # Initialize components
+    model_manager = ModelManager()
+    sample_manager = SampleManager()
+    optimizer = Optimizer(model_manager, sample_manager)
+    
+    # Register routes
+    app.register_blueprint(routes.create_routes(model_manager, sample_manager, optimizer))
+    
+    # Create required directories
+    app.before_request(lambda: create_directories())
+    
+    return app
 
-# Create templates and static directories if they don't exist
-os.makedirs("templates", exist_ok=True)
-os.makedirs("static", exist_ok=True)
-os.makedirs("samples", exist_ok=True)
-
-# Global variables
-optimization_running = False
-evaluation_results = {}
-model_lock = threading.Lock()
-
-# Available language models
-AVAILABLE_MODELS = [
-    'openrouter/anthropic/claude-3.7-sonnet',
-    'deepseek/deepseek-reasoner',
-    'anthropic/claude-3-7-sonnet-20250219',
-    'anthropic/claude-3-5-sonnet-20240620'
-]
-
-# Current model configuration
-current_model = 'openrouter/anthropic/claude-3.7-sonnet'
-lm = None
-
-def initialize_model(model_name):
-    """Initialize the language model with the specified name.
-    This function should only be called from the main thread.
-    """
-    global lm, current_model
-    try:
-        with model_lock:
-            lm = dspy.LM(model_name)
-            dspy.configure(lm=lm)
-            current_model = model_name
-        return True
-    except Exception as e:
-        print(f"Error initializing language model {model_name}: {e}")
-        return False
-
-def get_lm_instance(model_name=None):
-    """Get a language model instance without configuring DSPy.
-    This is safe to use in any thread.
-    """
-    if model_name is None:
-        model_name = current_model
-    try:
-        return dspy.LM(model_name)
-    except Exception as e:
-        print(f"Error creating language model instance {model_name}: {e}")
-        return None
-
-def load_samples():
-    """Load the generated samples from the JSON file."""
-    try:
-        with open("samples/generated_samples.json", "r") as f:
-            samples = json.load(f)
-        return samples
-    except FileNotFoundError:
-        return []
-
-def save_samples(samples):
-    """Save samples to the JSON file."""
-    with open("samples/generated_samples.json", "w") as f:
-        json.dump(samples, f, indent=2)
+def create_directories():
+    """Create required directories"""
+    os.makedirs("templates", exist_ok=True)
+    os.makedirs("static", exist_ok=True)
+    os.makedirs("samples", exist_ok=True)
 
 def run_optimization():
     """Run the optimization script in a separate thread."""
