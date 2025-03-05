@@ -1,6 +1,7 @@
 from typing import List, Dict
 import dspy
 import json
+import os
 from .samples import SampleManager
 from .models import ModelManager
 
