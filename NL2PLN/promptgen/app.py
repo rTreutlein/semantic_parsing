@@ -252,15 +252,6 @@ def optimize():
     if not optimization_running:
         # Get the model to use for optimization
         model_name = request.form.get('model', current_model)
-        
-        # Set the model to use for optimization
-        if current_model != model_name:
-            if not initialize_model(model_name):
-                return jsonify({
-                    "status": "error",
-                    "message": f"Failed to initialize model {model_name}"
-                })
-        
         optimization_running = True
         
         # Run optimization in a separate thread
@@ -268,7 +259,7 @@ def optimize():
             global optimization_running
             try:
                 # Get a model instance without configuring DSPy globally
-                thread_lm = get_lm_instance(current_model)
+                thread_lm = get_lm_instance(model_name)
                 if thread_lm is None:
                     print(f"Failed to create model instance for optimization")
                     optimization_running = False
@@ -317,7 +308,7 @@ def optimize():
                 
                 # Optimize the task using the thread-specific LM
                 with dspy.context(lm=thread_lm):
-                    optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data)
+                    optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data, requires_permission_to_run=False)
                 
                 # Save the optimized task
                 os.makedirs("./program/", exist_ok=True)
@@ -360,8 +351,6 @@ def evaluate():
             
         # Load optimized task
         try:
-            with open("task.json", "r") as f:
-                task = json.load(f)
             optimized_task = dspy.load("./program/")
             print(f"Successfully loaded optimized task: {type(optimized_task)}")
         except Exception as e:
