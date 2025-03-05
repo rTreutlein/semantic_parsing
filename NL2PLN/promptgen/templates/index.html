@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}NL2PLN Promptgen - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Samples Overview</h5>
+            </div>
+            <div class="card-body">
+                <p>Total samples: <strong>{{ samples|length }}</strong></p>
+                <a href="/samples" class="btn btn-outline-primary">View All Samples</a>
+                <a href="/add_sample" class="btn btn-outline-success">Add New Sample</a>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Optimization</h5>
+            </div>
+            <div class="card-body">
+                <p>Optimize the model using the current samples.</p>
+                <div class="mb-3">
+                    <label for="optimization-model" class="form-label">Model:</label>
+                    <select class="form-select" id="optimization-model">
+                        {% for model in models %}
+                        <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="optimize-btn" class="btn btn-success" {% if optimization_running %}disabled{% endif %}>
+                    {% if optimization_running %}Optimization Running...{% else %}Start Optimization{% endif %}
+                </button>
+                <div id="optimization-status" class="mt-3" style="{% if not optimization_running %}display: none;{% endif %}">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <p class="text-center mt-1">Optimization in progress...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Evaluation</h5>
+            </div>
+            <div class="card-body">
+                <p>Evaluate the current model against the samples.</p>
+                <div class="mb-3">
+                    <label for="evaluation-model" class="form-label">Model:</label>
+                    <select class="form-select" id="evaluation-model">
+                        {% for model in models %}
+                        <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="evaluate-btn" class="btn btn-info">Run Evaluation</button>
+                <div id="evaluation-status" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <p class="text-center mt-1">Evaluation in progress...</p>
+                </div>
+                <div id="evaluation-results" class="mt-3" style="{% if not evaluation_results %}display: none;{% endif %}">
+                    <h6>Evaluation Results:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if evaluation_results and evaluation_results.metrics %}
+                                    {% for metric, value in evaluation_results.metrics.items() %}
+                                    <tr>
+                                        <td>{{ metric }}</td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Recent Samples</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% if samples %}
+                        {% for sample in samples[:3] %}
+                            <a href="/sample/{{ loop.index0 }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ sample.input|truncate(50) }}</h5>
+                                </div>
+                                <p class="mb-1">Types: {{ sample.types|truncate(50) }}</p>
+                            </a>
+                        {% endfor %}
+                        {% if samples|length > 3 %}
+                            <a href="/samples" class="list-group-item list-group-item-action text-center">View all samples</a>
+                        {% endif %}
+                    {% else %}
+                        <div class="list-group-item">No samples available.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Optimization handling
+        $('#optimize-btn').click(function() {
+            $(this).prop('disabled', true);
+            $(this).text('Optimization Running...');
+            $('#optimization-status').show();
+            
+            // Get the selected model
+            var model = $('#optimization-model').val();
+            
+            $.ajax({
+                url: '/optimize',
+                type: 'POST',
+                data: {
+                    model: model
+                },
+                success: function(data) {
+                    if (data.status === 'started') {
+                        checkOptimizationStatus();
+                    } else if (data.status === 'error') {
+                        alert('Error: ' + data.message);
+                        $('#optimize-btn').prop('disabled', false);
+                        $('#optimize-btn').text('Start Optimization');
+                        $('#optimization-status').hide();
+                    } else {
+                        alert('Optimization already running');
+                    }
+                },
+                error: function() {
+                    alert('Error starting optimization');
+                    $('#optimize-btn').prop('disabled', false);
+                    $('#optimize-btn').text('Start Optimization');
+                    $('#optimization-status').hide();
+                }
+            });
+        });
+        
+        function checkOptimizationStatus() {
+            $.ajax({
+                url: '/optimization_status',
+                type: 'GET',
+                success: function(data) {
+                    if (data.running) {
+                        setTimeout(checkOptimizationStatus, 2000);
+                    } else {
+                        $('#optimize-btn').prop('disabled', false);
+                        $('#optimize-btn').text('Start Optimization');
+                        $('#optimization-status').hide();
+                        location.reload();
+                    }
+                },
+                error: function() {
+                    $('#optimize-btn').prop('disabled', false);
+                    $('#optimize-btn').text('Start Optimization');
+                    $('#optimization-status').hide();
+                }
+            });
+        }
+        
+        // Evaluation handling
+        $('#evaluate-btn').click(function() {
+            $(this).prop('disabled', true);
+            $('#evaluation-status').show();
+            $('#evaluation-results').hide();
+            
+            // Get the selected model
+            var model = $('#evaluation-model').val();
+            
+            $.ajax({
+                url: '/evaluate',
+                type: 'POST',
+                data: {
+                    model: model
+                },
+                success: function(data) {
+                    $('#evaluate-btn').prop('disabled', false);
+                    $('#evaluation-status').hide();
+                    
+                    // Update the evaluation results
+                    $('#evaluation-results').show();
+                    
+                    // Clear existing rows
+                    $('#evaluation-results table tbody').empty();
+                    
+                    // Add metrics rows
+                    if (data.metrics) {
+                        $.each(data.metrics, function(metric, value) {
+                            $('#evaluation-results table tbody').append(
+                                '<tr><td>' + metric + '</td><td>' + value + '</td></tr>'
+                            );
+                        });
+                    } else if (data.error) {
+                        $('#evaluation-results table tbody').append(
+                            '<tr><td colspan="2" class="text-danger">' + data.error + '</td></tr>'
+                        );
+                    }
+                },
+                error: function() {
+                    alert('Error running evaluation');
+                    $('#evaluate-btn').prop('disabled', false);
+                    $('#evaluation-status').hide();
+                }
+            });
+        });
+        
+        {% if optimization_running %}
+        // Check status if optimization is already running
+        checkOptimizationStatus();
+        {% endif %}
+    });
+</script>
+{% endblock %}

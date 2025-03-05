@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}NL2PLN Promptgen - Add Sample{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Add New Sample</h1>
+        <div class="mb-3">
+            <a href="/samples" class="btn btn-outline-secondary btn-sm">← Back to Samples</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">New Sample</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="add-sample-form">
+                    <div class="mb-3">
+                        <label for="input" class="form-label">Input:</label>
+                        <div class="input-group">
+                            <textarea class="form-control" id="input" name="input" rows="3" required placeholder="Enter English text, e.g., 'Max is a Dog'"></textarea>
+                            <div class="input-group-append">
+                                <button type="button" id="generate-btn" class="btn btn-primary h-100">Generate</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Model:</label>
+                        <select class="form-select" id="model-select" name="model">
+                            {% for model in models %}
+                            <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the model to use for generation.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="types" class="form-label">Types:</label>
+                        <textarea class="form-control font-monospace" id="types" name="types" rows="5" required placeholder="(: dog (-> (: $dog Object) Type))
+(: name (-> (: $named Object) (: $name String) Type))"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="statements" class="form-label">Statements:</label>
+                        <textarea class="form-control font-monospace" id="statements" name="statements" rows="8" required placeholder="(: max Object)
+(: max_named_max (WithTV (name max 'Max') (STV 1.0 1.0)))
+(: max_dog (WithTV (dog max) (STV 1.0 1.0)))"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="questions" class="form-label">Questions:</label>
+                        <textarea class="form-control font-monospace" id="questions" name="questions" rows="3" placeholder="(: $query (Implication (dog $x) (animal $x)))"></textarea>
+                        <div class="form-text">Optional. Leave blank if there are no questions.</div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">Add Sample</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Handle generate button click
+        $("#generate-btn").click(function() {
+            const input = $("#input").val().trim();
+            const model = $("#model-select").val();
+            
+            if (!input) {
+                alert("Please enter some English text first.");
+                return;
+            }
+            
+            // Show loading state
+            $("#generate-btn").prop("disabled", true).text("Generating...");
+            
+            // Call the generate sample API
+            $.ajax({
+                url: "/generate_sample",
+                method: "POST",
+                data: {
+                    input: input,
+                    model: model
+                },
+                success: function(data) {
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                    } else {
+                        // Fill in the form fields with generated data
+                        $("#types").val(data.types);
+                        $("#statements").val(data.statements);
+                        $("#questions").val(data.questions);
+                    }
+                },
+                error: function() {
+                    alert("Error generating sample. Please try again.");
+                },
+                complete: function() {
+                    // Reset button state
+                    $("#generate-btn").prop("disabled", false).text("Generate");
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

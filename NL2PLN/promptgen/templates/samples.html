@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}NL2PLN Promptgen - Samples{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Samples</h1>
+        <p>
+            <a href="/add_sample" class="btn btn-primary">Add New Sample</a>
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    {% if samples %}
+        {% for sample in samples %}
+            <div class="col-md-6">
+                <div class="card sample-card">
+                    <div class="card-header">
+                        <h5>Sample #{{ loop.index }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Input:</h6>
+                        <div class="code-block">{{ sample.input }}</div>
+                        
+                        <h6>Types:</h6>
+                        <div class="code-block">{{ sample.types }}</div>
+                        
+                        <div class="mt-3">
+                            <a href="/sample/{{ loop.index0 }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                            <a href="/sample/{{ loop.index0 }}/edit" class="btn btn-outline-secondary btn-sm">Edit</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                No samples available. <a href="/add_sample">Add a new sample</a> to get started.
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+[
+  {
+    "input": "Max is a Dog",
+    "types": "(: dog (-> (: $dog Object) Type))\n(: name (-> (: $named Object) (: $name String) Type))",
+    "statements": "(: max Object)\n(: max_named_max (WithTV (name max 'Max') (STV 1.0 1.0)))\n(: max_dog (WithTV (dog max) (STV 1.0 1.0)))",
+    "questions": ""
+  },
+  {
+    "input": "John likes Mary.",
+    "types": "(: person (-> (: $person Object) Type))\n(: name (-> (: $named Object) (: $name String) Type))\n(: likes (-> (: $liker Object) (: $liked Object) Type))",
+    "statements": "(: john Object)\n(: mary Object)\n(: john_named_john (WithTV (name john 'John') (STV 1.0 1.0)))\n(: mary_named_mary (WithTV (name mary 'Mary') (STV 1.0 1.0)))\n(: john_person (WithTV (person john) (STV 1.0 1.0)))\n(: mary_person (WithTV (person mary) (STV 1.0 1.0)))\n(: john_likes_mary (WithTV (likes john mary) (STV 0.9 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "All birds can fly.",
+    "types": "(: bird (-> (: $bird Object) Type))\n(: can_fly (-> (: $flyer Object) Type))",
+    "statements": "(: bird_fly_rule (WithTV (Implication (bird $x) (can_fly $x)) (STV 0.95 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "The red car is not faster than the blue truck.",
+    "types": "(: vehicle (-> (: $vehicle Object) Type))\n(: car (-> (: $car Object) Type))\n(: truck (-> (: $truck Object) Type))\n(: red (-> (: $object Object) Type))\n(: blue (-> (: $object Object) Type))\n(: faster_than (-> (: $vehicle1 Object) (: $vehicle2 Object) Type))",
+    "statements": "(: car1 Object)\n(: truck1 Object)\n(: car1_is_car (WithTV (car car1) (STV 1.0 1.0)))\n(: truck1_is_truck (WithTV (truck truck1) (STV 1.0 1.0)))\n(: car1_is_vehicle (WithTV (vehicle car1) (STV 1.0 1.0)))\n(: truck1_is_vehicle (WithTV (vehicle truck1) (STV 1.0 1.0)))\n(: car1_is_red (WithTV (red car1) (STV 1.0 1.0)))\n(: truck1_is_blue (WithTV (blue truck1) (STV 1.0 1.0)))\n(: not_faster (WithTV (faster_than car1 truck1) (STV 0.0 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "Some students who study hard will pass the exam.",
+    "types": "(: student (-> (: $person Object) Type))\n(: studies_hard (-> (: $student Object) Type))\n(: passes_exam (-> (: $student Object) Type))",
+    "statements": "(: conditional_rule (WithTV (Implication (And (student $x) (studies_hard $x)) (passes_exam $x)) (STV 0.85 0.5)))",
+    "questions": ""
+  },
+  {
+    "input": "Every teacher either likes mathematics or teaches science.",
+    "types": "(: person (-> (: $person Object) Type))\n(: teacher (-> (: $teacher Object) Type))\n(: likes_mathematics (-> (: $person Object) Type))\n(: teaches_science (-> (: $teacher Object) Type))",
+    "statements": "(: teacher_math_science_rule (WithTV (Implication (teacher $x) (Or (likes_mathematics $x) (teaches_science $x))) (STV 0.9 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "A number is even if and only if it is divisible by 2.",
+    "types": "(: even (-> (: $n Object) Type))\n(: divisible_by (-> (: $n Object) (: $divisor Number) Type))",
+    "statements": "(: even_iff_div_by_2 (WithTV (Equivalence (even $x) (divisible_by $x 2)) (STV 1.0 1.0)))",
+    "questions": ""
+  },
+  {
+    "input": "All dogs chase some cat.",
+    "types": "(: dog (-> (: $dog Object) Type))\n(: cat (-> (: $cat Object) Type))\n(: chase (-> (: $chaser Object) (: $chased Object) Type))",
+    "statements": "(: dogschasesomecat (WithTV (Implication (dog $d) (And (cat $c) (chase $d $c))) (STV 0.9 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "If it rains tomorrow, the outdoor concert will be canceled.",
+    "types": "(: rain (-> (: $day Object) Type))\n(: outdoor_concert (-> (: $concert Object) Type))\n(: canceled (-> (: $event Object) Type))\n(: happens_on (-> (: $event Object) (: $day Object) Type))",
+    "statements": "(: tomorrow Object)\n(: concert1 Object)\n(: concert1_is_outdoor (WithTV (outdoor_concert concert1) (STV 1.0 1.0)))\n(: concert1_on_tomorrow (WithTV (happens_on concert1 tomorrow) (STV 1.0 1.0)))\n(: rain_cancels_concert (WithTV (Implication (rain tomorrow) (canceled concert1)) (STV 0.95 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "The Empire State Building is more than 380 meters tall.",
+    "types": "(: building (-> (: $building Object) Type))\n(: name (-> (: $named Object) (: $name String) Type))\n(: height (-> (: $object Object) (: $height Number) Type))\n(: unit (-> (: $object Object) (: $unit String) Type))\n(: greater_than (-> (: $value1 Number) (: $value2 Number) Type))",
+    "statements": "(: empire_state Object)\n(: empire_state_is_building (WithTV (building empire_state) (STV 1.0 1.0)))\n(: empire_state_named (WithTV (name empire_state 'Empire State Building') (STV 1.0 1.0)))\n(: empire_state_height (WithTV (And (height empire_state $h) (And (unit $h 'Meter') (greater_than $h 380))) (STV 1.0 1.0)))",
+    "questions": ""
+  },
+  {
+    "input": "Alice visits her grandmother every Sunday afternoon.",
+    "types": "(: person (-> (: $person Object) Type))\n(: name (-> (: $named Object) (: $name String) Type))\n(: grandmother_of (-> (: $grandmother Object) (: $grandchild Object) Type))\n(: visits (-> (: $visitor Object) (: $visited Object) Type))\n(: sunday (-> (: $day Object) Type))\n(: afternoon (-> (: $timeperiod Object) Type))",
+    "statements": "(: alice Object)\n(: grandmother1 Object)\n(: alice_named_alice (WithTV (name alice 'Alice') (STV 1.0 1.0)))\n(: alice_is_person (WithTV (person alice) (STV 1.0 1.0)))\n(: grandmother1_is_person (WithTV (person grandmother1) (STV 1.0 1.0)))\n(: grandmother_relation (WithTV (grandmother_of grandmother1 alice) (STV 1.0 1.0)))\n(: alice_visits_grandmother (WithTV (Implication (And (sunday $x) (afternoon $x)) (AtTime (visits alice grandmother1) $x) (STV 0.95 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "Is a Apple a fruit?",
+    "types": "(: apple (-> (: $apple Object) Type))\n(: fruit (-> (: $fruit Object) Type))",
+    "statements": "",
+    "questions": "(: $prf (Implication (apple $x) (fruit $x)))"
+  },
+  {
+    "input": "If a student studies for at least 5 hours and gets enough sleep, what is the probability they will pass the exam?",
+    "types": "(: student (-> (: $student Object) Type))\n(: studies_hours (-> (: $student Object) (: $hours Number) Type))\n(: gets_enough_sleep (-> (: $student Object) Type))\n(: passes_exam (-> (: $student Object) Type))\n(: greater_than_equal (-> (: $value1 Number) (: $value2 Number) Type))",
+    "statements": "",
+    "questions": "(: $query (WithTV (Implication (And (student $x) (And (studies_hours $x $h) (And (greater_than_equal $h 5) (gets_enough_sleep $x)))) (passes_exam $x)) $tv))"
+  },
+  {
+    "input": "If the barometric pressure drops rapidly and dark clouds form, there is an 80% chance it will rain within the next 3 hours.",
+    "types": "(: dark_clouds (-> (: $darkclouds Object) Type))\n(: rain (-> (: $rain Object) Type))\n(: dropping_rapidly (-> (: $object Object) Type))\n(: barometric_pressure (-> (: $presure Object) Type))\n(: within_hours (-> (: $time1 Object) (: $time2 Object) (: $hours Number) Type))",
+    "statements": "(: weather_prediction (WithTV (Implication \n  (And \n    (barometric_pressure $bp)\n    (And \n      (AtTime (drops_rapidly $bp) $time1) \n      (AtTime (dark_clouds $dc) $time1)\n    ) \n  (And \n    (AtTime (rain $r) $time2)\n    (within_hours $time2 $time1 3)\n  )\n) (STV 0.8 0.9)))",
+    "questions": ""
+  },
+  {
+    "input": "This ball is bright red.",
+    "types": "(: Ball (-> (: $ball Object) Type))\n(: red (-> (: $red Object) Type))\n(: bright (-> (-> (: $object Object) Type) (-> (: $object Object) Type)))",
+    "statements": "(: ball (WithTV (Ball $a) (STV 0.0001 0.001)))\n(: bojb Object)\n(: ballIsBall (WithTV (Ball bojb) (STV 1.0 0.9)))\n(: ballIsBrightRed (WithTV ((bright red) bojb) (STV 0.9 0.9)))",
+    "questions": ""
+  }
+]
