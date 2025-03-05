@@ -1,9 +1,26 @@
+import os
+import sys
+import json
+import subprocess
+import dspy
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from threading import Thread
 from .models import ModelManager
 from .samples import SampleManager
 from .optimization import Optimizer
 from . import routes  # Import the routes blueprint
+
+# Global variables
+app = Flask(__name__)
+current_model = "anthropic/claude-3-5-sonnet-20241022"
+optimization_running = False
+evaluation_results = {"metrics": {}, "results": []}
+lm = None
+AVAILABLE_MODELS = [
+    "anthropic/claude-3-5-sonnet-20241022",
+    "anthropic/claude-3-7-sonnet-20250219",
+    "openai/gpt-4-turbo"
+]
 
 def create_app():
     """Application factory function"""
@@ -87,6 +104,26 @@ def run_evaluation():
         return {"error": f"Error running evaluation: {e.output}"}
     except Exception as e:
         return {"error": f"Error: {str(e)}"}
+
+def load_samples():
+    """Load samples from the sample manager"""
+    sample_manager = SampleManager()
+    return sample_manager.load_samples()
+
+def save_samples(samples):
+    """Save samples using the sample manager"""
+    sample_manager = SampleManager()
+    sample_manager.save_samples(samples)
+
+def get_lm_instance(model_name):
+    """Get a language model instance"""
+    model_manager = ModelManager()
+    return model_manager.get_lm_instance(model_name)
+
+def initialize_model(model_name):
+    """Initialize the language model"""
+    model_manager = ModelManager()
+    return model_manager.initialize_model(model_name)
 
 @app.route('/')
 def index():
