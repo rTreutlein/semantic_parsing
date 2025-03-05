@@ -8,7 +8,6 @@ from threading import Thread
 from .models import ModelManager
 from .samples import SampleManager
 from .optimization import Optimizer
-from . import routes  # Import the routes blueprint
 
 # Global variables
 app = Flask(__name__)
@@ -24,20 +23,25 @@ AVAILABLE_MODELS = [
 
 def create_app():
     """Application factory function"""
-    app = Flask(__name__)
+    flask_app = Flask(__name__)
     
     # Initialize components
     model_manager = ModelManager()
     sample_manager = SampleManager()
     optimizer = Optimizer(model_manager, sample_manager)
     
+    # Import routes here to avoid circular imports
+    from . import routes
+    
     # Register routes
-    app.register_blueprint(routes.create_routes(model_manager, sample_manager, optimizer))
+    flask_app.register_blueprint(routes.create_routes(model_manager, sample_manager, optimizer))
     
     # Create required directories
-    app.before_request(lambda: create_directories())
+    @flask_app.before_request
+    def setup_dirs():
+        create_directories()
     
-    return app
+    return flask_app
 
 def create_directories():
     """Create required directories"""
