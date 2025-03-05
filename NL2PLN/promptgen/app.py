@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import subprocess
+import threading
 from threading import Thread
 import dspy
 import time
@@ -17,6 +18,7 @@ os.makedirs("samples", exist_ok=True)
 # Global variables
 optimization_running = False
 evaluation_results = {}
+model_lock = threading.Lock()
 
 # Available language models
 AVAILABLE_MODELS = [
@@ -31,16 +33,31 @@ current_model = 'openrouter/anthropic/claude-3.7-sonnet'
 lm = None
 
 def initialize_model(model_name):
-    """Initialize the language model with the specified name."""
+    """Initialize the language model with the specified name.
+    This function should only be called from the main thread.
+    """
     global lm, current_model
     try:
-        lm = dspy.LM(model_name)
-        dspy.configure(lm=lm)
-        current_model = model_name
+        with model_lock:
+            lm = dspy.LM(model_name)
+            dspy.configure(lm=lm)
+            current_model = model_name
         return True
     except Exception as e:
         print(f"Error initializing language model {model_name}: {e}")
         return False
+
+def get_lm_instance(model_name=None):
+    """Get a language model instance without configuring DSPy.
+    This is safe to use in any thread.
+    """
+    if model_name is None:
+        model_name = current_model
+    try:
+        return dspy.LM(model_name)
+    except Exception as e:
+        print(f"Error creating language model instance {model_name}: {e}")
+        return None
 
 def load_samples():
     """Load the generated samples from the JSON file."""
@@ -179,19 +196,17 @@ def add_sample():
 @app.route('/generate_sample', methods=['POST'])
 def generate_sample():
     """Generate a sample using the LLM."""
-    global lm, current_model
+    global current_model
     
     # Get the input and model
     input_text = request.form.get('input', '')
     model_name = request.form.get('model', current_model)
     
-    # Initialize a new model instance for this request
-    try:
-        sample_lm = dspy.LM(model_name)
-        dspy.configure(lm=sample_lm)
-    except Exception as e:
+    # Get a model instance without configuring DSPy
+    sample_lm = get_lm_instance(model_name)
+    if sample_lm is None:
         return jsonify({
-            "error": f"Failed to initialize model {model_name}: {e}",
+            "error": f"Failed to initialize model {model_name}",
             "input": input_text,
             "types": "",
             "statements": "",
@@ -199,7 +214,7 @@ def generate_sample():
         })
     
     try:
-        # Create a basic example generator
+        # Create a basic example generator with the specific LM instance
         gen_example = dspy.ChainOfThought('task: str, input: str -> types: str, statements: str, questions: str')
         
         # Get the task from task.json if it exists
@@ -209,8 +224,9 @@ def generate_sample():
         except Exception:
             task = "Convert English to Logic (MeTTa PLN Light)"
         
-        # Generate the sample
-        pred = gen_example(task=task, input=input_text)
+        # Generate the sample using the specific LM instance
+        with dspy.context(lm=sample_lm):
+            pred = gen_example(task=task, input=input_text)
         
         # Return the generated sample
         return jsonify({
@@ -251,9 +267,12 @@ def optimize():
         def run_optimization_with_model():
             global optimization_running
             try:
-                # Initialize model in this thread
-                thread_lm = dspy.LM(current_model)
-                dspy.configure(lm=thread_lm)
+                # Get a model instance without configuring DSPy globally
+                thread_lm = get_lm_instance(current_model)
+                if thread_lm is None:
+                    print(f"Failed to create model instance for optimization")
+                    optimization_running = False
+                    return
                 
                 # Load samples
                 samples = load_samples()
@@ -296,8 +315,9 @@ def optimize():
                         pred_questions=pred.pln_questions
                     ).similarity
                 
-                # Optimize the task
-                optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data)
+                # Optimize the task using the thread-specific LM
+                with dspy.context(lm=thread_lm):
+                    optimized_task = dspy.MIPROv2(metric=metric, auto="light").compile(task, trainset=data)
                 
                 # Save the optimized task
                 os.makedirs("./program/", exist_ok=True)
@@ -329,13 +349,11 @@ def evaluate():
     
     # Evaluate directly without calling the script
     try:
-        # Configure a new model instance for this request
-        try:
-            eval_lm = dspy.LM(model_name)
-            dspy.configure(lm=eval_lm)
-        except Exception as e:
+        # Get a model instance without configuring DSPy globally
+        eval_lm = get_lm_instance(model_name)
+        if eval_lm is None:
             return jsonify({
-                "error": f"Failed to initialize model {model_name}: {e}",
+                "error": f"Failed to initialize model {model_name}",
                 "metrics": {},
                 "full_output": f"Error initializing model {model_name}"
             })
@@ -372,8 +390,9 @@ def evaluate():
                 expected_statements = sample["statements"]
                 expected_questions = sample.get("questions", "")
                 
-                # Run the model on the input
-                prediction = optimized_task(english=english)
+                # Run the model on the input with the specific LM instance
+                with dspy.context(lm=eval_lm):
+                    prediction = optimized_task(english=english)
                 
                 # Calculate simple similarity metrics
                 types_match = expected_types.strip() == prediction.pln_types.strip()
@@ -449,5 +468,6 @@ def get_evaluation_results():
     return jsonify(evaluation_results)
 
 if __name__ == '__main__':
-    # Initialize the default model
+    # Initialize the default model in the main thread
+    initialize_model(current_model)
     app.run(debug=True, host='0.0.0.0', port=5000)
