@@ -6,8 +6,9 @@ import dspy
 from .models import ModelManager
 from .samples import SampleManager
 from .optimization import Optimizer
+from .state import AppState
 
-def create_routes(model_manager: ModelManager, sample_manager: SampleManager, optimizer: Optimizer):
+def create_routes(app_state: AppState, model_manager: ModelManager, sample_manager: SampleManager, optimizer: Optimizer):
     """Create Flask routes blueprint"""
     bp = Blueprint('main', __name__)
     
@@ -17,8 +18,9 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
         return render_template('index.html', 
                             samples=samples, 
                             optimization_running=optimizer.running,
-                            models=model_manager.AVAILABLE_MODELS,
-                            current_model=model_manager.current_model)
+                            evaluation_results=app_state.evaluation_results,
+                            models=app_state.AVAILABLE_MODELS,
+                            current_model=app_state.current_model)
 
     @bp.route('/samples')
     def view_samples():
@@ -68,15 +70,15 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
             return redirect(url_for('main.view_samples'))
         
         return render_template('add_sample.html', 
-                              models=model_manager.AVAILABLE_MODELS, 
-                              current_model=model_manager.current_model)
+                              models=app_state.AVAILABLE_MODELS, 
+                              current_model=app_state.current_model)
 
     @bp.route('/generate_sample', methods=['POST'])
     def generate_sample():
         """Generate a sample using the LLM."""
         # Get the input and model
         input_text = request.form.get('input', '')
-        model_name = request.form.get('model', model_manager.current_model)
+        model_name = request.form.get('model', app_state.current_model)
         
         # Get a model instance without configuring DSPy
         sample_lm = model_manager.get_lm_instance(model_name)
@@ -119,7 +121,9 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
     @bp.route('/optimize', methods=['POST'])
     def optimize():
         if not optimizer.running:
-            model_name = request.form.get('model', model_manager.current_model)
+            model_name = request.form.get('model', app_state.current_model)
+            # Update the current model in app state
+            app_state.current_model = model_name
             Thread(target=optimizer.run_optimization, args=(model_name,)).start()
             return jsonify({"status": "started"})
         return jsonify({"status": "already_running"})
@@ -132,7 +136,9 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
     def evaluate():
         """Run the evaluation on the optimized model."""
         # Get the model to use for evaluation
-        model_name = request.form.get('model', model_manager.current_model)
+        model_name = request.form.get('model', app_state.current_model)
+        # Update the current model in app state
+        app_state.current_model = model_name
         
         # Evaluate directly without calling the script
         try:
@@ -232,11 +238,14 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
                 "Errors": f"{errors}/{total} ({errors/total:.2%})"
             }
             
-            # Return the evaluation results
-            return jsonify({
+            # Store the evaluation results in app state
+            app_state.evaluation_results = {
                 "metrics": metrics,
                 "results": results
-            })
+            }
+            
+            # Return the evaluation results
+            return jsonify(app_state.evaluation_results)
         except Exception as e:
             return jsonify({
                 "error": f"Evaluation failed: {str(e)}",
@@ -247,8 +256,7 @@ def create_routes(model_manager: ModelManager, sample_manager: SampleManager, op
     @bp.route('/evaluation_results')
     def get_evaluation_results():
         """Get the current evaluation results."""
-        # This would need to be stored in a persistent way
-        return jsonify({})
+        return jsonify(app_state.evaluation_results)
 
     return bp
 

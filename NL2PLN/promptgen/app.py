@@ -1,45 +1,35 @@
 import os
-import sys
-import json
-import subprocess
-import dspy
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from threading import Thread
+from flask import Flask
 from .models import ModelManager
 from .samples import SampleManager
 from .optimization import Optimizer
-
-# Global variables
-app = Flask(__name__)
-current_model = "anthropic/claude-3-5-sonnet-20241022"
-optimization_running = False
-evaluation_results = {"metrics": {}, "results": []}
-lm = None
-AVAILABLE_MODELS = [
-    "anthropic/claude-3-5-sonnet-20241022",
-    "anthropic/claude-3-7-sonnet-20250219",
-    "openai/gpt-4-turbo"
-]
+from .state import AppState
 
 def create_app():
     """Application factory function"""
     flask_app = Flask(__name__)
     
     # Initialize components
+    app_state = AppState()
     model_manager = ModelManager()
     sample_manager = SampleManager()
     optimizer = Optimizer(model_manager, sample_manager)
-    
-    # Import routes here to avoid circular imports
-    from . import routes
-    
-    # Register routes
-    flask_app.register_blueprint(routes.create_routes(model_manager, sample_manager, optimizer))
     
     # Create required directories
     @flask_app.before_request
     def setup_dirs():
         create_directories()
+    
+    # Import routes here to avoid circular imports
+    from . import routes
+    
+    # Register routes
+    flask_app.register_blueprint(
+        routes.create_routes(app_state, model_manager, sample_manager, optimizer)
+    )
+    
+    # Initialize the model
+    model_manager.initialize_model(app_state.current_model)
     
     return flask_app
 
