@@ -89,7 +89,7 @@ class Processor:
         
         return True
 
-def configure_lm(model_name: str = 'anthropic/claude-3-5-sonnet-20241022'):
+def configure_lm(model_name: str = 'anthropic/claude-3-7-sonnet-20250219'):
     """Configure the LM for DSPY."""
     lm = dspy.LM(model_name)
     dspy.configure(lm=lm)

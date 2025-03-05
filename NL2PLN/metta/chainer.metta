@@ -26,6 +26,9 @@
 (= (bc $kb $_ (: $prf $thrm))
    (match $kb (: $prf $thrm) (: $prf $thrm)))
 
+(= (bc $kb $_ (: (CPU $f $args) (CPU $res)))
+  (: (CPU $f $args) (CPU (cons-atom $f $args))))
+
 ; Recursive step
 (= (bc $kb (S $k) (: ($prfabs $prfarg) $thrm))
    (let* (((: $prfabs (-> (: $prfarg $prms) $thrm))

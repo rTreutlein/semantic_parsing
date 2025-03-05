@@ -27,7 +27,7 @@ def main():
     
     for i in range(args.num_puzzles):
         print(f"\nGenerating puzzle {i+1}/{args.num_puzzles}")
-        puzzle = puzzle_gen.generate_puzzle(numberOfPremises=2)
+        puzzle = puzzle_gen.generate_puzzle(numberOfPremises=5)
         processor.process_puzzle(puzzle)
 
 if __name__ == "__main__":

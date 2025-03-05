@@ -1,9 +1,10 @@
 import dspy
 
-dspy_program = dspy.ChainOfThought("question -> answer")
+loaded_program = dspy.load("./program/")
 
-dspy_program.save("./testprogram/", save_program=True)
-
-loaded_program = dspy.load("./testprogram/")
+loaded_program.save("program.json", save_program=False)
 
 print(type(loaded_program))
+
+#print(loaded_program.predict.signature)
+#print(loaded_program.predict.extended_signature)
