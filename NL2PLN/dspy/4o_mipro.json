@@ -1,0 +1,86 @@
+{
+  "analyze.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "new_types": [
+          "(: Boy (-> (: $boy Object) Type))"
+        ],
+        "similar_types": [
+          "(: Male (-> (: $male Object) Type))",
+          "(: Person (-> (: $person Object) Type))"
+        ],
+        "statements": [
+          "(: BoyIsMale (Implication (Boy $boy_obj) (Male $boy_obj) (STV 0.9 0.9)))",
+          "(: MaleIsBoy (Implication (Male $male_obj) (Boy $male_obj) (STV 0.25 0.8)))",
+          "(: BoyIsPerson (Implication (Boy $boy_obj) (Person $boy_obj) (STV 0.9 0.9)))"
+        ]
+      },
+      {
+        "new_types": [
+          "(: ToLeave (-> (: $person Object) (: $location Object) Type))"
+        ],
+        "similar_types": [
+          "(: ToStay (-> (: $person Object) (: $location Object) Type))",
+          "(: ToEat (-> (: $person Object) (: $food Object) Type))"
+        ],
+        "statements": [
+          "(: ToLeaveToNotToStay (Equivalence (ToLeave $person_obj $location_obj) (Not (ToStay $person_obj $location_obj)) (STV 1 0.9)))",
+          "(: ToStayToNotToLeave (Equivalence (ToStay $person_obj $location_obj) (Not (ToLeave $person_obj $location_obj)) (STV 1 0.9)))"
+        ]
+      },
+      {
+        "new_types": [
+          "(: Apple (-> (: $apple Object) Type))"
+        ],
+        "similar_types": [
+          "(: Fruit (-> (: $fruit Object) Type))",
+          "(: Color (-> (: $color Object) Type))"
+        ],
+        "statements": [
+          "(: AppleIsFruit (Implication (Apple $apple_obj) (Fruit $apple_obj) (STV 0.9 0.9)))"
+        ]
+      },
+      {
+        "new_types": [
+          "(: Temperature (-> (: $t Object) Type))"
+        ],
+        "similar_types": [
+          "(: Pressure (-> (: $p Object) Type))",
+          "(: Distance (-> (: $d Object) Type))"
+        ],
+        "statements": []
+      }
+    ],
+    "signature": {
+      "instructions": "Analyze the provided MeTTa type definitions and generate logical relationships between them. Your task is to:\n\n1. First, carefully examine both the new types and similar existing types to understand their semantic meanings and potential relationships.\n\n2. Reason step-by-step about possible logical connections between these types, considering:\n   - Hierarchical relationships (is one type a subtype of another?)\n   - Functional relationships (does one type imply the existence of another?)\n   - Exclusivity relationships (are types mutually exclusive?)\n   - Partial overlaps (do types share some instances but not others?)\n\n3. Generate formal MeTTa statements expressing these relationships using:\n   - Implication: (Implication $premise $conclusion $stv)\n   - Equivalence: (Equivalence $premise $conclusion $stv)\n   - And: (And $premise1 $premise2 $premise3 ...)\n   - Or: (Or $premise1 $premise2 $premise3 ...)\n   - Not: (Not $premise)\n\n4. Assign appropriate Simple Truth Values (STV $strength $confidence) where:\n   - $strength represents the probability of the relationship being true (0.0-1.0)\n   - $confidence represents certainty in that probability (0.0-0.99, never 1.0)\n   - Only include relationships where both values exceed 0.1 (10%)\n\n5. Ensure logical validity by:\n   - Verifying that conclusions contain no unbound variables (all variables in conclusions must appear in premises)\n   - Using only the provided types (do not invent new ones)\n   - Testing each relationship with potential counterexamples\n   - Adjusting strength values for relationships that are possible but not certain\n\n6. If no valid logical relationships can be established with reasonable confidence, explicitly state this reasoning and return an empty list of statements.\n\nExample of correct variable binding:\nCORRECT: (: CompletionToFinishes (Implication (Completes $student_obj $course_obj) (Finishes $student_obj $course_obj) (STV 1 0.9)))\nINCORRECT: (: CompletionToDegree (Implication (Completes $student_obj $course_obj) (HasDegree $student_obj $degree_obj) (STV 1 0.9)))\nThe second example is incorrect because $degree_obj appears in the conclusion but not in the premises.",
+      "fields": [
+        {
+          "prefix": "New Types:",
+          "description": "List of new type definitions in MeTTa syntax"
+        },
+        {
+          "prefix": "Similar Types:",
+          "description": "List of existing similar type definitions"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Statements:",
+          "description": "Generated MeTTa statements expressing relationships between types"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "2.6.11",
+      "cloudpickle": "3.1"
+    }
+  }
+}

@@ -9,27 +9,30 @@ class TypeAnalyzerSignature(dspy.Signature):
     """Generate logical linking statements between MeTTa types.
     
     Analyzes new types and similar existing types to generate valid MeTTa statements
-    that express relationships between them using operators like -> and Not.
+    that express relationships between them using the following operator:
+     - Implication (Implication $premise $conclusion $stv)
+     - Equivalence (Equivalence $premise $conclusion $stv)
+     - And (And $premise1 $premise2 $premise3 ...)
+     - Or (Or $premise1 $premise2 $premise3 ...)
+     - Not (Not $premise)
+
+    The Simple Truth Value (STV $strength $confidence) is a measure of the probility of a fact.
+    The strength is the probability of the fact being true.
+    The confidence is the probability that the strenght is correct. (should never be 1)
 
     Make sure that:
     - The conclusion has no unbound variables
      - Meaning if a variable appeas in the conclusion it must exist in the premises
-      -  CORRECT (: CompletionToFinishes (: $complete_prf (Completes $student_obj $course_obj)) (Finishes $student_obj $course_obj))
-      -  INCORRECT (: CompletionToDegree (: $complete_prf (Completes $student_obj $course_obj)) (HasDegree $student_obj $degree_obj))
+      -  CORRECT (: CompletionToFinishes (Implication (Completes $student_obj $course_obj) (Finishes $student_obj $course_obj) (STV 1 0.9)))
+      -  INCORRECT (: CompletionToDegree (Implication (Completes $student_obj $course_obj) (HasDegree $student_obj $degree_obj) (STV 1 0.9)))
        - The $degree_obj variable is unbound as it does not exist in the premises
-
-    - Negations (Not) should ONLY be used between relationships predicates (predicates with 2 or more arguments)
-     - CORRECT: (: ToStayToNotToLeave (-> (: $stay_prf (ToStay $person_obj $location_obj)) (Not (ToLeave $person_obj $location_obj))))
-     - INCORRECT: (: CarnivorToNotHerbivor (-> (: $carn_prf (Carnivore $carn_obj)) (Not (Herbivore $carn_obj))))
-     - Instead of negating types, express positive relationships:
-       e.g., (: EatsMeatToCarnivore (-> (: $eat_prf (EatsMeat $animal_obj)) (Carnivore $animal_obj)))
 
     - Try to come up with counter examples before you submit your answer
 
     - Only use the types provided do not invent new ones
 
-    - If something is only possible but not always true do not create the relationship
-      only create the relationship that are always true
+    - If something is only possible but not always true make sure that's reflected in the Truth Value
+    - If the $strenght or $confidence is below 10% then don't create the relationship
     """
     
     new_types: list[str] = dspy.InputField(desc="List of new type definitions in MeTTa syntax")
@@ -98,7 +101,9 @@ def create_training_data():
         dspy.Example(
             new_types=["(: Apple (-> (: $apple Object) Type))"],
             similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $color Object) Type))"],
-            statements=["(: AppleIsFruit (-> (: $apple_prf (Apple $apple_obj)) (Fruit $apple_obj)))"]
+            statements=[
+                "(: AppleIsFruit (Implication (Apple $apple_obj) (Fruit $apple_obj) (STV 0.9 0.9)))",
+            ],
         ),
         dspy.Example(
             new_types=["(: ToLeave (-> (: $person Object) (: $location Object) Type))"],
@@ -107,8 +112,8 @@ def create_training_data():
                 "(: ToEat (-> (: $person Object) (: $food Object) Type))"  # Unrelated action
             ],
             statements=[
-                "(: ToLeaveToNotToStay (-> (: $leave_prf (ToLeave $person_obj $location_obj)) (Not (ToStay $person_obj $location_obj))))",
-                "(: ToStayToNotToLeave (-> (: $stay_prf (ToStay $person_obj $location_obj)) (Not (ToLeave $person_obj $location_obj))))"
+                "(: ToLeaveToNotToStay (Equivalence (ToLeave $person_obj $location_obj) (Not (ToStay $person_obj $location_obj)) (STV 1 0.9)))",
+                "(: ToStayToNotToLeave (Equivalence (ToStay $person_obj $location_obj) (Not (ToLeave $person_obj $location_obj)) (STV 1 0.9)))"
             ]
         ),
         dspy.Example(
@@ -126,8 +131,9 @@ def create_training_data():
                 "(: Person (-> (: $person Object) Type))"
             ],
             statements=[
-                "(: BoyIsMale (-> (: $boy_prf (Boy $boy_obj)) (Male $boy_obj)))",
-                "(: BoyIsPerson (-> (: $boy_prf (Boy $boy_obj)) (Person $boy_obj)))"
+                "(: BoyIsMale (Implication (Boy $boy_obj) (Male $boy_obj) (STV 0.9 0.9)))",
+                "(: MaleIsBoy (Implication (Male $male_obj) (Boy $male_obj) (STV 0.25 0.8)))",
+                "(: BoyIsPerson (Implication (Boy $boy_obj) (Person $boy_obj) (STV 0.9 0.9)))"
             ]
         ),
         dspy.Example(
@@ -137,8 +143,7 @@ def create_training_data():
                 "(: HasColor (-> (: $obj Object) (: $color Object) Type))"  # Unrelated property
             ],
             statements=[
-                "(: HasLocationToIsAt (-> (: $loc_prf (HasLocation $entity_obj $location_obj)) (IsAt $entity_obj $location_obj)))",
-                "(: IsAtToHasLocation (-> (: $at_prf (IsAt $entity_obj $location_obj)) (HasLocation $entity_obj $location_obj)))"
+                "(: HasLocationToIsAt (Equivalence (HasLocation $entity_obj $location_obj) (IsAt $entity_obj $location_obj) (STV 0.9 0.9)))",
             ]
         ),
         dspy.Example(
@@ -149,8 +154,8 @@ def create_training_data():
                 "(: Furniture (-> (: $f Object) Type))"   # Unrelated type
             ],
             statements=[
-                "(: CarIsVehicle (-> (: $car_prf (Car $car_obj)) (Vehicle $car_obj)))",
-                "(: BicycleIsVehicle (-> (: $bike_prf (Bicycle $bike_obj)) (Vehicle $bike_obj)))"
+                "(: CarIsVehicle (Implication (Car $car_obj) (Vehicle $car_obj) (STV 0.9 0.9)))",
+                "(: BicycleIsVehicle (Implication (Bicycle $bike_obj) (Vehicle $bike_obj) (STV 0.9 0.9)))"
             ]
         ),
         # Shape hierarchy example
@@ -166,10 +171,10 @@ def create_training_data():
                 "(: Volume (-> (: $v Object) Type))"   # Unrelated measurement
             ],
             statements=[
-                "(: RectangleIsShape (-> (: $rect_prf (Rectangle $rect_obj)) (Shape $rect_obj)))",
-                "(: SquareIsShape (-> (: $sq_prf (Square $sq_obj)) (Shape $sq_obj)))",
-                "(: SquareIsRectangle (-> (: $sq_prf (Square $sq_obj)) (Rectangle $sq_obj)))",
-                "(: CircleIsShape (-> (: $circle_prf (Circle $circle_obj)) (Shape $circle_obj)))"
+                "(: RectangleIsShape (Implication (Rectangle $rect_obj) (Shape $rect_obj) (STV 0.9 0.9)))",
+                "(: SquareIsShape (Implication (Square $sq_obj) (Shape $sq_obj) (STV 0.9 0.9)))",
+                "(: SquareIsRectangle (Implication (Square $sq_obj) (Rectangle $sq_obj) (STV 0.9 0.9)))",
+                "(: CircleIsShape (Implication (Circle $circle_obj) (Shape $circle_obj) (STV 0.9 0.9)))"
             ]
         ),
         # Profession and skill relationships
@@ -185,7 +190,7 @@ def create_training_data():
                 "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
             ],
             statements=[
-                "(: ProfessionRequiresSkillImpliesHasSkill (-> (: $work_prf (WorksAs $person_obj $prof_obj)) (: $req_prf (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj)))"
+                "(: ProfessionRequiresSkillImpliesHasSkill (Implication (And (WorksAs $person_obj $prof_obj) (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj) (STV 0.9 0.9)))"
             ]
         ),
         # Time relationships
@@ -200,14 +205,11 @@ def create_training_data():
                 "(: Simultaneous (-> (: $t1 Object) (: $t2 Object) Type))"
             ],
             statements=[
-                "(: BeforeToAfter (-> (: $before_prf (Before $time1_obj $time2_obj)) (After $time2_obj $time1_obj)))",
-                "(: AfterToBefore (-> (: $after_prf (After $time1_obj $time2_obj)) (Before $time2_obj $time1_obj)))",
-                '(: BeforeNotAfter (-> (: $before_prf (Before $t1 $t2)) (Not (After $t1 $t2))))',
-                '(: AfterNotBefore (-> (: $after_prf (After $t1 $t2)) (Not (Before $t1 $t2))))',
-                "(: BeforToNotSimultaneous (-> (: $before_prf (Before $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
-                "(: AfterToNotSimultaneous (-> (: $after_prf (After $t1_obj $t2_obj)) (Not (Simultaneous $t1_obj $t2_obj))))",
-                "(: SimultaneousToNotBefore (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (Before $t1_obj $t2_obj))))",
-                "(: SimultaneousToNotAfter (-> (: $sim_prf (Simultaneous $t1_obj $t2_obj)) (Not (After $t1_obj $t2_obj))))"
+                "(: BeforeEqAfter (Equivalence (Before $time1_obj $time2_obj) (After $time2_obj $time1_obj) (STV 1 0.9)))",
+                '(: BeforeNotAfter (Equivalence (Before $t1 $t2) (Not (After $t1 $t2)) (STV 1 0.9)))',
+                '(: AfterNotBefore (Equivalence (After $t1 $t2) (Not (Before $t1 $t2)) (STV 1 0.9)))',
+                "(: BeforToNotSimultaneous (Implication (Before $t1_obj $t2_obj) (Not (Simultaneous $t1_obj $t2_obj)) (STV 1 0.9)))",
+                "(: AfterToNotSimultaneous (Implication (After $t1_obj $t2_obj) (Not (Simultaneous $t1_obj $t2_obj)) (STV 1 0.9)))",
             ]
         ),
         # Animal classification
@@ -224,28 +226,28 @@ def create_training_data():
                 "(: EatsMeat (-> (: $animal Object) Type))"
             ],
             statements=[
-                "(: MammalIsAnimal (-> (: $mammal_prf (Mammal $mammal_obj)) (Animal $mammal_obj)))",
-                '(: MammalIsVertebrate (-> (: $m_prf (Mammal $mammal_obj)) (Vertebrate $mammal_obj)))',
-                "(: CarnivoreEatsMeat (-> (: $carn_prf (Carnivore $carn_obj)) (EatsMeat $carn_obj)))",
-                "(: HerbivoreEatsPlants (-> (: $herb_prf (Herbivore $herb_obj)) (EatsPlants $herb_obj)))",
+                "(: MammalIsAnimal (Implication (Mammal $mammal_obj) (Animal $mammal_obj) (STV 0.9 0.9)))",
+                '(: MammalIsVertebrate (Implication (Mammal $mammal_obj) (Vertebrate $mammal_obj) (STV 0.9 0.9)))',
+                "(: CarnivoreEatsMeat (Implication (Carnivore $carn_obj) (EatsMeat $carn_obj) (STV 0.9 0.9)))",
+                "(: HerbivoreEatsPlants (Implication (Herbivore $herb_obj) (EatsPlants $herb_obj) (STV 0.9 0.9)))",
             ]
         ),
         # Weather conditions
         dspy.Example(
             new_types=[
-                "(: WeatherCondition (-> (: $w Object) Type))",
                 "(: Raining (-> (: $r Object) Type))",
-                "(: Sunny (-> (: $s Object) Type))",
-                "(: Cloudy (-> (: $c Object) Type))"
             ],
             similar_types=[
+                "(: Sunny (-> (: $s Object) Type))",
+                "(: Cloudy (-> (: $c Object) Type))"
+                "(: WeatherCondition (-> (: $w Object) Type))",
                 "(: Temperature (-> (: $t Object) Type))",
                 "(: Humidity (-> (: $h Object) Type))"
             ],
             statements=[
-                "(: RainingIsWeather (-> (: $rain_prf (Raining $weather_obj)) (WeatherCondition $weather_obj)))",
-                "(: SunnyIsWeather (-> (: $sun_prf (Sunny $weather_obj)) (WeatherCondition $weather_obj)))",
-                "(: CloudyIsWeather (-> (: $cloud_prf (Cloudy $weather_obj)) (WeatherCondition $weather_obj)))",
+                "(: RainingIsNotSunny (Equivalence (Raining $weather_obj) (Not (Sunny $weather_obj)) (STV 0.9 0.9)))",
+                "(: SunnyIsNotRaining (Equivalence (Sunny $weather_obj) (Not (Raining $weather_obj)) (STV 0.9 0.9)))",
+                "(: RainingIsWeather (Implication (Raining $weather_obj) (WeatherCondition $weather_obj) (STV 0.9 0.9)))",
             ]
         ),
         # Educational Achievement Chain
@@ -262,9 +264,9 @@ def create_training_data():
                 "(: Teaches (-> (: $teacher Object) (: $subject Object) Type))"
             ],
             statements=[
-                "(: DegreeQualifiesPerson (-> (: $degree_prf (HasDegree $person_obj $degree_obj)) (: $req_prf (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj)))",
-                '(: EnrollsToStudies (-> (: $enroll_prf (Enrolls $student_obj $course_obj)) (Studies $student_obj $course_obj)))',
-                '(: CompletesToNotEnrolls (-> (: $complete_prf (Completes $student_obj $course_obj)) (Not (Enrolls $student_obj $course_obj))))',
+                "(: DegreeQualifiesPerson (Implication (And (HasDegree $person_obj $degree_obj) (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj) (STV 0.9 0.9)))",
+                '(: EnrollsToStudies (Implication (Enrolls $student_obj $course_obj) (Studies $student_obj $course_obj) (STV 0.9 0.9)))',
+                '(: CompletesToNotEnrolls (Implication (Completes $student_obj $course_obj) (Not (Enrolls $student_obj $course_obj)) (STV 0.9 0.9)))',
             ]
         ),
         # Supply Chain Relationships
@@ -280,8 +282,8 @@ def create_training_data():
                 "(: Transports (-> (: $carrier Object) (: $cargo Object) Type))"
             ],
             statements=[
-                "(: ProductionNeedsMaterial (-> (: $prod_prf (Produces $manuf_obj $product_obj)) (: $use_prf (Uses $product_obj $material_obj)) (RequiresMaterial $manuf_obj $material_obj)))",
-                "(: SuppliesToRequiresMaterial (-> (: $supply_prf (Supplies $supplier_obj $material_obj $manuf_obj)) (RequiresMaterial $manuf_obj $material_obj)))"
+                "(: ProductionNeedsMaterial (Implication (And (Produces $manuf_obj $product_obj) (Uses $product_obj $material_obj)) (RequiresMaterial $manuf_obj $material_obj) (STV 0.9 0.9)))",
+                "(: SuppliesToRequiresMaterial (Implication (And (Supplies $supplier_obj $material_obj $manuf_obj) (RequiresMaterial $manuf_obj $material_obj)) (STV 0.9 0.9)))"
             ]
         ),
         # Family Relationships
@@ -296,11 +298,11 @@ def create_training_data():
                 "(: SameGeneration (-> (: $p1 Object) (: $p2 Object) Type))"
             ],
             statements=[
-                "(: ParentOfToRelated (-> (: $parent_prf (ParentOf $parent_obj $child_obj)) (Related $parent_obj $child_obj)))",
-                "(: SiblingOfToRelated (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (Related $sib1_obj $sib2_obj)))",
-                "(: GrandparentOfToRelated (-> (: $gparent_prf (GrandparentOf $gparent_obj $gchild_obj)) (Related $gparent_obj $gchild_obj)))",
-                "(: SiblingsAreSymmetric (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (SiblingOf $sib2_obj $sib1_obj)))",
-                "(: SiblingsAreSameGeneration (-> (: $sib_prf (SiblingOf $sib1_obj $sib2_obj)) (SameGeneration $sib1_obj $sib2_obj)))",
+                "(: ParentOfToRelated (Implication (ParentOf $parent_obj $child_obj) (Related $parent_obj $child_obj) (STV 1 0.9)))",
+                "(: SiblingOfToRelated (Implication (SiblingOf $sib1_obj $sib2_obj) (Related $sib1_obj $sib2_obj) (STV 1 0.9)))",
+                "(: GrandparentOfToRelated (Implication (GrandparentOf $gparent_obj $gchild_obj) (Related $gparent_obj $gchild_obj) (STV 1 0.9)))",
+                "(: SiblingsAreSymmetric (Implication (SiblingOf $sib1_obj $sib2_obj) (SiblingOf $sib2_obj $sib1_obj) (STV 1 0.9)))",
+                "(: SiblingsAreSameGeneration (Implication (SiblingOf $sib1_obj $sib2_obj) (SameGeneration $sib1_obj $sib2_obj) (STV 0.9 0.9)))",
             ]
         ),
         # Chemical Reactions
@@ -316,15 +318,15 @@ def create_training_data():
                 "(: Compound (-> (: $c Object) Type))"
             ],
             statements=[
-                "(: CompoundIsChemical (-> (: $compound_prf (Compound $compound_obj)) (Chemical $compound_obj)))",
-                "(: ElementIsChemical (-> (: $element_prf (Element $element_obj)) (Chemical $element_obj)))",
-                '(: ReactantsAreChemical (-> (: $react_prf (ReactsWith $r1 $r2 $p)) (Chemical $r1)))',
-                '(: ReactantsAreChemical2 (-> (: $react_prf (ReactsWith $r1 $r2 $p)) (Chemical $r2)))',
-                "(: ReactionProducesChemical (-> (: $reaction_prf (ReactsWith $r1_obj $r2_obj $p_obj)) (Chemical $p_obj)))",
-                "(: CatalystIsChemical (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Chemical $cat_obj)))",
-                "(: InhibitorIsChemical (-> (: $inhibit_prf (Inhibitor $inhibit_obj $reaction_obj)) (Chemical $inhibit_obj)))",
-                "(: CatalystIsNotInhibitor (-> (: $cat_prf (Catalyst $cat_obj $reaction_obj)) (Not (Inhibitor $cat_obj $reaction_obj))))",
-                "(: InhibitorIsNotCatalyst (-> (: $inhibit_prf (Inhibitor $inhibit_obj $reaction_obj)) (Not (Catalyst $inhibit_obj $reaction_obj))))",
+                "(: CompoundIsChemical (Implication (Compound $compound_obj) (Chemical $compound_obj) (STV 1 0.9)))",
+                "(: ElementIsChemical (Implication (Element $element_obj) (Chemical $element_obj) (STV 1 0.9)))",
+                '(: ReactantsAreChemical (Implication (ReactsWith $r1 $r2 $p) (Chemical $r1) (STV 1 0.9)))',
+                '(: ReactantsAreChemical2 (Implication (ReactsWith $r1 $r2 $p) (Chemical $r2) (STV 1 0.9)))',
+                "(: ReactionProducesChemical (Implication (ReactsWith $r1_obj $r2_obj $p_obj) (Chemical $p_obj) (STV 1 0.9)))",
+                "(: CatalystIsChemical (Implication (Catalyst $cat_obj $reaction_obj) (Chemical $cat_obj) (STV 1 0.9)))",
+                "(: InhibitorIsChemical (Implication (Inhibitor $inhibit_obj $reaction_obj) (Chemical $inhibit_obj) (STV 1 0.9)))",
+                "(: CatalystIsNotInhibitor (Equivalence (Catalyst $cat_obj $reaction_obj) (Not (Inhibitor $cat_obj $reaction_obj)) (STV 0.9 0.9)))",
+                "(: InhibitorIsNotCatalyst (Equivalence (Inhibitor $inhibit_obj $reaction_obj) (Not (Catalyst $inhibit_obj $reaction_obj)) (STV 0.9 0.9)))",
             ]
         ),
         # Software Dependencies
@@ -339,9 +341,9 @@ def create_training_data():
                 "(: Available (-> (: $pkg Object) Type))"
             ],
             statements=[
-                "(: DependencyMustBeInstalled (-> (: $dep_prf (DependsOn $pkg_obj $dep_obj)) (: $pkg_prf (Installed $pkg_obj)) (Installed $dep_obj)))",
-                "(: IncompatibleIsSymmetric (-> (: $incomp_prf (Incompatible $pkg1_obj $pkg2_obj)) (Incompatible $pkg2_obj $pkg1_obj)))",
-                "(: IncompatibleNotInstalled (-> (: $incomp_prf (Incompatible $pkg1_obj $pkg2_obj)) (: $inst1_prf (Installed $pkg1_obj)) (Not (Installed $pkg2_obj))))"
+                "(: DependencyMustBeInstalled (Implication (And (DependsOn $pkg_obj $dep_obj) (Installed $pkg_obj)) (Installed $dep_obj) (STV 1 0.9)))",
+                "(: IncompatibleIsSymmetric (Implication (Incompatible $pkg1_obj $pkg2_obj) (Incompatible $pkg2_obj $pkg1_obj) (STV 1 0.9)))",
+                "(: IncompatibleNotInstalled (Implication (And (Incompatible $pkg1_obj $pkg2_obj) (Installed $pkg1_obj)) (Not (Installed $pkg2_obj)) (STV 1 0.9)))"
             ]
         ),
     ]
@@ -349,7 +351,7 @@ def create_training_data():
     # Set inputs for all examples
     return [ex.with_inputs("new_types", "similar_types") for ex in examples]
 
-def optimize_MIPRO(program,trainset,mode="light",out="mipro_optimized_type_analyzer"):
+def optimize_MIPRO(program,trainset,mode='light',out="mipro_optimized_type_analyzer"):
     # Initialize MIPROv2 optimizer with light optimization settings
     teleprompter = MIPROv2(
         metric=my_metric,
@@ -369,70 +371,6 @@ def optimize_MIPRO(program,trainset,mode="light",out="mipro_optimized_type_analy
     optimized_program.save(f"{out}.json")
     
     return optimized_program
-
-def optimize_MIPRO_ZeroShot(program,trainset,mode="light",out="miprozs_optimized"):
-    # Initialize MIPROv2 optimizer with light optimization settings
-    teleprompter = MIPROv2(
-        metric=my_metric,
-        auto=mode,  # light/medium/heavy optimization run
-        verbose=True
-    )
-    
-    # Optimize the program
-    print("Optimizing program with MIPROv2...")
-    optimized_program = teleprompter.compile(
-        program.deepcopy(),
-        trainset=trainset,
-        max_bootstrapped_demos=0,
-        max_labeled_demos=0,
-        requires_permission_to_run=False
-    )
-    
-    # Save the optimized program
-    optimized_program.save(f"{out}.json")
-    
-    return optimized_program
-
-
-
-
-def optimize_BFS(program, dataset, out):
-
-    optimizer = BootstrapFewShot(
-            metric=my_metric,
-            max_bootstrapped_demos=5,
-            max_labeled_demos=5,
-            max_rounds=10,
-    )
-
-    optimized_program = optimizer.compile(program.deepcopy(), trainset=dataset)
-
-    optimized_program.save(f"{out}.json")
-    
-    return optimized_program
-
-def optimize_COPRO(program,trainset,out="copro_optimized_type_analyzer"):
-    # Set up evaluation
-    teleprompter = COPRO(
-        metric=my_metric,
-        verbose=True
-    )
-
-    kwargs = dict(display_progress=True, display_table=0)
-
-    # Optimize the program
-    print("Optimizing program with COPRO...")
-    optimized_program = teleprompter.compile(
-        program.deepcopy(),
-        trainset=trainset,
-        eval_kwargs=kwargs
-    )
-
-    # Save the optimized program
-    optimized_program.save(f"{out}.json")
-    
-    return optimized_program
-
 
 from pprint import pprint
 
@@ -465,10 +403,11 @@ def eval(program, dataset):
 def main():
     program = TypeAnalyzer()
     #lm = dspy.LM('deepseek/deepseek-chat')
-    lm = dspy.LM('deepseek/deepseek-reasoner', temperature=None)
+    #lm = dspy.LM('deepseek/deepseek-reasoner', temperature=None)
     #lm = dspy.LM('openrouter/qwen/qwq-32b-preview', temperature=0.5, max_tokens=10000)
     #lm = dspy.LM('openai/o1-mini', temperature = 1, max_tokens = 5000)
     #lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
+    lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
     #lm = dspy.LM('openai/gpt-4o')
     #lm = dspy.LM('gemini/gemini-exp-1206')
     dspy.configure(lm=lm)
@@ -477,12 +416,9 @@ def main():
     trainset = create_training_data()
 
     #program.load("claude_optimized_type_analyzer.json")
-    program.load("claude_mipro.json")
+    #program.load("claude_mipro.json")
     # Optimize the program
-    #program = optimize_MIPRO(program,trainset,"light",out="4o_mipro")
-    #program = optimize_BFS(program,trainset, out="deepseekBFS")
-    #program = optimize_COPRO(program,trainset, out="copro_optimized_type_analyzer")
-    #program = optimize_MIPRO_ZeroShot(program,trainset,out="claude_miprozs")
+    program = optimize_MIPRO(program,trainset,"light",out="4o_mipro")
 
     eval(program, trainset)
     
