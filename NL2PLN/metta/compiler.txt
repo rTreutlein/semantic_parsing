@@ -1,0 +1,49 @@
+
+This describes the function of the compiler.
+
+In the simplest case if we have just a fact like:
+
+(: prf Type TruthValue)
+
+we compile it to rule that given no input produces the output.
+
+(() ⊢ ((: prf Type TruthValue)))
+
+If we get a disjunction
+
+(: prf (Or a b) TruthValue)
+
+we need to add it and custom projecting rules
+
+(() ⊢ ((: prf (Or a b) TruthValue)))
+(((: prf (Or a b) $tv) (: prfa a $atv)) ⊢ ((CPU not $atv $natv) (CPU or-projection ($tv $natv) $btv) (: prf b $btv)))
+(((: prf (Or a b) $tv) (: prfb b $btv)) ⊢ ((CPU not $btv $nbtv) (CPU or-projection ($tv $nbtv) $atv) (: prf a $atv)))
+
+Now the interesting is when we get an Implication:
+
+(: prf (Implication a b) TV)
+
+which in this simplest case gets turned into:
+
+(((: $prfa a $atv)) ⊢  ((CPU mp-formula ($atv $tv) $btv) (: (prf $prfa) b $btv)))
+
+Now depending on what exactly the premises and conclusions of the Implication are we need to some further processing.
+
+For the premises if we have (And a b)
+
+(: prf (Implication (And a b) c) TV)
+
+(((: $prfa a $atv)(: $prfb b $btv)) ⊢  ((CPU and-formula ($atv $btv) $andtv)(CPU mp-formula ($andtv $tv) $ctv) (: (prf $prfa $prfb) c $ctv)))
+
+Or If we have an Implication:
+
+(: prf (Implication (Implication a b) c) TV)
+
+(((((: $prfa a (STV 1.0 1.0))) ⊢  ((: (prf $prfa) b $abtv)))) ⊢  ((CPU mp-formula ($abtv $tv) $ctv) (: (prf $prfa $prfb) c $ctv)))
+
+Now for the conclusion lets say we have:
+
+(: prf (Implication a (And (Implication b c) (Or d e) x) TV))
+
+(((: $prfa a $atv)) ⊢  ((CPU mp-formula ($atv $tv) $xtv) (: (prf $prfa) (Or d e) $xtv) (: (prf $prfa) x $xtv)))
+(((: $prfa a $atv) (: $prfb b $btv)) ⊢  ((CPU and-formula ($atv $btv) $andtv) (CPU mp-formula ($atv $tv) $ctv) (: (prf $prfa $prfab) c $ctv)))
