@@ -47,3 +47,56 @@ Now for the conclusion lets say we have:
 
 (((: $prfa a $atv)) ⊢  ((CPU mp-formula ($atv $tv) $xtv) (: (prf $prfa) (Or d e) $xtv) (: (prf $prfa) x $xtv)))
 (((: $prfa a $atv) (: $prfb b $btv)) ⊢  ((CPU and-formula ($atv $btv) $andtv) (CPU mp-formula ($atv $tv) $ctv) (: (prf $prfa $prfab) c $ctv)))
+
+Additional examples:
+
+1. Negation in premise:
+
+(: prf (Implication (Not p) q) TV)
+
+(((: $prfa p $atv)) ⊢ ((CPU not $atv $natv) (CPU mp-formula ($natv $tv) $qtv) (: (prf $prfa) q $qtv)))
+
+2. Negation in conclusion:
+
+(: prf (Implication p (Not q)) TV)
+
+(((: $prfa p $atv) (: $prfb q $qtv)) ⊢ ((CPU not $qtv $nqtv) (CPU mp-formula ($atv $tv) $nqtv) (: (prf $prfa $prfb) (Not q) $nqtv)))
+
+3. Equivalence relation:
+
+(: prf (Equivalence p q) TV)
+
+(((: $prfa p $atv)) ⊢ ((CPU equiv-formula ($atv $tv) $qtv) (: (prf $prfa) q $qtv)))
+(((: $prfb q $btv)) ⊢ ((CPU equiv-formula ($btv $tv) $ptv) (: (prf $prfb) p $ptv)))
+
+4. Universal quantification:
+
+(: prf (ForAll $x (Implication (P $x) (Q $x))) TV)
+
+(((: $prfa (P $v) $atv)) ⊢ ((CPU mp-formula ($atv $tv) $qtv) (: (prf $prfa) (Q $v) $qtv)))
+
+5. Existential quantification:
+
+(: prf (Exists $x (And (P $x) (Q $x))) TV)
+
+(() ⊢ ((: prf (Exists $x (And (P $x) (Q $x))) TV)))
+(((: prf (P $v) $ptv) (: prf (Q $v) $qtv)) ⊢ ((CPU and-formula ($ptv $qtv) $andtv) (CPU exists-intro ($v $andtv) $etv) (: prf (Exists $x (And (P $x) (Q $x))) $etv)))
+
+6. Multiple conjunctions in premise:
+
+(: prf (Implication (And (And a b) c) d) TV)
+
+(((: $prfa a $atv) (: $prfb b $btv) (: $prfc c $ctv)) ⊢ ((CPU and-formula ($atv $btv) $abtv) (CPU and-formula ($abtv $ctv) $abctv) (CPU mp-formula ($abctv $tv) $dtv) (: (prf $prfa $prfb $prfc) d $dtv)))
+
+7. Disjunction in premise:
+
+(: prf (Implication (Or p q) r) TV)
+
+(((: $prfa p $atv)) ⊢ ((CPU mp-formula ($atv $tv) $rtv) (: (prf $prfa) r $rtv)))
+(((: $prfb q $btv)) ⊢ ((CPU mp-formula ($btv $tv) $rtv) (: (prf $prfb) r $rtv)))
+
+8. Conditional with multiple implications:
+
+(: prf (Implication (Implication a b) (Implication b c)) TV)
+
+(((((: $prfa a $atv)) ⊢ ((: (prf $prfa) b $btv))) (: $prfb b $btv)) ⊢ ((CPU mp-formula ($btv $tv) $ctv) (: (prf $prfa $prfb) c $ctv)))
