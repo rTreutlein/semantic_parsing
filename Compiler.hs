@@ -188,48 +188,19 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
                     (zip args [0..])
         in (concat rulesList, concat prfVarsList)
 
-    -- Conclusion: (Or d e)
-    List [Atom "Or", d, e] ->
+    -- Conclusion: (Or d e ...)
+    List (Atom "Or":args) ->
         let orTVVar = "ortv" ++ show idx
             orTV = Var orTVVar
             prfCtx = prfContext (head prfVars) (tail prfVars)
             mpCall = cpuCall "mp-formula" [premiseTV, mainTV] orTV
             -- The rule establishes the truth of the Or statement
             orRulePremise = [mpCall]
-            orRuleConclusion = typedStmt prfCtx (List [Atom "Or", d, e]) orTV
-            -- We need the projection rules for Or, similar to top-level Or
-            dtv = Var ("dtv" ++ show idx)
-            etv = Var ("etv" ++ show idx)
-            ndtv = Var ("ndtv" ++ show idx)
-            netv = Var ("netv" ++ show idx)
-            prfd = Var ("prfd" ++ show idx)
-            prfe = Var ("prfe" ++ show idx)
-            -- Rule to deduce e from Or and not d
-            projRule1Premise = [ typedStmt prfd d dtv
-                               , orRuleConclusion -- Use the derived Or statement
-                               ]
-            projRule1Conclusion = List [ cpuCall "not" [dtv] ndtv
-                                       , cpuCall "or-projection" [orTV, ndtv] etv
-                                       , typedStmt prfCtx e etv -- Use original proof context
-                                       ]
-            -- Rule to deduce d from Or and not e
-            projRule2Premise = [ typedStmt prfe e etv
-                               , orRuleConclusion
-                               ]
-            projRule2Conclusion = List [ cpuCall "not" [etv] netv
-                                       , cpuCall "or-projection" [orTV, netv] dtv
-                                       , typedStmt prfCtx d dtv
-                                       ]
-        -- Return the rule establishing the Or, plus the two projection rules
-        in ( [(orRulePremise, orRuleConclusion)]
-           -- These projection rules need to be generated separately or handled differently
-           -- For now, let's just return the main implication result for Or
-           -- TODO: Revisit Or in conclusion - the example seems incomplete/ambiguous
-           -- Example: (: prf (Implication a (And (Implication b c) (Or d e) x) TV))
-           -- Output has separate rules for (Or d e) and x, implying And distributes?
-           -- Let's assume And distributes for now based on example.
-           -- Returning the rule for the Or part only:
-           -- [( [mpCall], typedStmt prfCtx (List [Atom "Or", d, e]) orTV )]
+            orRuleConclusion = typedStmt prfCtx (List (Atom "Or":args)) orTV
+            
+            -- Generate projection rules for each argument in Or
+            projectionRules = map (generateOrProjectionInConclusion prfCtx args orTV idx) (zip args [0..])
+        in ( [(orRulePremise, orRuleConclusion)] ++ projectionRules
            , [] -- No new proof variables from the Or structure itself
            )
 
@@ -310,6 +281,31 @@ compileAnd prfName args tv tvVars =
         -- Generate rules for each argument
         componentRules = map (generateAndComponent prfName args tvS) (zip args [0..])
     in rule [] andStmt : componentRules
+
+-- Helper to generate projection rules for Or in conclusion
+generateOrProjectionInConclusion :: SExpr -> [SExpr] -> SExpr -> Int -> (SExpr, Int) -> ([SExpr], SExpr)
+generateOrProjectionInConclusion prfCtx args orTV baseIdx (arg, idx) =
+    let argTV = Var $ "tv" ++ show (baseIdx * 10 + idx)
+        otherArgs = [a | (a,i) <- zip args [0..], i /= idx]
+        negatedTVs = map (\i -> Var $ "ntv" ++ show (baseIdx * 10 + i)) [0..length args - 1]
+        prfVar = Var $ "prf" ++ show (baseIdx * 10 + idx)
+        
+        -- Premise: the arg and the Or statement
+        premise = [ typedStmt prfVar arg argTV
+                  , typedStmt prfCtx (List (Atom "Or":args)) orTV
+                  ]
+        
+        -- Conclusion: negate all other args and project to this one
+        negateOthers = [ cpuCall "not" [Var $ "tv" ++ show (baseIdx * 10 + i)] 
+                              (Var $ "ntv" ++ show (baseIdx * 10 + i))
+                       | i <- [0..length args - 1], i /= idx ]
+        project = cpuCall "or-projection" 
+                    (orTV : [Var $ "ntv" ++ show (baseIdx * 10 + i) 
+                            | i <- [0..length args - 1], i /= idx])
+                    argTV
+        
+        conclusion = List (negateOthers ++ [project, typedStmt prfCtx arg argTV])
+    in (premise, conclusion)
 
 -- Helper to generate component rules for each argument in And
 generateAndComponent :: String -> [SExpr] -> SExpr -> (SExpr, Int) -> MeTTaRule
