@@ -83,13 +83,13 @@ compileOr prfName a b tv tvVars =
         prfb = Var "prfb"
         orStmt = List [Atom ":", Atom prfName, List [Atom "Or", a, b], tvS]
         rule1Premise = [typedStmt prfa a atv, orStmt]
-        rule1Conclusion = List [ cpuCall "not" [atv, natv]
-                               , cpuCall "or-projection" [List [tvS, natv], btv]
+        rule1Conclusion = List [ cpuCall "not" [atv] natv
+                               , cpuCall "or-projection" [tvS, natv] btv
                                , typedStmt (Atom prfName) b btv -- Changed from (: prf b $btv) to match example style
                                ]
         rule2Premise = [typedStmt prfb b btv, orStmt]
-        rule2Conclusion = List [ cpuCall "not" [btv, nbtv]
-                               , cpuCall "or-projection" [List [tvS, nbtv], atv]
+        rule2Conclusion = List [ cpuCall "not" [btv] nbtv
+                               , cpuCall "or-projection" [tvS, nbtv] atv
                                , typedStmt (Atom prfName) a atv -- Changed from (: prf a $atv)
                                ]
     in [ rule [] orStmt -- The Or statement itself is a fact
@@ -144,13 +144,15 @@ compilePremise premise idx = case premise of
         let (pPremises, pTV, pPrfVars) = compilePremise p idx
             notTVVar = "ntv" ++ show idx
             notTV = Var notTVVar
-            cpuNot = cpuCall "not" [pTV, notTV]
+            cpuNot = cpuCall "not" [pTV] notTV
         in (pPremises ++ [cpuNot], notTV, pPrfVars)
 
     -- Premise: (Or p q) - Handled by splitting the outer implication rule
     -- This case should be handled by compileImplication directly if premise is Or
     List [Atom "Or", _, _] ->
-        error "Or in premise handled by splitting the main implication rule"
+        let prfVar = "prfa" ++ show idx
+            atvVar = "atv" ++ show idx
+        in ([typedStmt (Var prfVar) premise (Var atvVar)], Var atvVar, [prfVar])
 
     -- Default case for complex structures treated atomically
     _ ->
@@ -171,7 +173,7 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
         let ctvVar = "ctv" ++ show idx
             ctv = Var ctvVar
             prfCtx = prfContext (head prfVars) (tail prfVars)
-            mpCall = cpuCall "mp-formula" [premiseTV, mainTV, ctv]
+            mpCall = cpuCall "mp-formula" [premiseTV, mainTV] ctv
             finalConc = typedStmt prfCtx (Atom c) ctv
         in ([( [mpCall], finalConc)], []) -- No additional proof vars generated at leaf
 
@@ -186,7 +188,7 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
         let orTVVar = "ortv" ++ show idx
             orTV = Var orTVVar
             prfCtx = prfContext (head prfVars) (tail prfVars)
-            mpCall = cpuCall "mp-formula" [premiseTV, mainTV, orTV]
+            mpCall = cpuCall "mp-formula" [premiseTV, mainTV] orTV
             -- The rule establishes the truth of the Or statement
             orRulePremise = [mpCall]
             orRuleConclusion = typedStmt prfCtx (List [Atom "Or", d, e]) orTV
@@ -201,16 +203,16 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
             projRule1Premise = [ typedStmt prfd d dtv
                                , orRuleConclusion -- Use the derived Or statement
                                ]
-            projRule1Conclusion = List [ cpuCall "not" [dtv, ndtv]
-                                       , cpuCall "or-projection" [List [orTV, ndtv], etv]
+            projRule1Conclusion = List [ cpuCall "not" [dtv] ndtv
+                                       , cpuCall "or-projection" [orTV, ndtv] etv
                                        , typedStmt prfCtx e etv -- Use original proof context
                                        ]
             -- Rule to deduce d from Or and not e
             projRule2Premise = [ typedStmt prfe e etv
                                , orRuleConclusion
                                ]
-            projRule2Conclusion = List [ cpuCall "not" [etv, netv]
-                                       , cpuCall "or-projection" [List [orTV, netv], dtv]
+            projRule2Conclusion = List [ cpuCall "not" [etv] netv
+                                       , cpuCall "or-projection" [orTV, netv] dtv
                                        , typedStmt prfCtx d dtv
                                        ]
         -- Return the rule establishing the Or, plus the two projection rules
@@ -240,7 +242,7 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
             andTVVar = "andtv" ++ show idx
             andTV = Var andTVVar
             -- First combine the truth values with and-formula
-            cpuAnd = cpuCall "and-formula" [premiseTV, bTV, andTV]
+            cpuAnd = cpuCall "and-formula" [premiseTV, bTV] andTV
             -- Then apply mp-formula to get conclusion's TV
             mpCall = cpuCall "mp-formula" [andTV, mainTV] cTV
             finalConc = typedStmt prfCtx c cTV
@@ -254,8 +256,8 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
             qtvVar = "qtv" ++ show idx -- The actual TV for q
             qtv = Var qtvVar
             prfCtx = prfContext (head prfVars) (tail prfVars)
-            mpCall = cpuCall "mp-formula" [premiseTV, mainTV, nqtv]
-            cpuNot = cpuCall "not" [nqtv, qtv] -- Derive q's TV from not-q's TV
+            mpCall = cpuCall "mp-formula" [premiseTV, mainTV] nqtv
+            cpuNot = cpuCall "not" [nqtv] qtv -- Derive q's TV from not-q's TV
             -- The final rule asserts q with its derived TV
             finalConc = typedStmt prfCtx q qtv
         in ([( [mpCall, cpuNot], finalConc)], [])
@@ -265,7 +267,7 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
         let ctvVar = "ctv" ++ show idx
             ctv = Var ctvVar
             prfCtx = prfContext (head prfVars) (tail prfVars)
-            mpCall = cpuCall "mp-formula" [premiseTV, mainTV, ctv]
+            mpCall = cpuCall "mp-formula" [premiseTV, mainTV] ctv
             finalConc = typedStmt prfCtx conclusion ctv
         in ([( [mpCall], finalConc)], [])
 
@@ -280,7 +282,7 @@ compileEquivalence prfName p q tv tvVars =
         qtvVar1 = "qtv1"
         qtv1 = Var qtvVar1
         prfCtx1 = prfContext prfName pPrfVars1
-        mpCall1 = cpuCall "mp-formula" [pTV1, tvS, qtv1]
+        mpCall1 = cpuCall "mp-formula" [pTV1, tvS] qtv1
         finalConc1 = typedStmt prfCtx1 q qtv1
         rule1 = rule (pPremises1 ++ [mpCall1]) finalConc1
         -- Rule 2: q -> p
@@ -288,7 +290,7 @@ compileEquivalence prfName p q tv tvVars =
         ptvVar2 = "ptv2"
         ptv2 = Var ptvVar2
         prfCtx2 = prfContext prfName qPrfVars2
-        mpCall2 = cpuCall "mp-formula" [qTV2, tvS, ptv2]
+        mpCall2 = cpuCall "mp-formula" [qTV2, tvS] ptv2
         finalConc2 = typedStmt prfCtx2 p ptv2
         rule2 = rule (qPremises2 ++ [mpCall2]) finalConc2
     in [rule1, rule2]
@@ -337,8 +339,7 @@ main = do
     let input6 = List [Atom ":", Atom "prf", List [Atom "Implication", Atom "a",
                         List [Atom "And",
                               List [Atom "Implication", Atom "b", Atom "c"],
-                              List [Atom "Or", Atom "d", Atom "e"],
-                              Atom "x"]
+                              List [Atom "Or", Atom "d", Atom "e"]]
                        ], Atom "TV"]
     mapM_ print (compile input6)
 
@@ -361,6 +362,7 @@ main = do
     -- This case requires splitting the implication rule, which needs specific handling in compileImplication
     putStrLn "\n--- Implication with Disjunction in Premise ---"
     let input11 = List [Atom ":", Atom "prf", List [Atom "Implication", List [Atom "Or", Atom "p", Atom "q"], Atom "r"], Atom "TV"]
+    mapM_ print (compile input11)
     -- Current implementation doesn't split for Or premise, needs refinement based on desired output.
     -- The example shows two separate rules, one for p->r, one for q->r.
     -- Let's add specific handling for this in compileImplication.
