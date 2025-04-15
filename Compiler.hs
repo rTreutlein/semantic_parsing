@@ -60,42 +60,46 @@ compileFormula prfName formula tv tvVars = case formula of
     -- Simple Fact: (: prf Type TruthValue) -> (() ⊢ ((: prf Type TruthValue)))
     Atom _ -> -- Assuming simple atoms are types/propositions
         [rule [] (List [Atom ":", Atom prfName, formula, head (map Var tvVars)])]
-    List [Atom "Or", a, b] -> compileOr prfName a b tv tvVars
+    List (Atom "Or":args) -> compileOr prfName args tv tvVars
     List [Atom "Implication", premise, conclusion] -> compileImplication prfName premise conclusion tv tvVars
-    List [Atom "Equivalence", p, q] -> compileEquivalence prfName p q tv tvVars
+    List (Atom "Equivalence":args) | length args == 2 -> compileEquivalence prfName (args!!0) (args!!1) tv tvVars
     List [Atom "Not", p] -> compileSimpleNegation prfName p tv tvVars
+    List (Atom "And":args) -> compileAnd prfName args tv tvVars
     -- Handle potential predicate applications or other list structures as facts
     List _ ->
         [rule [] (List [Atom ":", Atom prfName, formula, head (map Var tvVars)])]
     _ -> error $ "Unsupported formula structure: " ++ show formula
 
 
--- | Compile Or: (: prf (Or a b) TV)
-compileOr :: String -> SExpr -> SExpr -> SExpr -> [String] -> [MeTTaRule]
-compileOr prfName a b tv tvVars =
-    let [tvVar] = tvVars -- Expecting one TV var for the Or statement itself
+-- | Compile Or: (: prf (Or a b c ...) TV)
+compileOr :: String -> [SExpr] -> SExpr -> [String] -> [MeTTaRule]
+compileOr prfName args tv tvVars =
+    let [tvVar] = tvVars
         tvS = Var tvVar
-        atv = Var "atv"
-        btv = Var "btv"
-        natv = Var "natv"
-        nbtv = Var "nbtv"
-        prfa = Var "prfa"
-        prfb = Var "prfb"
-        orStmt = List [Atom ":", Atom prfName, List [Atom "Or", a, b], tvS]
-        rule1Premise = [typedStmt prfa a atv, orStmt]
-        rule1Conclusion = List [ cpuCall "not" [atv] natv
-                               , cpuCall "or-projection" [tvS, natv] btv
-                               , typedStmt (Atom prfName) b btv -- Changed from (: prf b $btv) to match example style
-                               ]
-        rule2Premise = [typedStmt prfb b btv, orStmt]
-        rule2Conclusion = List [ cpuCall "not" [btv] nbtv
-                               , cpuCall "or-projection" [tvS, nbtv] atv
-                               , typedStmt (Atom prfName) a atv -- Changed from (: prf a $atv)
-                               ]
-    in [ rule [] orStmt -- The Or statement itself is a fact
-       , rule rule1Premise rule1Conclusion
-       , rule rule2Premise rule2Conclusion
-       ]
+        orStmt = List [Atom ":", Atom prfName, List (Atom "Or":args), tvS]
+        
+        -- Generate rules for each argument
+        projectionRules = concatMap (generateOrProjection prfName args tvS) (zip args [0..])
+    in rule [] orStmt : projectionRules
+
+-- Helper to generate projection rules for each argument in Or
+generateOrProjection :: String -> [SExpr] -> SExpr -> (SExpr, Int) -> [MeTTaRule]
+generateOrProjection prfName args tvS (arg, idx) =
+    let argTV = Var $ "tv" ++ show idx
+        otherArgs = [a | (a,i) <- zip args [0..], i /= idx]
+        negatedTVs = map (\i -> Var $ "ntv" ++ show i) [0..length args - 1]
+        prfVar = Var $ "prf" ++ show idx
+        
+        -- Rule premise: the arg and the Or statement
+        premise = [typedStmt prfVar arg argTV, List [Atom ":", Atom prfName, List (Atom "Or":args), tvS]]
+        
+        -- Conclusion: negate all other args and project to this one
+        negateOthers = [ cpuCall "not" [Var $ "tv" ++ show i] (Var $ "ntv" ++ show i) 
+                       | i <- [0..length args - 1], i /= idx ]
+        project = cpuCall "or-projection" (tvS : [Var $ "ntv" ++ show i | i <- [0..length args - 1], i /= idx]) argTV
+        
+        conclusion = negateOthers ++ [project, typedStmt (Atom prfName) arg argTV]
+    in [rule premise (List conclusion)]
 
 -- | Compile Implication: (: prf (Implication premise conclusion) TV)
 compileImplication :: String -> SExpr -> SExpr -> SExpr -> [String] -> [MeTTaRule]
@@ -117,14 +121,14 @@ compilePremise premise idx = case premise of
             atvVar = "atv" ++ show idx
         in ([typedStmt (Var prfVar) (Atom a) (Var atvVar)], Var atvVar, [prfVar])
 
-    -- Premise: (And a b)
-    List [Atom "And", a, b] ->
-        let (aPremises, aTV, aPrfVars) = compilePremise a (idx * 2)
-            (bPremises, bTV, bPrfVars) = compilePremise b (idx * 2 + 1)
+    -- Premise: (And a b c ...)
+    List (Atom "And":args) ->
+        let (premisesList, tvs, prfVarsList) = unzip3 $ 
+                map (\(arg,i) -> compilePremise arg (idx * 2 + i)) (zip args [0..])
             andTVVar = "andtv" ++ show idx
             andTV = Var andTVVar
-            cpuAnd = cpuCall "and-formula" [aTV, bTV] andTV
-        in (aPremises ++ bPremises ++ [cpuAnd], andTV, aPrfVars ++ bPrfVars)
+            cpuAnd = cpuCall "and-formula" tvs andTV
+        in (concat premisesList ++ [cpuAnd], andTV, concat prfVarsList)
 
     -- Premise: (Implication a b) -> Becomes a nested rule
     List [Atom "Implication", a, b] ->
@@ -177,11 +181,12 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
             finalConc = typedStmt prfCtx (Atom c) ctv
         in ([( [mpCall], finalConc)], []) -- No additional proof vars generated at leaf
 
-    -- Conclusion: (And b c)
-    List [Atom "And", b, c] ->
-        let (bRules, bPrfVars) = compileConclusion b mainTV premiseTV prfVars (idx * 2)
-            (cRules, cPrfVars) = compileConclusion c mainTV premiseTV prfVars (idx * 2 + 1)
-        in (bRules ++ cRules, bPrfVars ++ cPrfVars)
+    -- Conclusion: (And b c d ...)
+    List (Atom "And":args) ->
+        let (rulesList, prfVarsList) = unzip $
+                map (\(arg,i) -> compileConclusion arg mainTV premiseTV prfVars (idx * 2 + i)) 
+                    (zip args [0..])
+        in (concat rulesList, concat prfVarsList)
 
     -- Conclusion: (Or d e)
     List [Atom "Or", d, e] ->
@@ -294,6 +299,27 @@ compileEquivalence prfName p q tv tvVars =
         finalConc2 = typedStmt prfCtx2 p ptv2
         rule2 = rule (qPremises2 ++ [mpCall2]) finalConc2
     in [rule1, rule2]
+
+-- | Compile And: (: prf (And a b c ...) TV)
+compileAnd :: String -> [SExpr] -> SExpr -> [String] -> [MeTTaRule]
+compileAnd prfName args tv tvVars =
+    let [tvVar] = tvVars
+        tvS = Var tvVar
+        andStmt = List [Atom ":", Atom prfName, List (Atom "And":args), tvS]
+        
+        -- Generate rules for each argument
+        componentRules = map (generateAndComponent prfName args tvS) (zip args [0..])
+    in rule [] andStmt : componentRules
+
+-- Helper to generate component rules for each argument in And
+generateAndComponent :: String -> [SExpr] -> SExpr -> (SExpr, Int) -> MeTTaRule
+generateAndComponent prfName args tvS (arg, idx) =
+    let argTV = Var $ "tv" ++ show idx
+        prfVar = Var $ "prf" ++ show idx
+        premise = [List [Atom ":", Atom prfName, List (Atom "And":args), tvS]]
+        conclusion = [cpuCall "and-projection" [tvS, Var $ "idx" ++ show idx] argTV,
+                     typedStmt prfVar arg argTV]
+    in rule premise (List conclusion)
 
 -- | Compile Simple Negation Fact: (: prf (Not p) TV)
 -- This case isn't explicitly in the examples, but needed for completeness.
