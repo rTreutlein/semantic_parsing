@@ -227,38 +227,23 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
 
     -- Conclusion: (Implication b c)
     List [Atom "Implication", b, c] ->
-        -- Outer rule: ((premiseA) ⊢ (Implication b c))
-        -- Inner rule: ((premiseA & premiseB) ⊢ c)
-        let (bPremises, bTV, bPrfVars) = compilePremise b (idx * 2)
-            -- The conclusion 'c' of the nested implication needs its own TV
+        let -- Compile the premise b
+            (bPremises, bTV, bPrfVars) = compilePremise b (idx * 2)
+            -- The conclusion c needs its own TV
             cTVVar = "ctv" ++ show idx
             cTV = Var cTVVar
-            -- Combine proof variables from outer premise and inner premise 'b'
+            -- Combine all proof variables
             combinedPrfVars = prfVars ++ bPrfVars
             prfCtx = prfContext (head combinedPrfVars) (tail combinedPrfVars)
-            -- CPU calls: first mp for outer implication, second for inner
-            -- This requires careful TV management. Let's follow example 8:
-            -- (: prf (Implication (Implication a b) (Implication b c)) TV)
-            -- Rule: (((( (: $prfa a $atv)) ⊢ ((: (prf $prfa) b $btv))) (: $prfb b $btv)) ⊢ ...)
-            -- This structure suggests the inner implication's premise becomes a premise for the final rule.
-            -- Let's rethink: The result of Implication A B is a rule (A |- B).
-            -- If this rule is the *conclusion* of another implication C -> (A -> B),
-            -- it means C implies the rule (A |- B). This is complex to represent directly.
-            -- Let's stick to the provided example structure if possible.
-            -- Example 8: (: prf (Implication (Implication a b) (Implication b c)) TV)
-            -- (( ( (: $prfa a (STV 1.0 1.0))) ⊢ ((: (prf $prfa) b $btv)) ) (: $prfb b $btv)) ⊢ ((CPU mp-formula ($btv $tv) $ctv) (: (prf $prfa $prfb) c $ctv)))
-            -- This implies the premise of the outer implication IS the nested rule.
-            -- And the conclusion requires the premise of the inner implication.
-
-            -- Let's assume the goal is to derive 'c'.
-            -- We need the premise 'b' (bPremises, bTV, bPrfVars)
-            -- We need the TV resulting from the outer implication: (premiseTV -> mainTV) -> innerImplicationTV
-            -- This doesn't seem right. Let's follow example 8 structure directly.
-            -- The rule needs the premise 'b' as an input premise.
-            mpCall = cpuCall "mp-formula" [bTV, mainTV, cTV] -- Assuming mainTV applies to the inner implication
+            -- Create andTV variable to combine premiseTV and bTV
+            andTVVar = "andtv" ++ show idx
+            andTV = Var andTVVar
+            -- First combine the truth values with and-formula
+            cpuAnd = cpuCall "and-formula" [premiseTV, bTV, andTV]
+            -- Then apply mp-formula to get conclusion's TV
+            mpCall = cpuCall "mp-formula" [andTV, mainTV, cTV]
             finalConc = typedStmt prfCtx c cTV
-        -- The premises required are those for 'b', plus the CPU call
-        in ([(bPremises ++ [mpCall], finalConc)], bPrfVars)
+        in ([(bPremises ++ [cpuAnd, mpCall], finalConc)], bPrfVars)
 
 
     -- Conclusion: (Not q)
