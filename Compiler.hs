@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Compiler where
+module Main where
 
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
@@ -340,6 +340,11 @@ main = do
     putStrLn "\n--- Implication with Implication Premise ---"
     let input5 = List [Atom ":", Atom "prf", List [Atom "Implication", List [Atom "Implication", Atom "a", Atom "b"], Atom "c"], Atom "TV"]
     mapM_ print (compile input5)
+
+
+    putStrLn "\n--- Implication with Implication Conclusion ---"
+    let input5_1 = List [Atom ":", Atom "prf", List [Atom "Implication", Atom "c", List [Atom "Implication", Atom "a", Atom "b"]], Atom "TV"]
+    mapM_ print (compile input5_1)
 
     -- This example is ambiguous in the text. Assuming And distributes the implication.
     putStrLn "\n--- Implication with Complex Conclusion (And (Imp ..) (Or ..) x) ---"
