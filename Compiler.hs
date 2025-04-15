@@ -35,9 +35,10 @@ rule premises conclusion = List [List premises, Atom "⊢", conclusion]
 typedStmt :: SExpr -> SExpr -> SExpr -> SExpr
 typedStmt name typeExpr value = List [Atom ":", name, typeExpr, value]
 
--- | Helper to create a CPU function call like (CPU func arg1 arg2)
-cpuCall :: String -> [SExpr] -> SExpr
-cpuCall funcName args = List (Atom "CPU" : Atom funcName : args)
+-- | Helper to create a CPU function call like (CPU func (args...) res)
+cpuCall :: String -> [SExpr] -> SExpr -> SExpr
+cpuCall funcName args res = 
+    List [Atom "CPU", Atom funcName, List args, res]
 
 -- | Helper to generate proof context variables like (prf $prfa $prfb)
 prfContext :: String -> [String] -> SExpr
@@ -122,7 +123,7 @@ compilePremise premise idx = case premise of
             (bPremises, bTV, bPrfVars) = compilePremise b (idx * 2 + 1)
             andTVVar = "andtv" ++ show idx
             andTV = Var andTVVar
-            cpuAnd = cpuCall "and-formula" [aTV, bTV, andTV]
+            cpuAnd = cpuCall "and-formula" [aTV, bTV] andTV
         in (aPremises ++ bPremises ++ [cpuAnd], andTV, aPrfVars ++ bPrfVars)
 
     -- Premise: (Implication a b) -> Becomes a nested rule
@@ -241,7 +242,7 @@ compileConclusion conclusion mainTV premiseTV prfVars idx = case conclusion of
             -- First combine the truth values with and-formula
             cpuAnd = cpuCall "and-formula" [premiseTV, bTV, andTV]
             -- Then apply mp-formula to get conclusion's TV
-            mpCall = cpuCall "mp-formula" [andTV, mainTV, cTV]
+            mpCall = cpuCall "mp-formula" [andTV, mainTV] cTV
             finalConc = typedStmt prfCtx c cTV
         in ([(bPremises ++ [cpuAnd, mpCall], finalConc)], bPrfVars)
 
