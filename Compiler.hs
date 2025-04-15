@@ -365,7 +365,8 @@ main = do
     let input6 = List [Atom ":", Atom "prf", List [Atom "Implication", Atom "a",
                         List [Atom "And",
                               List [Atom "Implication", Atom "b", Atom "c"],
-                              List [Atom "Or", Atom "d", Atom "e"]]
+                              List [Atom "Or", Atom "d", Atom "e"],
+                              Atom "x"]
                        ], Atom "TV"]
     mapM_ print (compile input6)
 
