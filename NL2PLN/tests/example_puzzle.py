@@ -17,9 +17,3 @@ class ExamplePuzzleGenerator(LogicPuzzleGenerator):
                                        "James is the only librarian who has not approved the book 'Ancient Mysteries'"],
                                       "'Dragons and Their Habits' cannot be added to the library collection until James approves it")],
                           conclusion="'Dragons and Their Habits' cannot be added to the library collection until James approves it"                                                                                                                                                                                                                                                                             )
-
-#{
-#'premises': """John always takes his umbrella when it rains.\nThis morning, John left his umbrella.""",
-#'conclusion': """It wasn't raining this morning.""",
-#'common_sense': ""
-#}
