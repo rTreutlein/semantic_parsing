@@ -39,13 +39,15 @@ def main():
             puzzle = dspy.Prediction(**puzzle_data)
         else:
             # Generate new puzzle
-            puzzle = puzzle_gen.generate_puzzle(numberOfPremises=2)
+            puzzle = puzzle_gen.generate_puzzle(numberOfPremises=5)
             
             if args.save_puzzle:
                 # Save puzzle to file
+                print(puzzle)
+                print(puzzle.__dict__['_store'])
                 Path(args.save_puzzle).parent.mkdir(parents=True, exist_ok=True)
                 with open(args.save_puzzle, 'w') as f:
-                    json.dump(puzzle.__dict__, f, indent=2)
+                    json.dump(puzzle.__dict__['_store'], f, indent=2)
         
         processor.process_puzzle(puzzle)
 
