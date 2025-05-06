@@ -6,7 +6,7 @@ from NL2PLN.utils.verifier import VerifiedPredictor
 from NL2PLN.metta.metta_handler import MeTTaHandler
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.utils.ragclass import RAG
-from NL2PLN.utils.type_similarity import TypeSimilarityHandler
+from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
 class SentenceHandler:
     def __init__(self, metta_handler, type_handler, nl2pln, rag):
@@ -59,7 +59,7 @@ class SentenceHandler:
         self.pending_rag_entries.append((line, pln_data))
         self.pending_statements.extend(pln_data.statements)
         
-        self.previous_sentences.append(f"Converted Sentence:\n{line}\nTo:\n Context:\n{pln_data.context} TypeDefs:\n {pln_data.typedefs} Statements:\n{pln_data.statements} Questions:\n{pln_data.questions}")
+        self.previous_sentences.append(f"Converted Sentence:\n{line}\nTo: TypeDefs:\n {pln_data.typedefs} Statements:\n{pln_data.statements} Questions:\n{pln_data.questions}")
         if len(self.previous_sentences) > 10:
             self.previous_sentences.pop(0)
         
@@ -93,14 +93,21 @@ class ProofHandler:
         print("Trying to proof:")
         for stmt in self.pending_statements:
             print(stmt)
-            self.metta_handler.add_atom_and_run_fc(stmt)
+            self.metta_handler.add_atom(stmt)
         
         print("Running backward chaining...")
         print(self.conclusion_pln)
-        proof_steps, proven = self.metta_handler.bc(self.conclusion_pln)
+        proof_steps, proven = self.metta_handler.query(self.conclusion_pln)
+        print("----------------------------------------------")
+        print("Backward Results:")
+        print(proven)
+        print(proof_steps)
+
         
         if not proven:
             print("Handling failed conclusion")
+            print(self.metta_handler.run("!(show-cs &kb)"))
+            print(self.metta_handler.run("!(compileQuery " + self.conclusion_pln + ")"))
             return self._handle_failed_conclusion()
         return proven
 
@@ -110,14 +117,11 @@ class ProofHandler:
             for eng, pln in self.premises
         ])
 
-        rules = self.metta_handler.get_rules()
-        kb_statements = rules + self.linking_statements
-        
         print(f"Running proof analysis with premises:\n{premises_formatted}")
         analysis_result = self.proof_analyzer(
             premises=premises_formatted,
             conclusion=f"English:\n{self.conclusion_english}\nPLN:\n{self.conclusion_pln}",
-            kb_statements=kb_statements
+            kb_statements=self.linking_statements
         )
 
         for stmt in analysis_result.statements_to_remove:
@@ -128,7 +132,7 @@ class ProofHandler:
             self.metta_handler.run(f'!(add-atom &kb {stmt})')
             
         # Rerun backward chaining with the modified KB
-        proof_steps, proven = self.metta_handler.bc(analysis_result.intermediate_conclusion)
+        proof_steps, proven = self.metta_handler.query(analysis_result.intermediate_conclusion)
         
         if not proven:
             print("Combination failed. Further analysis may be needed.")
@@ -173,7 +177,6 @@ class PuzzleProcessor:
         """Store processed sentence results in RAG."""
         self.rag.store_embedding({
             "sentence": sentence,
-            "from_context": pln_data.context,
             "type_definitions": pln_data.typedefs,
             "statements": pln_data.statements,
             "questions": pln_data.questions,
