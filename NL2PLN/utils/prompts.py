@@ -451,7 +451,6 @@ class NL2PLN_Signature(dspy.Signature):
   similar: list[str] = dspy.InputField(desc="List of similar examples showing the NL to PLN conversion")
   previous: list[str] = dspy.InputField(desc="List of previous context")
 
-  context: list[str] = dspy.OutputField(desc="List of statments from the contexts used to generate the PLN")
   typedefs: list[str] = dspy.OutputField(desc="List of typedefs used to generate the PLN")
   statements: list[str] = dspy.OutputField(desc="List of PLN statements generated from the NL")
   questions: list[str] = dspy.OutputField(desc="List of PLN questions/querys generated from the NL")
