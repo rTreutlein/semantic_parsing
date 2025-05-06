@@ -1,5 +1,6 @@
 import dspy
 import os
+import json
 from typing import List, Dict
 from dspy.teleprompt import MIPROv2, BootstrapFewShot, COPRO
 from dspy.evaluate import Evaluate
@@ -98,226 +99,217 @@ def my_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) ->
 
 def create_training_data():
     examples = [
-        dspy.Example(
-            new_types=["(: Apple (-> (: $apple Object) Type))"],
-            similar_types=["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $color Object) Type))"],
-            statements=[
+        {
+            "new_types": ["(: Apple (-> (: $apple Object) Type))"],
+            "similar_types": ["(: Fruit (-> (: $fruit Object) Type))", "(: Color (-> (: $color Object) Type))"],
+            "statements": [
                 "(: AppleIsFruit (Implication (Apple $apple_obj) (Fruit $apple_obj) (STV 0.9 0.9)))",
             ],
-        ),
-        dspy.Example(
-            new_types=["(: ToLeave (-> (: $person Object) (: $location Object) Type))"],
-            similar_types=[
+        },
+        {
+            "new_types": ["(: ToLeave (-> (: $person Object) (: $location Object) Type))"],
+            "similar_types": [
                 "(: ToStay (-> (: $person Object) (: $location Object) Type))",
                 "(: ToEat (-> (: $person Object) (: $food Object) Type))"  # Unrelated action
             ],
-            statements=[
+            "statements": [
                 "(: ToLeaveToNotToStay (Equivalence (ToLeave $person_obj $location_obj) (Not (ToStay $person_obj $location_obj)) (STV 1 0.9)))",
                 "(: ToStayToNotToLeave (Equivalence (ToStay $person_obj $location_obj) (Not (ToLeave $person_obj $location_obj)) (STV 1 0.9)))"
             ]
-        ),
-        dspy.Example(
-            new_types=["(: Temperature (-> (: $t Object) Type))"],
-            similar_types=[
+        },
+        {
+            "new_types": ["(: Temperature (-> (: $t Object) Type))"],
+            "similar_types": [
                 "(: Pressure (-> (: $p Object) Type))",
                 "(: Distance (-> (: $d Object) Type))"
             ],
-            statements=[]
-        ),
-        dspy.Example(
-            new_types=["(: Boy (-> (: $boy Object) Type))"],
-            similar_types=[
+            "statements": []
+        },
+        {
+            "new_types": ["(: Boy (-> (: $boy Object) Type))"],
+            "similar_types": [
                 "(: Male (-> (: $male Object) Type))",
                 "(: Person (-> (: $person Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: BoyIsMale (Implication (Boy $boy_obj) (Male $boy_obj) (STV 0.9 0.9)))",
                 "(: MaleIsBoy (Implication (Male $male_obj) (Boy $male_obj) (STV 0.25 0.8)))",
                 "(: BoyIsPerson (Implication (Boy $boy_obj) (Person $boy_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        dspy.Example(
-            new_types=["(: HasLocation (-> (: $entity Object) (: $location Object) Type))"],
-            similar_types=[
+        },
+        {
+            "new_types": ["(: HasLocation (-> (: $entity Object) (: $location Object) Type))"],
+            "similar_types": [
                 "(: IsAt (-> (: $thing Object) (: $place Object) Type))",
-                "(: HasColor (-> (: $obj Object) (: $color Object) Type))"  # Unrelated property
+                "(: HasColor (-> (: $obj Object) (: $color Object) Type))"
             ],
-            statements=[
-                "(: HasLocationToIsAt (Equivalence (HasLocation $entity_obj $location_obj) (IsAt $entity_obj $location_obj) (STV 0.9 0.9)))",
+            "statements": [
+                "(: HasLocationToIsAt (Equivalence (HasLocation $entity_obj $location_obj) (IsAt $entity_obj $location_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        dspy.Example(
-            new_types=["(: Vehicle (-> (: $v Object) Type))", "(: Car (-> (: $c Object) Type))"],
-            similar_types=[
+        },
+        {
+            "new_types": ["(: Vehicle (-> (: $v Object) Type))", "(: Car (-> (: $c Object) Type))"],
+            "similar_types": [
                 "(: Bicycle (-> (: $b Object) Type))",
-                "(: Book (-> (: $bk Object) Type))",      # Unrelated type
-                "(: Furniture (-> (: $f Object) Type))"   # Unrelated type
+                "(: Book (-> (: $bk Object) Type))",
+                "(: Furniture (-> (: $f Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: CarIsVehicle (Implication (Car $car_obj) (Vehicle $car_obj) (STV 0.9 0.9)))",
                 "(: BicycleIsVehicle (Implication (Bicycle $bike_obj) (Vehicle $bike_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Shape hierarchy example
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: Shape (-> (: $s Object) Type))",
                 "(: Rectangle (-> (: $r Object) Type))",
                 "(: Square (-> (: $sq Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Circle (-> (: $c Object) Type))",
-                "(: Weight (-> (: $w Object) Type))",  # Unrelated measurement
-                "(: Volume (-> (: $v Object) Type))"   # Unrelated measurement
+                "(: Weight (-> (: $w Object) Type))",
+                "(: Volume (-> (: $v Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: RectangleIsShape (Implication (Rectangle $rect_obj) (Shape $rect_obj) (STV 0.9 0.9)))",
                 "(: SquareIsShape (Implication (Square $sq_obj) (Shape $sq_obj) (STV 0.9 0.9)))",
                 "(: SquareIsRectangle (Implication (Square $sq_obj) (Rectangle $sq_obj) (STV 0.9 0.9)))",
                 "(: CircleIsShape (Implication (Circle $circle_obj) (Shape $circle_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Profession and skill relationships
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: HasSkill (-> (: $person Object) (: $skill Object) Type))",
                 "(: Profession (-> (: $p Object) Type))",
                 "(: RequiresSkill (-> (: $prof Object) (: $skill Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: WorksAs (-> (: $person Object) (: $prof Object) Type))",
-                "(: Hobby (-> (: $h Object) Type))",      # Unrelated activity
-                "(: Language (-> (: $l Object) Type))"    # Unrelated attribute
+                "(: Hobby (-> (: $h Object) Type))",
+                "(: Language (-> (: $l Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: ProfessionRequiresSkillImpliesHasSkill (Implication (And (WorksAs $person_obj $prof_obj) (RequiresSkill $prof_obj $skill_obj)) (HasSkill $person_obj $skill_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Time relationships
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: TimePoint (-> (: $t Object) Type))",
                 "(: Before (-> (: $t1 Object) (: $t2 Object) Type))",
                 "(: After (-> (: $t1 Object) (: $t2 Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Duration (-> (: $d Object) Type))",
                 "(: Simultaneous (-> (: $t1 Object) (: $t2 Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: BeforeEqAfter (Equivalence (Before $time1_obj $time2_obj) (After $time2_obj $time1_obj) (STV 1 0.9)))",
                 '(: BeforeNotAfter (Equivalence (Before $t1 $t2) (Not (After $t1 $t2)) (STV 1 0.9)))',
                 '(: AfterNotBefore (Equivalence (After $t1 $t2) (Not (Before $t1 $t2)) (STV 1 0.9)))',
                 "(: BeforToNotSimultaneous (Implication (Before $t1_obj $t2_obj) (Not (Simultaneous $t1_obj $t2_obj)) (STV 1 0.9)))",
-                "(: AfterToNotSimultaneous (Implication (After $t1_obj $t2_obj) (Not (Simultaneous $t1_obj $t2_obj)) (STV 1 0.9)))",
+                "(: AfterToNotSimultaneous (Implication (After $t1_obj $t2_obj) (Not (Simultaneous $t1_obj $t2_obj)) (STV 1 0.9)))"
             ]
-        ),
-        # Animal classification
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: Animal (-> (: $a Object) Type))",
                 "(: Mammal (-> (: $m Object) Type))",
                 "(: Carnivore (-> (: $c Object) Type))",
                 "(: Herbivore (-> (: $h Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Vertebrate (-> (: $v Object) Type))",
                 "(: EatsPlants (-> (: $animal Object) Type))",
                 "(: EatsMeat (-> (: $animal Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: MammalIsAnimal (Implication (Mammal $mammal_obj) (Animal $mammal_obj) (STV 0.9 0.9)))",
                 '(: MammalIsVertebrate (Implication (Mammal $mammal_obj) (Vertebrate $mammal_obj) (STV 0.9 0.9)))',
                 "(: CarnivoreEatsMeat (Implication (Carnivore $carn_obj) (EatsMeat $carn_obj) (STV 0.9 0.9)))",
-                "(: HerbivoreEatsPlants (Implication (Herbivore $herb_obj) (EatsPlants $herb_obj) (STV 0.9 0.9)))",
+                "(: HerbivoreEatsPlants (Implication (Herbivore $herb_obj) (EatsPlants $herb_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Weather conditions
-        dspy.Example(
-            new_types=[
-                "(: Raining (-> (: $r Object) Type))",
+        },
+        {
+            "new_types": [
+                "(: Raining (-> (: $r Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Sunny (-> (: $s Object) Type))",
-                "(: Cloudy (-> (: $c Object) Type))"
+                "(: Cloudy (-> (: $c Object) Type))",
                 "(: WeatherCondition (-> (: $w Object) Type))",
                 "(: Temperature (-> (: $t Object) Type))",
                 "(: Humidity (-> (: $h Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: RainingIsNotSunny (Equivalence (Raining $weather_obj) (Not (Sunny $weather_obj)) (STV 0.9 0.9)))",
                 "(: SunnyIsNotRaining (Equivalence (Sunny $weather_obj) (Not (Raining $weather_obj)) (STV 0.9 0.9)))",
-                "(: RainingIsWeather (Implication (Raining $weather_obj) (WeatherCondition $weather_obj) (STV 0.9 0.9)))",
+                "(: RainingIsWeather (Implication (Raining $weather_obj) (WeatherCondition $weather_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Educational Achievement Chain
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: Studies (-> (: $student Object) (: $subject Object) Type))",
                 "(: Completes (-> (: $student Object) (: $course Object) Type))",
                 "(: HasDegree (-> (: $person Object) (: $degree Object) Type))",
                 "(: QualifiedFor (-> (: $person Object) (: $position Object) Type))",
                 "(: RequiresDegree (-> (: $position Object) (: $degree Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Enrolls (-> (: $student Object) (: $course Object) Type))",
                 "(: Teaches (-> (: $teacher Object) (: $subject Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: DegreeQualifiesPerson (Implication (And (HasDegree $person_obj $degree_obj) (RequiresDegree $position_obj $degree_obj)) (QualifiedFor $person_obj $position_obj) (STV 0.9 0.9)))",
                 '(: EnrollsToStudies (Implication (Enrolls $student_obj $course_obj) (Studies $student_obj $course_obj) (STV 0.9 0.9)))',
-                '(: CompletesToNotEnrolls (Implication (Completes $student_obj $course_obj) (Not (Enrolls $student_obj $course_obj)) (STV 0.9 0.9)))',
+                '(: CompletesToNotEnrolls (Implication (Completes $student_obj $course_obj) (Not (Enrolls $student_obj $course_obj)) (STV 0.9 0.9)))'
             ]
-        ),
-        # Supply Chain Relationships
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: Produces (-> (: $manufacturer Object) (: $product Object) Type))",
                 "(: Supplies (-> (: $supplier Object) (: $material Object) (: $manufacturer Object) Type))",
                 "(: Uses (-> (: $product Object) (: $material Object) Type))",
                 "(: RequiresMaterial (-> (: $manufacturer Object) (: $material Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Stores (-> (: $warehouse Object) (: $item Object) Type))",
                 "(: Transports (-> (: $carrier Object) (: $cargo Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: ProductionNeedsMaterial (Implication (And (Produces $manuf_obj $product_obj) (Uses $product_obj $material_obj)) (RequiresMaterial $manuf_obj $material_obj) (STV 0.9 0.9)))",
                 "(: SuppliesToRequiresMaterial (Implication (And (Supplies $supplier_obj $material_obj $manuf_obj) (RequiresMaterial $manuf_obj $material_obj)) (STV 0.9 0.9)))"
             ]
-        ),
-        # Family Relationships
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: ParentOf (-> (: $parent Object) (: $child Object) Type))",
                 "(: SiblingOf (-> (: $sib1 Object) (: $sib2 Object) Type))",
                 "(: GrandparentOf (-> (: $gparent Object) (: $gchild Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Related (-> (: $person1 Object) (: $person2 Object) Type))",
                 "(: SameGeneration (-> (: $p1 Object) (: $p2 Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: ParentOfToRelated (Implication (ParentOf $parent_obj $child_obj) (Related $parent_obj $child_obj) (STV 1 0.9)))",
                 "(: SiblingOfToRelated (Implication (SiblingOf $sib1_obj $sib2_obj) (Related $sib1_obj $sib2_obj) (STV 1 0.9)))",
                 "(: GrandparentOfToRelated (Implication (GrandparentOf $gparent_obj $gchild_obj) (Related $gparent_obj $gchild_obj) (STV 1 0.9)))",
                 "(: SiblingsAreSymmetric (Implication (SiblingOf $sib1_obj $sib2_obj) (SiblingOf $sib2_obj $sib1_obj) (STV 1 0.9)))",
-                "(: SiblingsAreSameGeneration (Implication (SiblingOf $sib1_obj $sib2_obj) (SameGeneration $sib1_obj $sib2_obj) (STV 0.9 0.9)))",
+                "(: SiblingsAreSameGeneration (Implication (SiblingOf $sib1_obj $sib2_obj) (SameGeneration $sib1_obj $sib2_obj) (STV 0.9 0.9)))"
             ]
-        ),
-        # Chemical Reactions
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: Chemical (-> (: $c Object) Type))",
                 "(: ReactsWith (-> (: $reactant1 Object) (: $reactant2 Object) (: $product Object) Type))",
                 "(: Catalyst (-> (: $catalyst Object) (: $reaction Object) Type))",
                 "(: Inhibitor (-> (: $inhibitor Object) (: $reaction Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Element (-> (: $e Object) Type))",
                 "(: Compound (-> (: $c Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: CompoundIsChemical (Implication (Compound $compound_obj) (Chemical $compound_obj) (STV 1 0.9)))",
                 "(: ElementIsChemical (Implication (Element $element_obj) (Chemical $element_obj) (STV 1 0.9)))",
                 '(: ReactantsAreChemical (Implication (ReactsWith $r1 $r2 $p) (Chemical $r1) (STV 1 0.9)))',
@@ -326,30 +318,29 @@ def create_training_data():
                 "(: CatalystIsChemical (Implication (Catalyst $cat_obj $reaction_obj) (Chemical $cat_obj) (STV 1 0.9)))",
                 "(: InhibitorIsChemical (Implication (Inhibitor $inhibit_obj $reaction_obj) (Chemical $inhibit_obj) (STV 1 0.9)))",
                 "(: CatalystIsNotInhibitor (Equivalence (Catalyst $cat_obj $reaction_obj) (Not (Inhibitor $cat_obj $reaction_obj)) (STV 0.9 0.9)))",
-                "(: InhibitorIsNotCatalyst (Equivalence (Inhibitor $inhibit_obj $reaction_obj) (Not (Catalyst $inhibit_obj $reaction_obj)) (STV 0.9 0.9)))",
+                "(: InhibitorIsNotCatalyst (Equivalence (Inhibitor $inhibit_obj $reaction_obj) (Not (Catalyst $inhibit_obj $reaction_obj)) (STV 0.9 0.9)))"
             ]
-        ),
-        # Software Dependencies
-        dspy.Example(
-            new_types=[
+        },
+        {
+            "new_types": [
                 "(: DependsOn (-> (: $pkg Object) (: $dep Object) Type))",
                 "(: VersionRange (-> (: $pkg Object) (: $min Object) (: $max Object) Type))",
                 "(: Incompatible (-> (: $pkg1 Object) (: $pkg2 Object) Type))"
             ],
-            similar_types=[
+            "similar_types": [
                 "(: Installed (-> (: $pkg Object) Type))",
                 "(: Available (-> (: $pkg Object) Type))"
             ],
-            statements=[
+            "statements": [
                 "(: DependencyMustBeInstalled (Implication (And (DependsOn $pkg_obj $dep_obj) (Installed $pkg_obj)) (Installed $dep_obj) (STV 1 0.9)))",
                 "(: IncompatibleIsSymmetric (Implication (Incompatible $pkg1_obj $pkg2_obj) (Incompatible $pkg2_obj $pkg1_obj) (STV 1 0.9)))",
                 "(: IncompatibleNotInstalled (Implication (And (Incompatible $pkg1_obj $pkg2_obj) (Installed $pkg1_obj)) (Not (Installed $pkg2_obj)) (STV 1 0.9)))"
             ]
-        ),
+        }
     ]
     
     # Set inputs for all examples
-    return [ex.with_inputs("new_types", "similar_types") for ex in examples]
+    return examples #[ex.with_inputs("new_types", "similar_types") for ex in examples]
 
 def optimize_MIPRO(program,trainset,mode='light',out="mipro_optimized_type_analyzer"):
     # Initialize MIPROv2 optimizer with light optimization settings
@@ -401,26 +392,29 @@ def eval(program, dataset):
 
 
 def main():
-    program = TypeAnalyzer()
+    #program = TypeAnalyzer()
     #lm = dspy.LM('deepseek/deepseek-chat')
     #lm = dspy.LM('deepseek/deepseek-reasoner', temperature=None)
     #lm = dspy.LM('openrouter/qwen/qwq-32b-preview', temperature=0.5, max_tokens=10000)
     #lm = dspy.LM('openai/o1-mini', temperature = 1, max_tokens = 5000)
     #lm = dspy.LM('anthropic/claude-3-5-sonnet-20241022')
-    lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
+    #lm = dspy.LM('anthropic/claude-3-7-sonnet-20250219')
     #lm = dspy.LM('openai/gpt-4o')
     #lm = dspy.LM('gemini/gemini-exp-1206')
-    dspy.configure(lm=lm)
+    #dspy.configure(lm=lm)
 
     # Load the training set
     trainset = create_training_data()
+    with open("TypeAnalyzerSamples.json", "w") as f:
+        json.dump(trainset, f, indent=2)
+
 
     #program.load("claude_optimized_type_analyzer.json")
     #program.load("claude_mipro.json")
     # Optimize the program
-    program = optimize_MIPRO(program,trainset,"light",out="4o_mipro")
+    #program = optimize_MIPRO(program,trainset,"light",out="4o_mipro")
 
-    eval(program, trainset)
+    #eval(program, trainset)
     
 
 if __name__ == "__main__":
