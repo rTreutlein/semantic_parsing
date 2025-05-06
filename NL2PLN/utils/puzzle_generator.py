@@ -15,7 +15,7 @@ class PuzzleGeneratorSignature(dspy.Signature):
     """You are a logic puzzle creator. Create puzzles following these rules:
     1. Write a short story that contains logical premises
     2. Don't number the sentences in any of the sections
-    3. Try to make at leas one of the premises hard to represent logically (nested quantifiers)
+    3. Try to make at least one of the premises hard to represent logically (nested quantifiers)
     4. Not all sentences need to be directly linked to the conclusion
     """
     numberOfPremises : int = dspy.InputField(desc="Number of premises to generate")
