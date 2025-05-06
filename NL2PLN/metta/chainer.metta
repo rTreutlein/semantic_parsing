@@ -1,93 +1,182 @@
-;; Define Nat
-(: Nat Type)
-(: Z Nat)
-(: S (-> Nat Nat))
+;!(import! &self utils)
+;!(import! &self setspace)
+;!(import! &self tvformulas)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Define <=
-(: <= (-> $a $a Bool))
-(= (<= $x $y) (or (< $x $y) (== $x $y)))
+;;In this chainer our statements look like
+;($pset ⊢ $cset)
+;; $pset and $cset are sets of proofs of the form (: $term Type)
 
-;; Define cast functions between Nat and Number
-(: fromNumber (-> Number Nat))
-(= (fromNumber $n) (if (<= $n 0) Z (S (fromNumber (- $n 1)))))
-(: fromNat (-> Nat Number))
-(= (fromNat Z) 0)
-(= (fromNat (S $k)) (+ 1 (fromNat $k)))
+;;To add a direct proof af a type use a function that as $pset == ()
+;;(() ⊢ ((: a A)))
+;;A simple function from a to b looks like:
+;;(((: $a A)) ⊢ ((: (f $a) B)))
+
+;;This chainer requires 2 indecies to lookup atoms
+;; One maps Conclusions to the Rules that prove them
+;; The other maps Premises to the Rules that use them
+;;They can be created with the init-kb function
+(= (init-kb)
+   (let* (($cs (new-space))
+          ($ps (new-state (create-setspace)))
+          )
+   ($cs $ps))
+)
+
+(= (show-cs ($cs $ps)) (match $cs $a $a))
+(= (show-ps ($cs $ps)) (sstostring (get-state $ps)))
+
+;;When adding an atom to the KB, it is first normalized
+;;Then it is added to the indexed spaces
+(= (add-to-kb ($cs $ps) $nstmt)
+   (let* (;($nstmt (normalize $stmt))
+          (($pset ⊢ $cset) $nstmt)
+          ($_ (foldl-atom $cset () $accum $celem (let $_ $accum (if (=unify $celem (: (CPU $f $args) (CPU $res))) () (add-atom $cs ($celem $nstmt))))))
+          ($ss (get-state $ps))
+          ($ns (insert-setspace $ss $pset $nstmt))
+          ($res (change-state! $ps $ns))
+          )
+   (Okay))
+)
+
+;Lokup all rules that prove a conclusion
+(= (lookup-ccls ($cs $ps) $ccls)
+   (match $cs ($ccls $rule) ($ccls $rule)))
+
+;Lookup all rules whose premises are a subset of $query
+(= (lookup-pset-in-kb ($cs $ps) $query)
+   (let $ss (get-state $ps) (combine (lookup-all-subsets $ss $query))))
+
+;;Normalize a statement (remove premises that are part of the conclusion)
+(= (normalize ()) ())
+(= (normalize ($pset ⊢ $cset))
+     (let ($npset $_ $ncset) (overlap2 $pset $cset) ($npset ⊢ (runreduction $cset))))
+     ;(let ($npset $_ $ncset) (overlap2 $pset $cset) ($npset ⊢ $cset)))
+
+;;Takes a list/expression of statements and combines them
+(= (combine $a) (normalize (myfold-atom1 $a unionStmt)))
+
+;;Takes 2 statements and combines them
+;;TODO should this also normalize the statements?
+(= (unionStmt $stmt1 $stmt2)
+   (if (or (is-variable $stmt1) (== $stmt1 ()))
+     $stmt2
+     (if (or (is-variable $stmt2) (== $stmt2 ()))
+       $stmt1
+       (let ($pset1 ⊢ $cset1) $stmt1
+         (let ($pset2 ⊢ $cset2) $stmt2
+           ((unique-union-atom $pset1 $pset2) ⊢ (unique-union-atom $cset1 $cset2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Backward chainer ;;
 ;;;;;;;;;;;;;;;;;;;;;;
-(: bc (-> $a                            ; Knowledge base space
-          Nat                           ; Maximum depth
-          $q                            ; Query
-          $r))                          ; Result
 
-;; Base case
-(= (bc $kb $_ (: $prf $thrm))
-   (match $kb (: $prf $thrm) (: $prf $thrm)))
+;Entry point for the backward chainer
+;that ensure the query is normalized
+(= (bc $kb $depth_full $query)
+ (let ($npset ⊢ $ncset) (normalize $query)
+  (if (is-variable $ncset)
+   (bcsingle $kb $depth_full (tracem singel ($npset ⊢ $ncset)))
+   (bcset $kb $depth_full ($npset ⊢ $ncset))
+  )
+ )
+)
 
-(= (bc $kb $_ (: (CPU $f $args) (CPU $res)))
-  (: (CPU $f $args) (CPU (cons-atom $f $args))))
+;Backward chainer for a set of conclusions
+(= (bcset $kb $depth_full ($pset ⊢ $cset))
+ (if-decons-expr $cset $ccls $ctail
+  (case $ccls
+   (((∧ $inner) (bcset $kb $depth_full ($pset ⊢ $inner)))
+    ($ccls
+     (let ($ppset ⊢ $pcset) (tracem sout (bcsingle $kb $depth_full (tracem (sin $depth_full) ($pset ⊢ $ccls))))
+      (if (== $ctail ()) ;Don't recurse if there is nothing left to do
+       ($ppset ⊢ $pcset)
+       (let* 
+        (;(($ncset $_cset $nctail) (overlap2 $pcset $ctail)) ;We could check if we have already prooved other things in $ctail but its a lot of overhead so we skip it for now
+         ;($npset (concat $pset $pcset))
+         ;($npcset (concat $ncset $_cset))
+         ;(($rpset ⊢ $rcset) (bcp $kb $depth_full ($npset ⊢ $nctail)))
+         (($rpset ⊢ $rcset) (bcset $kb $depth_full ($pset ⊢ $ctail)))
+        )
+        ;(normalize (unionStmt ($ppset ⊢ $npcset) ($rpset ⊢ $rcset)))
+        (normalize (unionStmt ($ppset ⊢ $ccls) ($rpset ⊢ $rcset)))
+       )
+      )
+     )
+    )
+   )
+  )
+  ;$cset is empty nothing to do
+  (() ⊢ ())
+ )
+)
 
-; Recursive step
-(= (bc $kb (S $k) (: ($prfabs $prfarg) $thrm))
-   (let* (((: $prfabs (-> (: $prfarg $prms) $thrm))
-           (bc $kb $k (: $prfabs (-> (: $prfarg $prms) $thrm))))
-          ((: $prfarg $prms)
-           (bc $kb $k (: $prfarg $prms))))
-     (unify $kb (: ($prfabs $prfarg) $thrm) (Empty) (: ($prfabs $prfarg) $thrm))))
+(= ((subst $kb $depth) $a) (if (== $a kb) $kb (if (== $a depth) $depth $a)))
 
-;;;;;;;;;;;;;;;;;;;;;
-;; Forward chainer ;;
-;;;;;;;;;;;;;;;;;;;;;
+;Backward chainer for a single conclusion
+(= (bcsingle $kb $depth_full ($pset ⊢ $ccls))
+ (case $ccls
+  (
+   ((CPU $f $args $res)
+    (if (is-closed $args)
+     (let $nargs (map-expr $args (subst $kb $depth_full))
+      (let $res (cons-atom $f $nargs)
+       (() ⊢ ((CPU $f $args $res)))))
+     $ccls))
+   ((CPUNC $f $args $res) 
+    (let $nargs (map-expr $args (subst $kb $depth_full))
+     (let $res (cons-atom $f $nargs)
+      (() ⊢ ((CPUNC $f $args $res))))))
+   ($ccls
+    (let* ;Go step backwards
+     ((($ccls ($lc_pset ⊢ $lc_cset)) (tracem lookup-ccls (lookup-ccls $kb $ccls))) ;Get rule to prove $ccls
+      (($_pset $opset $ppset) (overlap2 $pset $lc_pset)) ;Check if we have already prooved $lc_pset
+     )
+     ;Alternate to a forward step
+     (if (== $ppset ()) ;Nothing lef to prove runcpu and return
+      ($lc_pset ⊢ $lc_cset)
+      ;Premises left to prove
+      (unify $depth_full (S $depth)
+       (let ($a ⊢ $b) (tracem bcout (bcset $kb $depth ($pset ⊢ $ppset))) ;Proof the premises
+        (normalize (unionStmt ($lc_pset ⊢ $lc_cset) ($a ⊢ $b))))
+       (if (is-variable $pset)
+        ($lc_pset ⊢ $lc_cset)
+        Emtpy))))))))
 
-(: fc (-> $a                            ; Knowledge base space
-          Nat                           ; Maximum depth
-          $q                            ; Query
-          $r))                          ; Result
-
-;;Base case
-(= (fc $kb $_ (: $prf $thrm)) (: $prf $thrm))
-
-;;Recursive step
-(= (fc $kb (S $k) (: $prfarg $prms))
-    (let (: $prfabs (-> (: $prfarg $prms) $ccln)) 
-         (bc $kb $k (: $prfabs (-> (: $prfarg $prms) $ccln)))
-         (fc $kb $k (: ($prfabs $prfarg) $ccln))))
-
-(= (fc $kb (S $k) (: $prfabs (-> (: $prfarg $prms) $ccln)))
-   (let (: $prfarg $prms) 
-        (bc $kb $k (: $prfarg $prms)))
-        (fc $kb $k (: ($prfabs $prfarg) $ccln)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(= (merge $base $stmts)
+  (if-decons-expr $stmts $stmt $rest
+        (let ((: $prf1 $type1 $tv1) (: $prf2 $type2 $tv2)) ($base $stmt)
+         (if (elemexpr $prf1 $prf2)
+           (: $prf2 $type2 $tv2)
+           (if (elemexpr $prf2 $prf1)
+             (: $prf1 $type1 $tv1)
+             (merge (: (revision $prf1 $prf2) $type1 (mergetvs $tv1 $tv2)) $rest)
+           )
+         )
+       )
+        $base
+        ))
 
 
-;; Define ad-atom-nodup, that adds an atom only if it is not already
-;; in the atomspace
-(: add-atom-nodup (-> $st Atom ()))
-(= (add-atom-nodup $space $atom)
-   (case (match $space $atom $atom)
-     (($atom (Empty))
-      (Empty (add-atom $space $atom)))))
+!(assertEqual (merge (: p1 (m a) (STV 0.9 0.9)) ((: p2 (m a) (STV 0.9 0.9))))
+              (: (revision p1 p2) (m a) (STV 0.9 0.9473684210526316)))
 
-(: add-atom-nodup (-> $st Atom ()))
-(= (add-atom-nodup-nofail $space $atom)
-   (case (match $space $atom $atom)
-     (($atom ())
-      (Empty (add-atom $space $atom)))))
+(= (runreduction $stmts)
+ (if-decons-expr $stmts $stmt $rest
+  (unify (: $prf $type $tv) $stmt
+   (if (is-variable $type)
+    (let $nrest (runreduction $rest)
+     (cons-atom $stmt $nrest))
+    (let ($removed $remaining) (removeAlphaMagic $rest $stmt)
+     (let $nstmt (merge $stmt $removed)
+      (let $nrest (runreduction $remaining)
+       (cons-atom $nstmt $nrest)))
+    ))
+    (let $nrest (runreduction $rest)
+     (cons-atom $stmt $nrest)))
+  $stmts
+ )
+)
 
-(= (ddfc $kb $query)
-    (let* (($out (fc $kb (S (S Z)) $query))
-           ($dummy (add-atom-nodup $kb $out))
-          )
-    $out
-))
-
-;;deduplicatig bc
-(= (ddbc $kb $query)
-    (let* (($out (bc $kb (S (S (S (S Z)))) $query))
-           ($dummy (add-atom-nodup-nofail $kb $out))
-          )
-    $out
-))
+!(assertEqual (runreduction ((: p1 (m a) (STV 0.9 0.9)) (: p2 (m a) (STV 0.9 0.9)) (: p3 (m b) (STV 0.9 0.9))))
+              ((: (revision p1 p2) (m a) (STV 0.9 0.9473684210526316)) (: p3 (m b) (STV 0.9 0.9))))

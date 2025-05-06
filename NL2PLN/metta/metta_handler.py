@@ -10,54 +10,36 @@ class MeTTaHandler:
         self.file = file
         self._read_only = read_only
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.run("!(bind! &kb (new-space))")
-        self.run("!(bind! &rules (new-space))")
+        print(script_dir)
+        self.run_metta_from_file(os.path.join(script_dir, 'utils.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'setspace.metta'))
+        self.run_metta_from_file(os.path.join(script_dir, 'tvformulas.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
-        self.run("!(add-atom &kb (get-atoms &rules))")
+        self.run_metta_from_file(os.path.join(script_dir, 'compiler.metta'))
+        self.run("!(bind! &kb (init-kb))")
+        print(self.run("!(&kb)"))
 
     def run_metta_from_file(self, file_path):                                
         with open(file_path, 'r') as file:                                   
             chainerstringhere = file.read()                                  
             self.metta.run(chainerstringhere)                                
                                                                              
-    @staticmethod                                                            
-    def generate_random_identifier(length=8):                                
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
     @staticmethod
     def clean_variable_names(expr: str) -> str:
         """Remove #numbers from variable names like $var#1234"""
         import re
         return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
 
-    def get_rules(self) -> list[str]:
-        """Get the list of rules from the file"""
-        res = self.run("!(get-atoms &rules)")[0]
-        return [self.clean_variable_names(str(x)) for x in res]
-
     @property
     def read_only(self) -> bool:
         return self._read_only
 
-    def add_atom_and_run_fc(self, atom: str) -> List[str]:
-        self.metta.run(f'!(add-atom &kb {atom})')                  
-        res = self.metta.run(f'!(ddfc &kb {atom})')
-        out = [self.clean_variable_names(str(elem)) for elem in res[0]]
-        if not self.read_only:
-            self.append_to_file(f"{atom}")
-            [self.append_to_file(elem) for elem in out]
-        return out
+    def add_atom(self, atom: str) -> None:
+        self.metta.run(f'!(compileAdd &kb {atom})')
 
-    def bc(self, atom: str) -> Tuple[List[str], bool]:
-        """Run backward chaining on an atom.
-        
-        Returns:
-            Tuple containing:
-            - List of intermediate steps/proofs
-            - Boolean indicating if the conclusion was proven
-        """
-        results = self.metta.run('!(ddbc &kb ' + atom + ')')
+    def query(self, atom: str) -> Tuple[List[str], bool]:
+        results = self.metta.run(f'!(query &kb (fromNumber 5) {atom})')
         # If we got any results back, the conclusion was proven
         proven = len(results[0]) > 0
         return [str(elem) for elem in results[0]], proven
@@ -69,21 +51,22 @@ class MeTTaHandler:
             None if atom was added successfully
             The conflicting atom string if a conflict was found
         """
-        exp = self.metta.parse_single(atom)
-        inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")[0]
+        return None
+        #exp = self.metta.parse_single(atom)
+        #inctx = self.metta.run("!(match &kb (: " + str(exp.get_children()[1]) + " $a) $a)")[0]
 
-        
-        if len(inctx) == 0:
-            self.metta.run("!(add-atom &kb " + atom + ")")
-            return None
+        #
+        #if len(inctx) == 0:
+        #    self.metta.run("!(add-atom &kb " + atom + ")")
+        #    return None
 
-        unify = self.metta.run("!(unify " + str(exp.get_children()[2]) + " (match &kb (: " + str(exp.get_children()[1]) + " $a) $a)  same diff)")
+        #unify = self.metta.run("!(unify " + str(exp.get_children()[2]) + " (match &kb (: " + str(exp.get_children()[1]) + " $a) $a)  same diff)")
 
-        if str(unify[0][0]) == "same":
-            self.metta.run("!(add-atom &kb " + atom + ")")
-            return None
-        else:
-            return inctx
+        #if str(unify[0][0]) == "same":
+        #    self.metta.run("!(add-atom &kb " + atom + ")")
+        #    return None
+        #else:
+        #    return inctx
 
         
     def run(self, atom: str):
@@ -117,56 +100,32 @@ class MeTTaHandler:
         with open(self.file, 'a') as f:
             f.write(elem)
 
-if __name__ == "__main__":
-    handler = MeTTaHandler('kb_backup.json')
-    with open('kb_backup.json', 'w') as f:
-        f.write("")
+if __name__ == '__main__':
+    handler = MeTTaHandler('kb_backup.json', read_only=False)
 
-    print("\nTesting add_atom_and_run_fc:")
-    
-    # Test 1: Adding a new atom and running forward chaining
-    atom1 = "(: ab (-> (: $a (PredicateNode A)) (PredicateNode B)))"
-    print(f"Adding atom and running fc: {atom1}")
-    result = handler.add_atom_and_run_fc(atom1)
-    print(f"Forward chaining results: {result}")
+    print("Adding atoms")
 
-    # Test 2: Adding another atom to trigger more inferences
-    atom2 = "(: a (PredicateNode A))"
-    print(f"\nAdding second atom: {atom2}")
-    result = handler.add_atom_and_run_fc(atom2)
-    print(f"Forward chaining results: {result}")
+    #print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    #print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
-    print("\nTesting add_to_context:")
+    #print(handler.run("!(show-cs &kb)"))
+
+    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+
+    #print(handler.add_atom("(: rule1 (WithTV (Implication (And (Book $book) (CheckoutCount $book $count) (GreaterThan $count 10)) (NeedsInspection $book)) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact1 (WithTV (Book vanishing_key) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact2 (WithTV (SinceLastInspection vanishing_key 15) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact3 (WithTV (CheckoutCount vanishing_key 15) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact4 (WithTV (GreaterThan 15 10) (STV 1.0 1.0)))"))
+
+    #print(handler.query("(: $query (WithTV (NeedsInspection vanishing_key) $tv))"))
+
+    print(handler.add_atom("(: rule1 (WithTV (Implication (WonPrize $book) (Or (InAwardsSection $book) (InNewReleasesSection $book))) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: fact1 (WithTV (Book whispers_of_dawn) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: fact2 (WithTV (WonStellarPrize whispers_of_dawn) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: fact3 (WithTV (WonPrize whispers_of_dawn) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: fact4 (WithTV (Not (InNewReleasesSection whispers_of_dawn)) (STV 1.0 1.0)))"))
+
+    print(handler.run("!(show-cs &kb)"))
     
-    # Test 1: Adding a new atom (should succeed)
-    atom3 = "(: test1 (ImplicationLink (PredicateNode X) (PredicateNode Y)))"
-    result = handler.add_to_context(atom3)
-    print(f"Adding {atom3}")
-    print(f"Result: {result}")  # Should print None
-    
-    # Test 2: Adding conflicting atom (should return existing atom)
-    atom4 = "(: test1 (ImplicationLink (PredicateNode X) (PredicateNode Z)))"
-    print(f"\nAdding conflicting atom: {atom4}")
-    result = handler.add_to_context(atom4)
-    print(f"Result: {result}")  # Should print the existing atom
-    
-    # Verify final context state
-    print("\nTesting store_kb_to_file and load_kb_from_file:")
-    
-    # Store the KB to file
-    print("Storing KB to file...")
-    handler.store_kb_to_file()
-    
-    # Create a new handler instance
-    print("Creating new handler and loading KB...")
-    new_handler = MeTTaHandler('kb_backup.json')
-    new_handler.load_kb_from_file()
-    
-    # Verify the loaded KB
-    print("\nVerifying loaded KB contents:")
-    loaded_context = new_handler.run("!(match &kb $a $b)")
-    print("Loaded KB contents:", loaded_context[0])
-    
-    # Clean up test file
-    if os.path.exists('kb_backup.json'):
-        os.remove('kb_backup.json')
+    print(handler.query("(: $query (WithTV (InAwardsSection whispers_of_dawn) $tv))"))
