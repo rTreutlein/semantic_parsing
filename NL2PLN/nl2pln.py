@@ -5,6 +5,14 @@ from .utils.cleanPLN import cleanPLN
 class NL2PLN(dspy.Module):
     def __init__(self, rag):
         self.convert = dspy.ChainOfThought(NL2PLN_Signature)
+        optimized = dspy.load("nl2pln")
+        if optimized:
+            self.convert.predict.demos = optimized.predict.demos
+            self.convert.predict.signature.instructions = optimized.predict.signature.instructions
+            print(optimized.predict.signature.instructions)
+        else:
+            print("Failed to load optimized")
+            exit()
         self.rag = rag
 
     def forward(self, sentences, previous_sentences=None, n=1):
@@ -26,10 +34,6 @@ class NL2PLN(dspy.Module):
                 example = []
                 example.append(f"Sentence: {item['sentence']}")
                 
-                if item.get('from_context'):
-                    example.append("From Context:")
-                    example.extend(f"  {ctx}" for ctx in item['from_context'])
-                    
                 if item.get('type_definitions'):
                     example.append("Type Definitions:")
                     example.extend(f"  {typedef}" for typedef in item['type_definitions'])
@@ -63,6 +67,14 @@ class NL2PLN(dspy.Module):
 
         # Process as a batch with context
         joined_sentences = "\n".join([f"- {s}" for s in sentences])
+
+        print("----------------------------------------------")
+        print("Input:")
+        print(joined_sentences)
+        print(selected_examples)
+        print(previous_sentences)
+        print("----------------------------------------------")
+
         res = self.convert(
             sentences=joined_sentences,
             similar=selected_examples,
@@ -70,8 +82,7 @@ class NL2PLN(dspy.Module):
         )
 
         # Post-process all outputs
-        res.context = [cleanPLN(x) for x in res.context]
-        res.typedefs = [cleanPLN(x) for x in res.typedefs]
+        #res.typedefs = [cleanPLN(x) for x in res.typedefs]
         res.statements = [cleanPLN(x) for x in res.statements]
         res.questions = [cleanPLN(x) for x in res.questions]
         
