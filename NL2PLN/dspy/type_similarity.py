@@ -1,17 +1,19 @@
 from typing import List, Dict
+import dspy
 from NL2PLN.utils.ragclass import RAG
 from .dspy_type_analyzer import TypeAnalyzer
-from .verifier import VerifiedPredictor
-from .checker import human_verify_prediction
-from .cleanPLN import cleanPLN
+from ..utils.verifier import VerifiedPredictor
+from ..utils.checker import human_verify_prediction
+from ..utils.cleanPLN import cleanPLN
 
 class TypeSimilarityHandler:
     """Manages type definitions, storage, comparison, and analysis using RAG and DSPy."""
     
     def __init__(self, collection_name: str = "type_definitions", reset_db: bool = False, verify: bool = False):
         self.rag = RAG(collection_name=collection_name,reset_db=reset_db)
-        self.analyzer = TypeAnalyzer()
-        self.analyzer.load("claude_mipro.json")
+        #self.analyzer = TypeAnalyzer()
+        #self.analyzer.load("claude_mipro.json")
+        self.analyzer = dspy.load("typeAnalyzer")
         self.pending_types = []  # Store staged type definitions
         
         if verify:
