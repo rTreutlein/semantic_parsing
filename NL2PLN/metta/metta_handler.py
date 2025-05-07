@@ -15,7 +15,6 @@ class MeTTaHandler:
         self.run_metta_from_file(os.path.join(script_dir, 'setspace.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'tvformulas.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'rules.metta'))
         self.run_metta_from_file(os.path.join(script_dir, 'compiler.metta'))
         self.run("!(bind! &kb (init-kb))")
         print(self.run("!(&kb)"))
