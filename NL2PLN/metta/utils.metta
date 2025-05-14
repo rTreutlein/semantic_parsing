@@ -51,10 +51,10 @@
    (Time (- $stop $start) $res)))))
 
 ;lambda
-(: \1 (-> Atom Atom (-> Atom Atom)))
-(= ((\1 $var $body) $arg) (sealed ($var $arg $body) (let $var $arg $body)))
-(: \2 (-> Atom Atom Atom (-> Atom Atom Atom)))
-(= ((\2 $var1 $var2 $body) $arg1 $arg2) (sealed ($var1 $var2 $arg1 $arg2 $body) (let ($var1 $var2) ($arg1 $arg2) $body)))
+(: \1 (-> Atom Atom (-> Atom $r)))
+(= ((\1 $var $body) $arg) (eval (sealed ($var $arg $body) (let $var $arg $body))))
+(: \2 (-> Atom Atom Atom (-> Atom Atom $r)))
+(= ((\2 $var1 $var2 $body) $arg1 $arg2) (eval (sealed ($var1 $var2 $arg1 $arg2 $body) (let ($var1 $var2) ($arg1 $arg2) $body))))
 
 (= (reverse $list)
    (if-decons-expr $list $head $tail
@@ -155,7 +155,7 @@
 !(assertEqual (unique= ((: $a A) (: $a A) (: $b A))) ((: $a A) (: $b A)))
 
 ;;Check if 3 Atoms are unifiable without modifying them
-(= (=unify $a $b) (sealed ($a $b) (unify $a $b True False)))
+(= (=unify $a $b) (eval (sealed ($a $b) (unify $a $b True False))))
 
 ;;Given a proofen premise and list of target conclusions, remove the premise from the list
 (= (removePrf $ccls $premise)
@@ -220,15 +220,6 @@
 
 
 !(assertEqual (elem (: $a A) ((: a $A) (: b B))) ((: a A) ((: a A) (: b B))))
-
-(= (elemsealed $elem $list)
-   (if-decons-expr $list $head $tail
-      (let (quote $shead) (sealed $head (quote $head))
-      (unify $elem $head $shead (elem $tail $elem)))
-      Empty
-))
-
-!(assertAlphaEqual (elemsealed (: $a A) ((: a $A) (: b B))) (: a $A))
 
 (= (elemexpr $elem $expr)
    (if (== $elem $expr) True

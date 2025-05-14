@@ -39,7 +39,7 @@ def main():
             puzzle = dspy.Prediction(**puzzle_data)
         else:
             # Generate new puzzle
-            puzzle = puzzle_gen.generate_puzzle(numberOfPremises=5)
+            puzzle = puzzle_gen.generate_puzzle(numberOfPremises=3)
             
             if args.save_puzzle:
                 # Save puzzle to file

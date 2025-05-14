@@ -10,20 +10,18 @@ class MeTTaHandler:
         self.file = file
         self._read_only = read_only
         script_dir = os.path.dirname(os.path.abspath(__file__))
+        relative_path = os.path.relpath(script_dir,start=os.getcwd())
+        print(os.getcwd())
         print(script_dir)
-        self.run_metta_from_file(os.path.join(script_dir, 'utils.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'setspace.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'tvformulas.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'chainer.metta'))
-        self.run_metta_from_file(os.path.join(script_dir, 'compiler.metta'))
+        print(relative_path)
+        #self.metta.run(f"!(import! &self {os.path.join(script_dir, 'compiler')})")
+        path = os.path.join(relative_path, 'compiler').replace('/', ':')
+        print(path)
+        self.metta.run(f"!(import! &self {path})")
+        #self.metta.load_module_at_path(os.path.join(script_dir, 'compiler.metta'))
         self.run("!(bind! &kb (init-kb))")
         print(self.run("!(&kb)"))
 
-    def run_metta_from_file(self, file_path):                                
-        with open(file_path, 'r') as file:                                   
-            chainerstringhere = file.read()                                  
-            self.metta.run(chainerstringhere)                                
-                                                                             
     @staticmethod
     def clean_variable_names(expr: str) -> str:
         """Remove #numbers from variable names like $var#1234"""
@@ -104,8 +102,8 @@ if __name__ == '__main__':
 
     print("Adding atoms")
 
-    #print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
-    #print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
+    #rint(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    #rint(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
     #print(handler.run("!(show-cs &kb)"))
 
@@ -119,12 +117,24 @@ if __name__ == '__main__':
 
     #print(handler.query("(: $query (WithTV (NeedsInspection vanishing_key) $tv))"))
 
-    print(handler.add_atom("(: rule1 (WithTV (Implication (WonPrize $book) (Or (InAwardsSection $book) (InNewReleasesSection $book))) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: fact1 (WithTV (Book whispers_of_dawn) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: fact2 (WithTV (WonStellarPrize whispers_of_dawn) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: fact3 (WithTV (WonPrize whispers_of_dawn) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: fact4 (WithTV (Not (InNewReleasesSection whispers_of_dawn)) (STV 1.0 1.0)))"))
 
-    print(handler.run("!(show-cs &kb)"))
+    #print(handler.run("!(compile (: rule1 (WithTV (Implication (WonPrize $book) (Or (InAwardsSection $book) (InNewReleasesSection $book))) (STV 1.0 1.0))))"))
+
+    #print(handler.add_atom("(: rule1 (WithTV (Implication (WonPrize $book) (Or (InAwardsSection $book) (InNewReleasesSection $book))) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact1 (WithTV (Book whispers_of_dawn) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact2 (WithTV (WonStellarPrize whispers_of_dawn) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact3 (WithTV (WonPrize whispers_of_dawn) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact4 (WithTV (Not (InNewReleasesSection whispers_of_dawn)) (STV 1.0 1.0)))"))
+
     
-    print(handler.query("(: $query (WithTV (InAwardsSection whispers_of_dawn) $tv))"))
+    #print(handler.query("(: $query (WithTV (InAwardsSection whispers_of_dawn) $tv))"))
+
+    #print(handler.add_atom("(: fact1 (WithTV (Book atlas_ancient_civilizations) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact2 (WithTV (ContainsMaterialBefore atlas_ancient_civilizations -500) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: rule1 (WithTV (Implication (And (Book $book) (ContainsMaterialBefore $book -500)) (ReferenceBook $book)) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact1 (WithTV (Book atlas_ancient_civilizations) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact2 (WithTV (ReferenceBook atlas_ancient_civilizations) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: fact3 (WithTV (ContainsHistoricalMaps atlas_ancient_civilizations) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: rule1 (WithTV (Implication (And (ReferenceBook $book) (ContainsHistoricalMaps $book)) (StoredInWestWing $book)) (STV 1.0 1.0)))"))
+
+    #print(handler.query("(: $query (WithTV (StoredInWestWing atlas_ancient_civilizations) $tv))"))

@@ -1,6 +1,6 @@
-;!(import! &self utils)
-;!(import! &self setspace)
-;!(import! &self tvformulas)
+!(import! &self utils)
+!(import! &self setspace)
+!(import! &self tvformulas)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;In this chainer our statements look like
@@ -31,7 +31,8 @@
 (= (add-to-kb ($cs $ps) $nstmt)
    (let* (;($nstmt (normalize $stmt))
           (($pset ⊢ $cset) $nstmt)
-          ($_ (foldl-atom $cset () $accum $celem (let $_ $accum (if (=unify $celem (: (CPU $f $args) (CPU $res))) () (add-atom $cs ($celem $nstmt))))))
+          ($f (\1 $elem (if (and (not (is-variable $elem)) (=unify $elem (CPU $fun $args $res))) () (add-atom $cs ($elem $nstmt)))))
+          ($_ (map $cset $f))
           ($ss (get-state $ps))
           ($ns (insert-setspace $ss $pset $nstmt))
           ($res (change-state! $ps $ns))
@@ -99,7 +100,7 @@
          (($rpset ⊢ $rcset) (bcset $kb $depth_full ($pset ⊢ $ctail)))
         )
         ;(normalize (unionStmt ($ppset ⊢ $npcset) ($rpset ⊢ $rcset)))
-        (normalize (unionStmt ($ppset ⊢ $ccls) ($rpset ⊢ $rcset)))
+        (normalize (unionStmt ($ppset ⊢ ($ccls)) ($rpset ⊢ $rcset)))
        )
       )
      )
@@ -120,12 +121,12 @@
    ((CPU $f $args $res)
     (if (is-closed $args)
      (let $nargs (map-expr $args (subst $kb $depth_full))
-      (let $res (cons-atom $f $nargs)
+      (let $res (eval (cons-atom $f $nargs))
        (() ⊢ ((CPU $f $args $res)))))
      $ccls))
    ((CPUNC $f $args $res) 
     (let $nargs (map-expr $args (subst $kb $depth_full))
-     (let $res (cons-atom $f $nargs)
+     (let $res (eval (cons-atom $f $nargs))
       (() ⊢ ((CPUNC $f $args $res))))))
    ($ccls
     (let* ;Go step backwards

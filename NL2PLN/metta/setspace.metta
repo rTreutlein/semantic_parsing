@@ -1,4 +1,4 @@
-;!(import! &self utils)
+!(import! &self utils)
 ;; A pure MeTTa implementation of lookup_all_subsets for a trie-based set space.
 ;;
 ;; A trie node is represented as an expression: (trie <value> <children>)

@@ -1,19 +1,21 @@
 !(import! &self utils)
-;!(import! &self chainer)
+!(import! &self chainer)
 
 (= (out (: $_prf $type $_tv))
   (if-decons-expr $type $head $tail
     (case $head
       ((And
         (let $f (\1 $elem (superpose ( (((: $prf $type (STV $tvs $tvc)) (CPU sqrt-math ($tvs) $ntvs)) ⊢ ((: (proj0 $prf) $elem (STV $ntvs $tvc)))) (out (: $prf $elem $tv))) ))
-        (let $tmp (superpose $tail) ($f $tmp)))
+        ($f (superpose $tail)))
        )
        (Or
         (let $f (\1 $elem (superpose ( (((: $prf $type $tv)) ⊢ ((: (proj0 $prf) $elem $tv))) (out (: $prf $elem $tv)))))
-        (let $tmp (superpose $tail) ($f $tmp)))
+        ($f (superpose $tail)))
        )
       ))
     Empty))
+
+!(out (: prf (Or a (Or b c)) (STV 1.0 1.0)))
 
 (= (inTemplate $formula $type $tail)
  (let $prms (map $tail (\1 $elem (: $prf $elem $tv)))
@@ -22,9 +24,9 @@
             ((union-atom ((CPU $formula ($tv $tve) $ntv) (: $prfelem $elem $tve)) $premises)
              (: (cons-atom $prfelem $cclprf) $_ $ntv)
             )))
-   (let ($fst $rst) (decons-atom $prms)
-    (let ($res_prms (: $cclprf $ccltype $ccltv)) (myfold-atom $rst (($fst) (: () _ _)) $f)
-     ((reverse $res_prms) ⊢ ((: (cons-atom conjunction $cclprf) $type $ccltv))))))))
+   (let ((: $fstprf $fstelem $fsttv) $rst) (tracem da (decons-atom $prms))
+    (let ($res_prms (: $cclprfr $ccltype $ccltv)) (myfold-atom $rst (((: $fstprf $fstelem $fsttv)) (: ($fstprf) _ _)) $f)
+     ((reverse $res_prms) ⊢ ((: (cons-atom conjunction $cclprfr) $type $ccltv))))))))
 
 (= (in (: $prf $type $tv))
    (if-decons-expr $type $head $tail
@@ -34,14 +36,16 @@
        ))
      Emtpy))
 
+!(in (: prf (And a b) (STV 1.0 1.0)))
+
 (= (extract-vars-ff $accum $elem)
    (if (is-variable $elem) (cons-atom $elem $accum) $accum))
 
 (= (extract-vars $expr) (fold-expr $expr () extract-vars-ff))
 
 (= (subst-exists $a $b $prf)
-  (let* (($avars (extract-vars $a))
-         ($bvars (extract-vars $b))
+  (let* (($avars (unique= (extract-vars $a)))
+         ($bvars (unique= (extract-vars $b)))
          ($onlyb (unique= (subtraction-atom $bvars $avars))))
   (foldl-atom $onlyb $b $accum $elem (atom-subst (exists $prf) $elem $accum))
 ))
@@ -93,7 +97,7 @@
         (let* ( ($nb (subst-exists $a $b $prfa))
               )
         (post (superpose ( (((: $prfa $a $atv) (CPU mp-formula ($itv $atv) $btv)) ⊢ ((: ($prf $prfa) $nb $btv)))
-                           (tracem out (out (: ($prf $prfa) $nb $btv)))
+                           (out (: ($prf $prfa) $nb $btv))
                            (in (: $prfa $a $atv))
         )))))
        ($cleanstmt
@@ -111,7 +115,7 @@
         ))))
        ($cleanstmt
        (postQuery (superpose ( (() ⊢ ($cleanstmt))
-                               (out $cleanstmt)
+                               (in $cleanstmt)
        ))))))))
 
 
@@ -144,4 +148,4 @@
 
 ;!(query &kb (fromNumber 5) (: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv))
 
-!(compile (: rule1 (Implication a (Or b (Or c x))) (STV 1.0 1.0)))
+;!(compile (: rule1 (Implication a (Or b c)) (STV 1.0 1.0)))
