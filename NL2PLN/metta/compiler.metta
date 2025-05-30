@@ -5,7 +5,7 @@
   (if-decons-expr $type $head $tail
     (case $head
       ((And
-        (let $f (\1 $elem (superpose ( (((: $prf $type (STV $tvs $tvc)) (CPU sqrt-math ($tvs) $ntvs)) ⊢ ((: (proj0 $prf) $elem (STV $ntvs $tvc)))) (out (: $prf $elem $tv))) ))
+        (let $f (\1 $elem (superpose ( (((: $prf $type (STV $tvs $tvc)) (CPU sqrt-math ($tvs) $ntvs)) ⊢ ((: (proj $prf) $elem (STV $ntvs $tvc)))) (out (: $prf $elem $tv))) ))
         ($f (superpose $tail)))
        )
        (Or
@@ -15,28 +15,29 @@
       ))
     Empty))
 
-!(out (: prf (Or a (Or b c)) (STV 1.0 1.0)))
+;!(out (: prf (Or a (Or b c)) (STV 1.0 1.0)))
 
-(= (inTemplate $formula $type $tail)
+(= (inTemplate $formula $head $tail)
  (let $prms (map $tail (\1 $elem (: $prf $elem $tv)))
   (let $f (\2 ($premises (: $cclprf $ccltype $ccltv)) (: $prfelem $elem $tve)
            (let (($_1 $_2 $_3 $tv) $_r) (decons-atom $premises)
             ((union-atom ((CPU $formula ($tv $tve) $ntv) (: $prfelem $elem $tve)) $premises)
-             (: (cons-atom $prfelem $cclprf) $_ $ntv)
+             (: (cons-atom $prfelem $cclprf) (cons-atom $elem $ccltype) $ntv)
             )))
-   (let ((: $fstprf $fstelem $fsttv) $rst) (tracem da (decons-atom $prms))
-    (let ($res_prms (: $cclprfr $ccltype $ccltv)) (myfold-atom $rst (((: $fstprf $fstelem $fsttv)) (: ($fstprf) _ _)) $f)
-     ((reverse $res_prms) ⊢ ((: (cons-atom conjunction $cclprfr) $type $ccltv))))))))
+   (let ((: $fstprf $fstelem $fsttv) $rst) (decons-atom $prms)
+    (let ($res_prms (: $cclprf $ccltype $ccltv)) (foldl $rst (((: $fstprf $fstelem $fsttv)) (: ($fstprf) ($fstelem) $fsttv)) $f)
+     (let ($rres_prms $rcclprf $rccltype) ((reverse $res_prms) (reverse $cclprf) (reverse $ccltype))
+     ($rres_prms ⊢ ((: (cons-atom conjunction $rcclprf) (cons-atom $head $rccltype) $ccltv)))))))))
 
 (= (in (: $prf $type $tv))
    (if-decons-expr $type $head $tail
      (case $head
-       ((And (inTemplate and-formula $type $tail))
-        (Or (inTemplate or-formula $type $tail))
+       ((And (inTemplate and-formula $head $tail))
+        (Or (inTemplate or-formula $head $tail))
        ))
      Emtpy))
 
-!(in (: prf (And a b) (STV 1.0 1.0)))
+;!(in (: prf (And a b) (STV 1.0 1.0)))
 
 (= (extract-vars-ff $accum $elem)
    (if (is-variable $elem) (cons-atom $elem $accum) $accum))
@@ -90,33 +91,63 @@
   (let $2 (unify $1 (Forall $x $y) $y $1)
           (unify $2 (ForAll $x $y) $y $2))))
 
+(= (substitute $expr)
+  (if (is-variable $expr)
+    VAR
+    (if (is-expression $expr)
+      (map-atom $expr $elem (substitute $elem))
+      $expr)))
+
+(: rule (Implication (Dog $d) (And (Cat (exists rule $d)) (Chase $d (exists rule $d)))))
+
 (= (compile $stmt)
     (let $cleanstmt (convert (map-expr2 $stmt clean))
-    (case $cleanstmt
-      (((: $prf (Implication $a $b) $itv)
-        (let* ( ($nb (subst-exists $a $b $prfa))
-              )
-        (post (superpose ( (((: $prfa $a $atv) (CPU mp-formula ($itv $atv) $btv)) ⊢ ((: ($prf $prfa) $nb $btv)))
-                           (out (: ($prf $prfa) $nb $btv))
-                           (in (: $prfa $a $atv))
-        )))))
-       ($cleanstmt
-        (post (superpose ( (() ⊢ ($cleanstmt))
-                           (out $cleanstmt)
-       ))))))))
+    (let (: $prf $Type $tv) $cleanstmt
+    (if (is-variable $Type)
+      Empty
+      (case $cleanstmt
+        (((: $prf (Implication $a $b) $itv)
+          (let* ( ($nb (subst-exists $a $b $prfa))
+                  ($na (subst-exists $b $a $prfb))
+                )
+          (post (superpose ( (((: $prfa $a $atv) (CPU mp-formula ($itv $atv) $btv))
+                              ⊢
+                              ((: ($prf $prfa) $nb $btv)))
+                             (out (: ($prf $prfa) $nb $btv))
+                             (in (: $prfa $a $atv))
+
+                             (((: $prfsb (substitute $b) $btv1)
+                               (: $prfb $b $btv2)
+                               (CPU stv< ($btv1 $btv2) True)
+                               (: $pa (substitute $na) $atv)
+                               (CPU inversion-formula ($atv $btv1 $itv) $nitv)
+                               (CPU mp-formula ($btv2 $nitv) $natv)
+                              )
+                              ⊢
+                              ((: ((inverted $prf $pa $prfsb) $prfb) $na $natv)))
+                             (out (: ((inverted $prf $pa $pb1) $pb2) $na $natv))
+                             (in (: $pb2 $b $btv2))
+                           )
+          ))))
+         ($cleanstmt
+          (post (superpose ( (() ⊢ ($cleanstmt))
+                             (out $cleanstmt)
+         ))))))))))
 
 (= (compileQuery $stmt)
-    (let $cleanstmt (convert (map-expr2 $stmt clean))
-    (case $cleanstmt
-      (((: $prf (Implication $a $b) $itv)
-        (postQuery (superpose ( (((: $prfa $a (STV 1.0 1.0))) ⊢ ((: $prfb $b $itv)))
-                           (in (: $prfb $b $btv))
-                           (out (: $prfa $a $atv))
-        ))))
-       ($cleanstmt
-       (postQuery (superpose ( (() ⊢ ($cleanstmt))
-                               (in $cleanstmt)
-       ))))))))
+    (let (: $prf $Type $tv) (convert (map-expr2 $stmt clean))
+    (if (is-variable $Type)
+      (() ⊢ ((: $prf $Type $tv)))
+      (case (: $prf $Type $tv)
+        (((: $prf (Implication $a $b) $itv)
+          (postQuery (superpose ( (((: $prfa $a (STV 1.0 1.0))) ⊢ ((: $prfb $b $itv)))
+                             (in (: $prfb $b $btv))
+                             (out (: $prfa $a $atv))
+          ))))
+         ((: $prf $Type $tv)
+         (postQuery (superpose ( (() ⊢ ((: $prf $Type $tv)))
+                                 (in (: $prf $Type $tv))
+         )))))))))
 
 
 (= (compileAdd $kb $stmt)
@@ -133,7 +164,15 @@
 ;!(compile (: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0)))
 ;!(compile (: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0)))
 
-;!(compile (: $query (Implication a (And b (And c d))) $tv))
+(: dog (Dog $d) $tvdog)
+
+!(compile (: $query (Implication (Dog $d) (Animal $a)) $tv))
+
+((: $prf a $tva) (CPU mp-formula ($tva $tv) $tvb) ) -> (: $prf b $tvb)
+
+((: $prf (Dog VAR) $tva) (: $prf (Animal VAR) $tvb) (CPU inversion-formula ($tva $tvb $tv) $tvc) (: $prf (Animal $a) $tva2) (CPU mp-formula ($tva2 $tvc) $tvd)
+->(: $prf (Dog $a) $tvd)
+
 ;!(compileQuery (: $query (Implication a (And c (And d e))) $tv))
 
 ;(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (Exists ((: $reader Object)) (CanFullyAccess $reader $book))) $tv))

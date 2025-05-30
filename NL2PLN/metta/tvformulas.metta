@@ -10,6 +10,8 @@
 (= (and-formula (STV $as $ac) (STV $bs $bc)) (STV (* $as $bs) (min-atom ($ac $bc))))
 (= (or-formula (STV $as $ac) (STV $bs $bc)) (STV (max-atom ($as $bs)) (min-atom ($ac $bc))))
 
+(= (mp-formula (STV $abs $abc) (STV $as $ac)) (STV (* $abs $as) (min-atom ($abc $ac))))
+
 (= (inversion-formula (STV $as $ac) (STV $bs $bc) (STV $abs $abc)) (STV (/ (* $as $abs) $bs) (* 0.9 (min-atom ($ac $bc $abc)))))
 
 (= (inversion-mp-formula (STV $as $ac) (STV $bs $bc) (STV $abs $abc)) (STV (* $as $abs) (min-atom ($ac $bc $abc))))
@@ -31,8 +33,8 @@
 !(assertEqual (mean-update 0.9 0.9 1 1) 0.9)
 
 (= (mergetvs (STV $m1 $conf1) (STV $m2 $conf2))
-   (let* (($count1 (confidenc-to-count $conf1))
-          ($count2 (confidenc-to-count $conf2))
+   (let* (($count1 (confidenc-to-count (min-atom ($conf1 0.999))))
+          ($count2 (confidenc-to-count (min-atom ($conf2 0.999))))
           ($m (mean-update $m1 $m2 $count1 $count2))
           ($c (merge-counts $count1 $count2))
           ($conf (count-to-confidenc $c))
@@ -40,18 +42,6 @@
             (STV $m $conf)
          ))
 
-;!(mergetvs (STV 0.9 0.9) (STV 0.9 0.9))
+!(assertEqual (mergetvs (STV 0.9 0.9) (STV 0.9 0.9)) (STV 0.9 0.9473684210526316))
 
-
-(= (update $atv)
-  (let* (($btv1 (STV 0.2 0.9))
-         ($btv2 (STV 0.9 0.9))
-         ($itv (STV 1 1))
-         ($iitv (inversion-formula $atv $btv1 $itv))
-         ($natv (mp-formula $iitv $btv2))
-        )
-        $natv
-  )
-)
-
-!(update (STV 0.1 0.1))
+(= (stv< (STV $s1 $c1) (STV $s2 $c2)) (< $s1 $s2))

@@ -3,10 +3,6 @@
 (: Z Nat)
 (: S (-> Nat Nat))
 
-;; Define <=
-(: <= (-> $a $a Bool))
-(= (<= $x $y) (or (< $x $y) (== $x $y)))
-
 ;; Define cast functions between Nat and Number
 (: fromNumber (-> Number Nat))
 (= (fromNumber $n) (if (<= $n 0) Z (S (fromNumber (- $n 1)))))
@@ -40,7 +36,8 @@
 
 
 ;Trace a message + argument and return the argument
-(= (tracem $msg $a) (trace! ($msg $a) $a))
+(: tracem (-> Atom Atom $a))
+(= (tracem $msg $a) (let $executed $a (trace! ($msg $executed) $executed)))
 
 ;Time an expression and return the result
 (: time (-> Atom $a))
@@ -72,30 +69,23 @@
       ()))
 
 ;; Custom fold function since the stdlib version has issues
-(= (myfold-atom $list $init $f)
+(= (foldl $list $init $f)
    (if-decons-expr $list $head $tail
-      (myfold-atom $tail ($f $init $head) $f)
+      (foldl $tail ($f $init $head) $f)
       $init))
 
 ;;Custom fold which assumes the first elment of the list as an init
-(= (myfold-atom1 $list $f)
+(= (foldl1 $list $f)
    (if (== (get-metatype $list) Variable)
      $list
      (if-decons-expr $list $head $tail
-        (myfold-atom $tail $head $f)
-        $list)))
-
-(= (myfold-atom1te $list $f)
-   (if (== (get-metatype $list) Variable)
-     $list
-     (if-decons-expr $list $head $tail
-        (myfold-atom $tail ($head) $f)
+        (foldl $tail $head $f)
         $list)))
 
 ;;Fold right to maintain the order of the list
-(= (myfoldr-atom $list $init $f)
+(= (foldr $list $init $f)
    (if-decons-expr $list $head $tail
-      ($f (myfoldr-atom $tail $init $f) $head)
+      ($f (foldr $tail $init $f) $head)
       $init))
 
 (= (map-expr $expr $f)
@@ -112,7 +102,7 @@
       $init))
 
 
-!(assertEqual (myfoldr-atom (1 2 3) 0 +) 6)
+!(assertEqual (foldr (1 2 3) 0 +) 6)
 
 ;;Because mettalog eliminates duplicates
 (= (munion-atom $list1 $list2)
@@ -132,6 +122,9 @@
 
 !(assertEqual (concat (a b c) (a b d)) (a b c a b d))
 
+;;Check if 3 Atoms are unifiable without modifying them
+(= (=unify $a $b) (eval (sealed ($a $b) (unify $a $b True False))))
+
 ;;Remove $elem from set if it can be unified with an element in $list
 ;;Return the unified $elem and the remaining set
 (= (remove $list $elem)
@@ -139,6 +132,37 @@
       (unify $elem $head ($head $tail) (let ($res $ntail) (remove $tail $elem) ($res (cons-atom $head $ntail))))
       (() $list)
 ))
+
+(= (removeAll $list $elem)
+   (if-decons-expr $list $head $tail
+      (if (=unify $elem $head)
+         (removeAll $tail $elem)
+         (let $ntail (removeAll $tail $elem) (cons-atom $head $ntail)))
+      $list))
+
+!(assertEqual (removeAll ((A 1) B (A 2) C) (A $a)) (B C))
+
+;Remove $elem from $list based on unification
+;If there multipel alternative return all as superposition
+(= (removeAlt $list $elem)
+   (if-decons-expr $list $head $tail
+      (if (=unify $elem $head)
+         ($head (removeAll $tail $elem))
+         (let ($res $ntail) (removeAlt $tail $elem) ($res (cons-atom $head $ntail))))
+      $list
+))
+
+(= (removeAlt $list $elem)
+   (if-decons-expr $list $head $tail
+      (if (=unify $elem $head)
+        (let ($res $ntail) (removeAlt $tail $elem) ($res $ntail))
+        Empty)
+      Empty))
+
+!(assertEqualToResult (removeAlt ((A 1) B (A 2) C) (A $a)) (((A 1) (B C)) ((A 2) (B C))))
+
+!(assertEqualToResult (removeAlt ((: fact1 (A 1) (STV 0.7 0.9)) (: fact2 (A 2) (STV 0.9 0.9))) (: $prfa (A $a) $atv))
+(((: fact1 (A 1) (STV 0.7 0.9)) ()) ((: fact2 (A 2) (STV 0.9 0.9)) ())))
 
 (= (remove= $list $elem)
    (if-decons-expr $list $head $tail
@@ -153,9 +177,6 @@
 ))
 
 !(assertEqual (unique= ((: $a A) (: $a A) (: $b A))) ((: $a A) (: $b A)))
-
-;;Check if 3 Atoms are unifiable without modifying them
-(= (=unify $a $b) (eval (sealed ($a $b) (unify $a $b True False))))
 
 ;;Given a proofen premise and list of target conclusions, remove the premise from the list
 (= (removePrf $ccls $premise)
@@ -187,27 +208,28 @@
   )
 )
 
-!(removePrf ((: $a (A $v)) (: $a2 (A $v2))) (: a (A 1)))
+!(assertEqualToResult 
+  (removePrf ((: $a (A $v) $tv1) (: $a2 (A $v2) $tv2)) (: a (A 1) tv3))
+  ((((: a (A 1) tv3)) ((: $a (A $v) $tv1))) (() ((: $a (A $v) $tv1) (: $a2 (A $v2) $tv2))) (((: a (A 1) tv3)) ((: $a2 (A $v2) $tv2))) (((: a (A 1) tv3) (: a (A 1) tv3)) ())))
 
-;!(assertAlphaEqual (removePrf ((: $a2 A) (: $b B)) (: $a A)) ((: $a2 A) ((: $b B))))
-
-
-(= (removeAlphaMagic $list $elem)
+;Given a list of terms (: $prf $type $tv) and a term (: $prf2 $type2 $tv2)
+;Remove all terms from the list whose $type is alpha equivlaen to $type2
+(= (removeAlphaType $list $elem)
  (unify $elem (: $prf2 $type2 $tv2)
  (if-decons-expr $list $head $tail
   (unify $head (: $prf $type $tv)
-   (if (=alpha $type $type2) ;If the conclusion Type is closed or the premise is alpha equivalent to the conclusion
-    (let ($res $ntail) (removeAlphaMagic $tail $elem) ((cons-atom $head $res) $ntail))
-    (let ($res $ntail) (removeAlphaMagic $tail $elem) ($res (cons-atom $head $ntail)))
+   (if (and (=alpha $type $type2) (not (=unify $prf $prf2))) ;If the conclusion Type is closed or the premise is alpha equivalent to the conclusion
+    (let ($res $ntail) (removeAlphaType $tail $elem) ((cons-atom $head $res) $ntail))
+    (let ($res $ntail) (removeAlphaType $tail $elem) ($res (cons-atom $head $ntail)))
    )
-   (let ($res $ntail) (removeAlphaMagic $tail $elem) ($res (cons-atom $head $ntail))))
+   (let ($res $ntail) (removeAlphaType $tail $elem) ($res (cons-atom $head $ntail))))
   ;Ccls list is empty
   (() ())
  )
  (() $list)
 ))
 
-!(assertEqual (removeAlphaMagic  ((: b (m a) tv2) (: c c tv3) (: d (m a) tv4)) (: a (m a) tv1))
+!(assertEqual (removeAlphaType  ((: b (m a) tv2) (: c c tv3) (: d (m a) tv4)) (: a (m a) tv1))
   (((: b (m a) tv2) (: d (m a) tv4)) ((: c c tv3))))
 
 ;Check if an element is in a list based on unification
@@ -221,50 +243,41 @@
 
 !(assertEqual (elem (: $a A) ((: a $A) (: b B))) ((: a A) ((: a A) (: b B))))
 
+;Check if $elem is a sub expression of $expr
 (= (elemexpr $elem $expr)
    (if (== $elem $expr) True
      (if-decons-expr $expr $head $tail
-        (if (== $elem $head) True
-           (elemexpr $elem $tail)
-        )
+        (if (is-expression $head)
+           (elemexpr $elem $head)
+           (if (== $elem $head)
+              True
+              (elemexpr $elem $tail)
+        ))
         False
 )))
 
 !(assertEqual (elemexpr (implicat a) (traverse (implicat a))) True)
 !(assertEqual (elemexpr (implicat b) (traverse (implicat a))) False)
 
-;Check if an element is in a list based on unification
-;Return a boolean
-(= (elemB $elem $list)
-   (if-decons-expr $list $head $tail
-      (unify $elem $head True (elemB $elem $tail))
-      False
-))
-
 ;;Helper function for overlap
-(= (overlap_ff ($left $intersection $right) $elem)
-   (let ($res $nright) (removePrf $right $elem)
+(= ((overlap_ff $rmf) ($left $intersection $right) $elem)
+   (let ($res $nright) ($rmf $right $elem)
      (if (== $res ())
        ((cons-atom $elem $left) $intersection $right)
        ($left (concat $res $intersection) $nright))))
 
 ;;Calculate the overlap of 2 sets
 ;;Retruns (($list1 - $list2) ($list1 intersection $list2) ($list2 - $list1))
-;;Variables are treated as matchichg any set
+;;If the lists are  $variables don't match anything.
 (= (overlap $list1 $list2)
-   (if (== (get-metatype $list1) Variable)
-     (() $list2 ())
-     (if (== (get-metatype $list2) Variable)
-       (() $list1 ())
-       (myfoldr-atom $list1 (() () $list2) overlap_ff))))
-
-;;Same as above but $variables don't match anything.
-(= (overlap2 $list1 $list2)
    (if (or (is-variable $list1) (is-variable $list2))
      ($list1 () $list2)
-     (myfoldr-atom $list1 (() () $list2) overlap_ff)))
+     (foldr $list1 (() () $list2) (overlap_ff removePrf))))
 
-;!(assertAlphaEqual (overlap2 ((: $a A)) ((: $a2 A) (: $b B))) (() ((: $a A)) ((: $b B))))
+(= (overlapAlphaType $list1 $list2)
+   (if (or (is-variable $list1) (is-variable $list2))
+     ($list1 () $list2)
+     (foldr $list1 (() () $list2) (overlap_ff removeAlphaType))))
 
 ;;Custom unique function that works with variables
 (= (myunique $a) (if (is-variable $a) $a (unique= $a)))
@@ -275,11 +288,3 @@
 (= (unique-union-atom $a $b) (let $res (concat $a $b) (myunique $res)))
 
 !(assertEqual (unique-union-atom ((: $a A) (: b B)) ((: $a A))) ((: $a A) (: b B)))
-
-!(let* (
-        ($left ((: a2 (A 2)) (: a1 (A 1))))
-        ($right ((: $a1 (A $v1)) (: $a2 (A $v2))))
-        (($_ $out ()) (overlap2 $left $right))
-        )
-       ($left $right $out))
-
