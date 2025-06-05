@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import dspy
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from NL2PLN.utils.proof_assistant import ProofAnalyzer
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -54,6 +55,18 @@ class SimplePuzzleProcessor:
         else:
             self.nl2pln = SimpleNL2PLN(n=self.n)
 
+    def _run_single_proof(self, i: int, pln_data, puzzle_counter: int) -> bool:
+        """Run a single proof attempt - helper method for parallel execution."""
+        metta_handler = MeTTaHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
+        metta_handler.load_kb_from_file()
+        
+        proof_handler = SimpleProofHandler(
+            metta_handler,
+            pln_data[i].questions[0],
+            pln_data[i].statements
+        )
+        return proof_handler.try_to_proof()
+
     def process_puzzle(self, premises: List[str], query: str):
         """Process a complete puzzle with premises and conclusion."""
         print(f"Processing puzzle with {len(premises)} premises")
@@ -66,21 +79,26 @@ class SimplePuzzleProcessor:
             # Process combined text
             pln_data = self.nl2pln(combined_text)
 
-            cnt = 0
+            # Run proofs in parallel
             res = 0
-            for i in range(self.n):
-                self.metta_handler = MeTTaHandler(f"{self.output_base}_{self.puzzle_counter}_{cnt}.metta")
-                self.metta_handler.load_kb_from_file()
-                cnt += 1
-                proof_handler = SimpleProofHandler(
-                    self.metta_handler,
-                    pln_data[i].questions[0],
-                    pln_data[i].statements
-                )
-                if proof_handler.try_to_proof():
-                    res += 1
-            print(f"Proved {res}/{cnt} statements")
-            return res/cnt
+            with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
+                # Submit all proof tasks
+                future_to_index = {
+                    executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter): i 
+                    for i in range(self.n)
+                }
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_index):
+                    i = future_to_index[future]
+                    try:
+                        if future.result():
+                            res += 1
+                    except Exception as e:
+                        print(f"Error in proof {i}: {e}")
+            
+            print(f"Proved {res}/{self.n} statements")
+            return res/self.n
         except Exception as e:
             print(f"Error processing puzzle: {e}")
             raise
