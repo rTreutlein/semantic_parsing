@@ -17,6 +17,7 @@ def main():
     parser.add_argument("--verify", action="store_true", help="Verify the NL2PLN module")
     parser.add_argument("--save-puzzle", help="Save generated puzzle to JSON file")
     parser.add_argument("--load-puzzle", help="Load puzzle from JSON file instead of generating")
+    parser.add_argument("--store-medium", help="Directory to store puzzles with medium difficulty (score != 0 and != 1)")
     args = parser.parse_args()
 
     # Configure LM
@@ -50,6 +51,19 @@ def main():
         print("Processed puzzle:")
         print(puzzle)
         score = processor.process_puzzle(puzzle.sentences,puzzle.question)
+        
+        # Store puzzle if it has medium difficulty and storage directory is specified
+        if args.store_medium and score != 0 and score != 1:
+            storage_dir = Path(args.store_medium)
+            storage_dir.mkdir(parents=True, exist_ok=True)
+            
+            puzzle_filename = f"puzzle_{i+1}_score_{score}.json"
+            puzzle_path = storage_dir / puzzle_filename
+            
+            with open(puzzle_path, 'w') as f:
+                json.dump(puzzle.__dict__['_store'], f, indent=2)
+            
+            print(f"Stored medium difficulty puzzle (score: {score}) to {puzzle_path}")
 
 if __name__ == "__main__":
     main()
