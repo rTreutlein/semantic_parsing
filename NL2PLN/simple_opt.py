@@ -37,7 +37,12 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
             with open(json_file, 'r') as f:
                 puzzle_data = json.load(f)
             
-            # Convert back to dspy.Example
+            # Convert back to dspy.Example and append question to sentences
+            if 'question' in puzzle_data and 'sentences' in puzzle_data:
+                # Create a copy of sentences and append the question
+                sentences_with_question = puzzle_data['sentences'] + [puzzle_data['question']]
+                puzzle_data['sentences'] = sentences_with_question
+            
             puzzle = dspy.Example(**puzzle_data).with_inputs("sentences")
             dataset.append(puzzle)
             
