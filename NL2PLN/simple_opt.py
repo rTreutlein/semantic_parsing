@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import List
 from dspy.teleprompt import MIPROv2
-from simple_puzzle_manager import SimplePuzzleProcessor
+from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 
 def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction]:
@@ -24,7 +24,7 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
         return dataset
     
     # Find all JSON files in the directory
-    json_files = list(puzzles_path.glob("puzzle_*.json"))
+    json_files = list(puzzles_path.glob("puzzle*.json"))
     
     if not json_files:
         print(f"Warning: No puzzle JSON files found in {medium_puzzles_dir}")
@@ -37,8 +37,8 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
             with open(json_file, 'r') as f:
                 puzzle_data = json.load(f)
             
-            # Convert back to dspy.Prediction
-            puzzle = dspy.Prediction(**puzzle_data)
+            # Convert back to dspy.Example
+            puzzle = dspy.Example(**puzzle_data).with_inputs("sentences")
             dataset.append(puzzle)
             
         except Exception as e:
@@ -62,7 +62,7 @@ teleprompter = MIPROv2(
 
 # Load training dataset from medium difficulty puzzles
 # Replace 'path/to/medium/puzzles' with the actual directory path
-trainset = load_medium_puzzles_dataset('path/to/medium/puzzles')
+trainset = load_medium_puzzles_dataset('puzzle')
 
 # Optimize program
 print(f"Optimizing program with MIPROv2...")
