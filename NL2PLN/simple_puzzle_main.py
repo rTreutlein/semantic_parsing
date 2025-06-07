@@ -1,6 +1,7 @@
 import argparse
 import dspy
 import json
+import datetime
 from pathlib import Path
 from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.utils.sample_generator import SampleGenerator
@@ -38,7 +39,7 @@ def main():
             puzzle = dspy.Prediction(**puzzle_data)
         else:
             # Generate new puzzle
-            puzzle = puzzle_gen.generate_sample(numberOfSentences=1)
+            puzzle = puzzle_gen.generate_sample(numberOfSentences=3)
             
             if args.save_puzzle:
                 # Save puzzle to file
@@ -50,14 +51,14 @@ def main():
         
         print("Processed puzzle:")
         print(puzzle)
-        score = processor.process_puzzle(puzzle.sentences,puzzle.question)
+        score = processor.process_puzzle(puzzle)
         
         # Store puzzle if it has medium difficulty and storage directory is specified
         if args.store_medium and score != 0 and score != 1:
             storage_dir = Path(args.store_medium)
             storage_dir.mkdir(parents=True, exist_ok=True)
             
-            puzzle_filename = f"puzzle_{i+1}_score_{score}.json"
+            puzzle_filename = f"puzzle_{i+1}_score_{score}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
             puzzle_path = storage_dir / puzzle_filename
             
             with open(puzzle_path, 'w') as f:
