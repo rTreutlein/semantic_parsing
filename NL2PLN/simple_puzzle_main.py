@@ -11,6 +11,56 @@ def configure_lm(model_name: str = 'openai/gpt-4o'):
     lm = dspy.LM(model_name)
     dspy.configure(lm=lm)
 
+def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
+    """Generate samples with increasing difficulty, collecting 10 medium-difficulty puzzles per sentence count."""
+    puzzle_gen = SampleGenerator()
+    processor = SimplePuzzleProcessor("sample", verify=verify)
+    
+    storage_dir = Path(output_dir)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    
+    total_saved = 0
+    num_sentences = 1
+    
+    while total_saved < num_puzzles:
+        print(f"\nGenerating puzzles with {num_sentences} sentences...")
+        saved_for_this_level = 0
+        attempts = 0
+        max_attempts = 100  # Prevent infinite loops
+        
+        while saved_for_this_level < 10 and total_saved < num_puzzles and attempts < max_attempts:
+            attempts += 1
+            print(f"Attempt {attempts} for {num_sentences} sentences (saved: {saved_for_this_level}/10)")
+            
+            # Generate puzzle
+            puzzle = puzzle_gen.generate_sample(numberOfSentences=num_sentences)
+            score = processor.process_puzzle(puzzle)
+            
+            # Check if it's medium difficulty (score != 0 and != 1)
+            if score != 0 and score != 1:
+                puzzle_filename = f"puzzle_sentences_{num_sentences}_count_{saved_for_this_level + 1}_score_{score}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+                puzzle_path = storage_dir / puzzle_filename
+                
+                with open(puzzle_path, 'w') as f:
+                    json.dump(puzzle.__dict__['_store'], f, indent=2)
+                
+                saved_for_this_level += 1
+                total_saved += 1
+                print(f"Saved medium difficulty puzzle (score: {score}) to {puzzle_path}")
+                print(f"Progress: {total_saved}/{num_puzzles} total puzzles saved")
+        
+        if attempts >= max_attempts:
+            print(f"Warning: Reached maximum attempts ({max_attempts}) for {num_sentences} sentences")
+        
+        num_sentences += 1
+        
+        # Safety check to prevent infinite loop
+        if num_sentences > 10:
+            print("Warning: Reached maximum sentence count (10), stopping generation")
+            break
+    
+    print(f"\nGeneration complete! Saved {total_saved} puzzles to {storage_dir}")
+
 def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
     parser.add_argument("--output", default="puzzle", help="Base name for output files")
@@ -18,12 +68,17 @@ def main():
     parser.add_argument("--verify", action="store_true", help="Verify the NL2PLN module")
     parser.add_argument("--save-puzzle", help="Save generated puzzle to JSON file")
     parser.add_argument("--load-puzzle", help="Load puzzle from JSON file instead of generating")
-    parser.add_argument("--store-medium", help="Directory to store puzzles with medium difficulty (score != 0 and != 1)")
+    parser.add_argument("--generate-samples", help="Directory to generate and store sample puzzles with medium difficulty")
     args = parser.parse_args()
 
     # Configure LM
     #configure_lm('deepseek/deepseek-reasoner')
     configure_lm('openrouter/anthropic/claude-sonnet-4')
+
+    # Check if we should generate samples
+    if args.generate_samples:
+        generate_samples(args.num_puzzles, args.generate_samples, args.verify)
+        return
 
     # Initialize puzzle generator and processor
     puzzle_gen = SampleGenerator()
@@ -52,19 +107,6 @@ def main():
         print("Processed puzzle:")
         print(puzzle)
         score = processor.process_puzzle(puzzle)
-        
-        # Store puzzle if it has medium difficulty and storage directory is specified
-        if args.store_medium and score != 0 and score != 1:
-            storage_dir = Path(args.store_medium)
-            storage_dir.mkdir(parents=True, exist_ok=True)
-            
-            puzzle_filename = f"puzzle_{i+1}_score_{score}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-            puzzle_path = storage_dir / puzzle_filename
-            
-            with open(puzzle_path, 'w') as f:
-                json.dump(puzzle.__dict__['_store'], f, indent=2)
-            
-            print(f"Stored medium difficulty puzzle (score: {score}) to {puzzle_path}")
 
 if __name__ == "__main__":
     main()
