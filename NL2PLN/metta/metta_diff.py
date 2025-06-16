@@ -41,6 +41,8 @@ def tokenize_metta_line(line):
     # Handles parentheses, variables ($...), and other tokens
     tokens = []
     i = 0
+    skip_next = False
+    
     while i < len(line):
         char = line[i]
         
@@ -64,9 +66,21 @@ def tokenize_metta_line(line):
                 j += 1
             if j > i:
                 token = line[i:j]
-                # Normalize numbers for consistent comparison
-                normalized_token = normalize_number(token)
-                tokens.append(normalized_token)
+                
+                # Check if we should skip the next token (after CPU)
+                if skip_next:
+                    # Skip this token and add a normalized placeholder
+                    tokens.append('CPU_FUNCTION')
+                    skip_next = False
+                elif token == 'CPU':
+                    # Add CPU and mark to skip the next token
+                    tokens.append(token)
+                    skip_next = True
+                else:
+                    # Normalize numbers for consistent comparison
+                    normalized_token = normalize_number(token)
+                    tokens.append(normalized_token)
+                
                 i = j
             else:
                 i += 1
