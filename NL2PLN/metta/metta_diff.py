@@ -41,7 +41,7 @@ def tokenize_metta_line(line):
     # Handles parentheses, variables ($...), and other tokens
     tokens = []
     i = 0
-    skip_next = False
+    cpu_function_mode = False
     
     while i < len(line):
         char = line[i]
@@ -52,6 +52,9 @@ def tokenize_metta_line(line):
         elif char in '()':
             tokens.append(char)
             i += 1
+            # Reset CPU function mode when we hit a closing paren
+            if char == ')':
+                cpu_function_mode = False
         elif char == '$':
             # Extract variable name
             j = i + 1
@@ -67,17 +70,24 @@ def tokenize_metta_line(line):
             if j > i:
                 token = line[i:j]
                 
-                # Check if we should skip the next token (after CPU)
-                if skip_next:
-                    # Skip this token and add a normalized placeholder
-                    tokens.append('CPU_FUNCTION')
-                    skip_next = False
-                elif token == 'CPU':
-                    # Add CPU and mark to skip the next token
+                if token == 'CPU':
+                    # Add CPU and enter function normalization mode
                     tokens.append(token)
-                    skip_next = True
+                    cpu_function_mode = True
+                elif cpu_function_mode:
+                    # We're in CPU function mode - normalize any function representation
+                    # This handles both "math.sqrt" and "<built-in", "function", "sqrt>"
+                    if token.startswith('<built-in') or token == 'function' or token.endswith('>') or '.' in token:
+                        # This is part of a function representation, normalize it
+                        tokens.append('CPU_FUNCTION')
+                        cpu_function_mode = False  # Reset after first function token
+                    else:
+                        # Not a function token, process normally
+                        normalized_token = normalize_number(token)
+                        tokens.append(normalized_token)
+                        cpu_function_mode = False
                 else:
-                    # Normalize numbers for consistent comparison
+                    # Normal token processing
                     normalized_token = normalize_number(token)
                     tokens.append(normalized_token)
                 
