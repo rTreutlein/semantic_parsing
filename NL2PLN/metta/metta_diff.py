@@ -339,14 +339,18 @@ def main():
         for norm_line in sorted(only_in_log1, key=lambda x: format_normalized_line(x)):
             count = log1_counts[norm_line]
             count_str = f" (appears {count}x)" if count > 1 else ""
-            print(f"  {format_normalized_line(norm_line)}{count_str}")
+            print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
             
-            if args.show_examples:
-                examples = list(set(log1_examples[norm_line]))[:3]  # Show up to 3 unique examples
-                for example in examples:
-                    print(f"    Example: {example}")
-                if len(log1_examples[norm_line]) > 3:
-                    print(f"    ... and {len(set(log1_examples[norm_line])) - 3} more variants")
+            # Always show at least one original example
+            examples = list(set(log1_examples[norm_line]))[:3]  # Show up to 3 unique examples
+            for i, example in enumerate(examples):
+                if i == 0:
+                    print(f"  Original:   {example}")
+                else:
+                    print(f"              {example}")
+            if len(set(log1_examples[norm_line])) > 3:
+                print(f"              ... and {len(set(log1_examples[norm_line])) - 3} more variants")
+            print()
         print()
     
     if only_in_log2:
@@ -355,14 +359,18 @@ def main():
         for norm_line in sorted(only_in_log2, key=lambda x: format_normalized_line(x)):
             count = log2_counts[norm_line]
             count_str = f" (appears {count}x)" if count > 1 else ""
-            print(f"  {format_normalized_line(norm_line)}{count_str}")
+            print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
             
-            if args.show_examples:
-                examples = list(set(log2_examples[norm_line]))[:3]  # Show up to 3 unique examples
-                for example in examples:
-                    print(f"    Example: {example}")
-                if len(log2_examples[norm_line]) > 3:
-                    print(f"    ... and {len(set(log2_examples[norm_line])) - 3} more variants")
+            # Always show at least one original example
+            examples = list(set(log2_examples[norm_line]))[:3]  # Show up to 3 unique examples
+            for i, example in enumerate(examples):
+                if i == 0:
+                    print(f"  Original:   {example}")
+                else:
+                    print(f"              {example}")
+            if len(set(log2_examples[norm_line])) > 3:
+                print(f"              ... and {len(set(log2_examples[norm_line])) - 3} more variants")
+            print()
         print()
     
     # Check for frequency differences in common lines
@@ -375,12 +383,12 @@ def main():
         print(f"Alpha-equivalent forms with different frequencies ({len(frequency_diffs)}):")
         print("-" * 50)
         for norm_line, count1, count2 in sorted(frequency_diffs, key=lambda x: format_normalized_line(x[0])):
-            print(f"  {format_normalized_line(norm_line)}")
+            print(f"  Normalized: {format_normalized_line(norm_line)}")
             print(f"    {args.log1}: {count1}x")
             print(f"    {args.log2}: {count2}x")
-            if args.show_examples:
-                print(f"    Example from log1: {log1_examples[norm_line][0]}")
-                print(f"    Example from log2: {log2_examples[norm_line][0]}")
+            print(f"    Original from log1: {log1_examples[norm_line][0]}")
+            print(f"    Original from log2: {log2_examples[norm_line][0]}")
+            print()
         print()
     
     if not only_in_log1 and not only_in_log2 and not frequency_diffs:
