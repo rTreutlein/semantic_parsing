@@ -16,6 +16,7 @@ def normalize_number(token):
     """
     Normalize numeric tokens to handle equivalent representations.
     E.g., 9.2e-05 -> 9.2e-5, 1.0 -> 1, 1 -> 1 (consistent formatting)
+    Also rounds to 5 decimal places to handle small rounding differences.
     """
     try:
         # Try to parse as float first
@@ -25,8 +26,14 @@ def normalize_number(token):
         if num.is_integer():
             return str(int(num))  # Convert 1.0 -> 1
         else:
-            # Use 'g' format for consistent representation of floats
-            return f"{num:g}"
+            # Round to 5 decimal places to handle small rounding differences
+            # This treats 0.998228 and 0.998229 as equivalent
+            rounded = round(num, 5)
+            if rounded.is_integer():
+                return str(int(rounded))
+            else:
+                # Use 'g' format for consistent representation of floats
+                return f"{rounded:g}"
     except ValueError:
         # Not a number, return as-is
         return token
