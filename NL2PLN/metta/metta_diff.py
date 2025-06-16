@@ -12,6 +12,30 @@ import sys
 from collections import Counter
 
 
+def normalize_number(token):
+    """
+    Normalize numeric tokens to handle equivalent representations.
+    E.g., 9.2e-05 -> 9.2e-5, 1.0 -> 1.0 (consistent formatting)
+    """
+    try:
+        # Try to parse as float and reformat consistently
+        if 'e' in token.lower() or 'E' in token:
+            # Scientific notation
+            num = float(token)
+            return f"{num:g}"  # Use 'g' format for consistent scientific notation
+        elif '.' in token:
+            # Decimal number
+            num = float(token)
+            return str(num)
+        else:
+            # Try integer
+            int(token)  # Just to validate it's a number
+            return token
+    except ValueError:
+        # Not a number, return as-is
+        return token
+
+
 def tokenize_metta_line(line):
     """
     Tokenize a MeTTa line into tokens, preserving structure.
@@ -43,7 +67,10 @@ def tokenize_metta_line(line):
             while j < len(line) and not line[j].isspace() and line[j] not in '()$':
                 j += 1
             if j > i:
-                tokens.append(line[i:j])
+                token = line[i:j]
+                # Normalize numbers for consistent comparison
+                normalized_token = normalize_number(token)
+                tokens.append(normalized_token)
                 i = j
             else:
                 i += 1
