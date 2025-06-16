@@ -57,8 +57,9 @@ def tokenize_metta_line(line):
         elif char == '$':
             # Extract variable name
             j = i + 1
-            while j < len(line) and (line[j].isalnum() or line[j] in '_#'):
+            while j < len(line) and line[j] not in ' ()':
                 j += 1
+            print(line[i:j])
             tokens.append(('VAR', line[i:j]))
             i = j
         else:
