@@ -42,6 +42,7 @@ def tokenize_metta_line(line):
     tokens = []
     i = 0
     cpu_function_mode = False
+    cpu_function_added = False
     
     while i < len(line):
         char = line[i]
@@ -55,6 +56,7 @@ def tokenize_metta_line(line):
             # Reset CPU function mode when we hit a closing paren
             if char == ')':
                 cpu_function_mode = False
+                cpu_function_added = False
         elif char == '$':
             # Extract variable name
             j = i + 1
@@ -62,6 +64,10 @@ def tokenize_metta_line(line):
                 j += 1
             tokens.append(('VAR', line[i:j]))
             i = j
+            # Reset CPU function mode after processing a variable
+            if cpu_function_mode:
+                cpu_function_mode = False
+                cpu_function_added = False
         else:
             # Extract other tokens (atoms, numbers, etc.)
             j = i
@@ -74,18 +80,22 @@ def tokenize_metta_line(line):
                     # Add CPU and enter function normalization mode
                     tokens.append(token)
                     cpu_function_mode = True
+                    cpu_function_added = False
                 elif cpu_function_mode:
-                    # We're in CPU function mode - normalize any function representation
-                    # This handles both "math.sqrt" and "<built-in", "function", "sqrt>"
-                    if token.startswith('<built-in') or token == 'function' or token.endswith('>') or '.' in token:
-                        # This is part of a function representation, normalize it
+                    # We're in CPU function mode - skip all function-related tokens
+                    if not cpu_function_added:
+                        # Add the normalized function token only once
                         tokens.append('CPU_FUNCTION')
-                        cpu_function_mode = False  # Reset after first function token
-                    else:
-                        # Not a function token, process normally
+                        cpu_function_added = True
+                    # Skip this token (it's part of the function representation)
+                    # Continue until we hit something that's not function-related
+                    if not (token.startswith('<') or token == 'function' or token.endswith('>') or 
+                           'built-in' in token or '.' in token or token in ['sqrt', 'sin', 'cos', 'tan']):
+                        # This token is not part of the function, process it normally
                         normalized_token = normalize_number(token)
                         tokens.append(normalized_token)
                         cpu_function_mode = False
+                        cpu_function_added = False
                 else:
                     # Normal token processing
                     normalized_token = normalize_number(token)
