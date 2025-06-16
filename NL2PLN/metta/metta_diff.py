@@ -78,16 +78,111 @@ def tokenize_metta_line(line):
     return tokens
 
 
+def parse_expression(tokens, start=0):
+    """
+    Parse tokens into a structured expression tree.
+    Returns (expression, next_index)
+    """
+    if start >= len(tokens):
+        return None, start
+    
+    token = tokens[start]
+    
+    if token == '(':
+        # Parse list/expression
+        expr = []
+        i = start + 1
+        while i < len(tokens) and tokens[i] != ')':
+            sub_expr, i = parse_expression(tokens, i)
+            if sub_expr is not None:
+                expr.append(sub_expr)
+        if i < len(tokens) and tokens[i] == ')':
+            i += 1
+        return expr, i
+    else:
+        # Atomic token
+        return token, start + 1
+
+
+def normalize_commutative_ops(expr):
+    """
+    Normalize commutative operations by sorting their arguments.
+    """
+    if not isinstance(expr, list) or len(expr) == 0:
+        return expr
+    
+    # Recursively normalize sub-expressions first
+    normalized_expr = [normalize_commutative_ops(item) for item in expr]
+    
+    # Check if this is a commutative operation
+    if len(normalized_expr) >= 3:
+        op = normalized_expr[0]
+        if op in ['revision', 'And', 'Or', 'conjunction']:  # Add more as needed
+            # Sort arguments (skip the operator)
+            sorted_args = sorted(normalized_expr[1:], key=str)
+            return [op] + sorted_args
+    
+    return normalized_expr
+
+
+def normalize_proof_steps(expr):
+    """
+    Normalize proof step ordering in |- expressions.
+    """
+    if not isinstance(expr, list) or len(expr) == 0:
+        return expr
+    
+    # Recursively process sub-expressions first
+    normalized_expr = [normalize_proof_steps(item) for item in expr]
+    
+    # Check if this is a |- (turnstile) expression
+    if len(normalized_expr) >= 3 and normalized_expr[1] == '|-':
+        # The structure is typically: ( ( ) |- ( step1 step2 step3 ... ) )
+        if len(normalized_expr) >= 3 and isinstance(normalized_expr[2], list):
+            # Sort the proof steps
+            proof_steps = normalized_expr[2]
+            if isinstance(proof_steps, list):
+                sorted_steps = sorted(proof_steps, key=str)
+                return [normalized_expr[0], '|-', sorted_steps]
+    
+    return normalized_expr
+
+
 def normalize_to_alpha_equivalent(tokens):
     """
-    Convert tokens to alpha-equivalent form by replacing all variables
-    with canonical names based on their order of appearance.
+    Convert tokens to alpha-equivalent form by:
+    1. Replacing all variables with canonical names
+    2. Normalizing commutative operations
+    3. Normalizing proof step ordering
     """
+    # First, parse into expression tree
+    expr, _ = parse_expression(tokens)
+    if expr is None:
+        return tuple(tokens)
+    
+    # Apply structural normalizations
+    expr = normalize_commutative_ops(expr)
+    expr = normalize_proof_steps(expr)
+    
+    # Flatten back to tokens for variable normalization
+    def flatten_expr(e):
+        if isinstance(e, list):
+            result = ['(']
+            for item in e:
+                result.extend(flatten_expr(item))
+            result.append(')')
+            return result
+        else:
+            return [e]
+    
+    flattened = flatten_expr(expr)
+    
+    # Now do variable normalization
     var_mapping = {}
     var_counter = 0
     normalized = []
     
-    for token in tokens:
+    for token in flattened:
         if isinstance(token, tuple) and token[0] == 'VAR':
             var_name = token[1]
             if var_name not in var_mapping:
