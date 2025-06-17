@@ -316,19 +316,37 @@ def interactive_diff_mode(log1_lines, log2_lines, log1_path, log2_path, only_in_
             log2_line_nums[norm] = []
         log2_line_nums[norm].append(line_num)
     
-    # Collect all differences
+    # Collect all differences, ordered by first appearance in files
     all_diffs = []
     
-    # Add lines only in log1
+    # Add lines only in log1, ordered by first appearance in log1
+    log1_only_with_line_nums = []
     for norm_line in only_in_log1:
+        first_line_num = log1_line_nums[norm_line][0]
+        log1_only_with_line_nums.append((first_line_num, norm_line))
+    
+    # Sort by line number and add to all_diffs
+    for _, norm_line in sorted(log1_only_with_line_nums):
         all_diffs.append(('only_in_log1', norm_line))
     
-    # Add lines only in log2
+    # Add lines only in log2, ordered by first appearance in log2
+    log2_only_with_line_nums = []
     for norm_line in only_in_log2:
+        first_line_num = log2_line_nums[norm_line][0]
+        log2_only_with_line_nums.append((first_line_num, norm_line))
+    
+    # Sort by line number and add to all_diffs
+    for _, norm_line in sorted(log2_only_with_line_nums):
         all_diffs.append(('only_in_log2', norm_line))
     
-    # Add frequency differences
+    # Add frequency differences, ordered by first appearance in log1
+    freq_diff_with_line_nums = []
     for norm_line, count1, count2 in frequency_diffs:
+        first_line_num = log1_line_nums[norm_line][0]
+        freq_diff_with_line_nums.append((first_line_num, norm_line, count1, count2))
+    
+    # Sort by line number and add to all_diffs
+    for _, norm_line, count1, count2 in sorted(freq_diff_with_line_nums):
         all_diffs.append(('frequency_diff', norm_line, count1, count2))
     
     if not all_diffs:
