@@ -10,6 +10,7 @@ import argparse
 import re
 import sys
 from collections import Counter
+import os
 
 
 def normalize_number(token):
@@ -282,6 +283,150 @@ def format_normalized_line(normalized_tokens):
     return str(normalized_tokens)
 
 
+def show_context(lines, target_line_num, context_size=3):
+    """Show lines around a target line number with context."""
+    start = max(0, target_line_num - context_size - 1)
+    end = min(len(lines), target_line_num + context_size)
+    
+    for i in range(start, end):
+        marker = ">>> " if i == target_line_num - 1 else "    "
+        print(f"{marker}{i+1:4d}: {lines[i].rstrip()}")
+
+
+def interactive_diff_mode(log1_lines, log2_lines, log1_path, log2_path, only_in_log1, only_in_log2, frequency_diffs, log1_examples, log2_examples, log1_counts, log2_counts):
+    """Interactive mode to step through differences one by one."""
+    
+    # Read original file contents for context
+    with open(log1_path, 'r', encoding='utf-8') as f:
+        log1_raw_lines = f.readlines()
+    with open(log2_path, 'r', encoding='utf-8') as f:
+        log2_raw_lines = f.readlines()
+    
+    # Create mappings from normalized forms to line numbers
+    log1_line_nums = {}
+    log2_line_nums = {}
+    
+    for norm, line_num, orig in log1_lines:
+        if norm not in log1_line_nums:
+            log1_line_nums[norm] = []
+        log1_line_nums[norm].append(line_num)
+    
+    for norm, line_num, orig in log2_lines:
+        if norm not in log2_line_nums:
+            log2_line_nums[norm] = []
+        log2_line_nums[norm].append(line_num)
+    
+    # Collect all differences
+    all_diffs = []
+    
+    # Add lines only in log1
+    for norm_line in only_in_log1:
+        all_diffs.append(('only_in_log1', norm_line))
+    
+    # Add lines only in log2
+    for norm_line in only_in_log2:
+        all_diffs.append(('only_in_log2', norm_line))
+    
+    # Add frequency differences
+    for norm_line, count1, count2 in frequency_diffs:
+        all_diffs.append(('frequency_diff', norm_line, count1, count2))
+    
+    if not all_diffs:
+        print("✓ Logs are alpha-equivalent (same logical content)")
+        return
+    
+    print(f"\nFound {len(all_diffs)} differences. Use 'n' for next, 'p' for previous, 'q' to quit, 'h' for help.")
+    print("=" * 80)
+    
+    current_idx = 0
+    
+    while True:
+        if current_idx < 0:
+            current_idx = 0
+        elif current_idx >= len(all_diffs):
+            current_idx = len(all_diffs) - 1
+        
+        diff = all_diffs[current_idx]
+        diff_type = diff[0]
+        
+        print(f"\nDifference {current_idx + 1} of {len(all_diffs)}")
+        print("-" * 40)
+        
+        if diff_type == 'only_in_log1':
+            norm_line = diff[1]
+            count = log1_counts[norm_line]
+            count_str = f" (appears {count}x)" if count > 1 else ""
+            
+            print(f"ONLY IN {log1_path}{count_str}")
+            print(f"Normalized: {format_normalized_line(norm_line)}")
+            print(f"Original:   {log1_examples[norm_line][0]}")
+            
+            if norm_line in log1_line_nums:
+                print(f"\nContext in {log1_path}:")
+                show_context(log1_raw_lines, log1_line_nums[norm_line][0])
+        
+        elif diff_type == 'only_in_log2':
+            norm_line = diff[1]
+            count = log2_counts[norm_line]
+            count_str = f" (appears {count}x)" if count > 1 else ""
+            
+            print(f"ONLY IN {log2_path}{count_str}")
+            print(f"Normalized: {format_normalized_line(norm_line)}")
+            print(f"Original:   {log2_examples[norm_line][0]}")
+            
+            if norm_line in log2_line_nums:
+                print(f"\nContext in {log2_path}:")
+                show_context(log2_raw_lines, log2_line_nums[norm_line][0])
+        
+        elif diff_type == 'frequency_diff':
+            norm_line, count1, count2 = diff[1], diff[2], diff[3]
+            
+            print(f"FREQUENCY DIFFERENCE")
+            print(f"Normalized: {format_normalized_line(norm_line)}")
+            print(f"{log1_path}: {count1}x")
+            print(f"{log2_path}: {count2}x")
+            print(f"Original from log1: {log1_examples[norm_line][0]}")
+            print(f"Original from log2: {log2_examples[norm_line][0]}")
+            
+            if norm_line in log1_line_nums:
+                print(f"\nContext in {log1_path} (first occurrence):")
+                show_context(log1_raw_lines, log1_line_nums[norm_line][0])
+            
+            if norm_line in log2_line_nums:
+                print(f"\nContext in {log2_path} (first occurrence):")
+                show_context(log2_raw_lines, log2_line_nums[norm_line][0])
+        
+        print("\n" + "=" * 80)
+        
+        try:
+            command = input("Command (n=next, p=previous, q=quit, h=help): ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting...")
+            break
+        
+        if command in ['n', 'next', '']:
+            current_idx += 1
+            if current_idx >= len(all_diffs):
+                print("Reached end of differences.")
+                current_idx = len(all_diffs) - 1
+        elif command in ['p', 'prev', 'previous']:
+            current_idx -= 1
+            if current_idx < 0:
+                print("At beginning of differences.")
+                current_idx = 0
+        elif command in ['q', 'quit', 'exit']:
+            break
+        elif command in ['h', 'help']:
+            print("\nCommands:")
+            print("  n, next    - Go to next difference")
+            print("  p, prev    - Go to previous difference")
+            print("  q, quit    - Exit interactive mode")
+            print("  h, help    - Show this help")
+            print("  <enter>    - Same as next")
+        else:
+            print(f"Unknown command: {command}. Type 'h' for help.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Compare two MeTTa interpreter logs using alpha equivalence"
@@ -292,6 +437,8 @@ def main():
                        help="Show original lines alongside normalized ones")
     parser.add_argument("--show-examples", action="store_true",
                        help="Show example original lines for each unique normalized form")
+    parser.add_argument("-i", "--interactive", action="store_true",
+                       help="Interactive mode to step through differences")
     
     args = parser.parse_args()
     
@@ -327,72 +474,79 @@ def main():
             log2_examples[norm] = []
         log2_examples[norm].append(orig)
     
-    # Report results
-    print(f"Log 1: {len(log1_lines)} lines ({len(log1_normalized)} unique alpha-equivalent forms)")
-    print(f"Log 2: {len(log2_lines)} lines ({len(log2_normalized)} unique alpha-equivalent forms)")
-    print(f"Common alpha-equivalent forms: {len(log1_normalized & log2_normalized)}")
-    print()
-    
-    if only_in_log1:
-        print(f"Alpha-equivalent forms only in {args.log1} ({len(only_in_log1)}):")
-        print("-" * 50)
-        for norm_line in sorted(only_in_log1, key=lambda x: format_normalized_line(x)):
-            count = log1_counts[norm_line]
-            count_str = f" (appears {count}x)" if count > 1 else ""
-            print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
-            
-            # Always show at least one original example
-            examples = list(set(log1_examples[norm_line]))[:3]  # Show up to 3 unique examples
-            for i, example in enumerate(examples):
-                if i == 0:
-                    print(f"  Original:   {example}")
-                else:
-                    print(f"              {example}")
-            if len(set(log1_examples[norm_line])) > 3:
-                print(f"              ... and {len(set(log1_examples[norm_line])) - 3} more variants")
-            print()
-        print()
-    
-    if only_in_log2:
-        print(f"Alpha-equivalent forms only in {args.log2} ({len(only_in_log2)}):")
-        print("-" * 50)
-        for norm_line in sorted(only_in_log2, key=lambda x: format_normalized_line(x)):
-            count = log2_counts[norm_line]
-            count_str = f" (appears {count}x)" if count > 1 else ""
-            print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
-            
-            # Always show at least one original example
-            examples = list(set(log2_examples[norm_line]))[:3]  # Show up to 3 unique examples
-            for i, example in enumerate(examples):
-                if i == 0:
-                    print(f"  Original:   {example}")
-                else:
-                    print(f"              {example}")
-            if len(set(log2_examples[norm_line])) > 3:
-                print(f"              ... and {len(set(log2_examples[norm_line])) - 3} more variants")
-            print()
-        print()
-    
     # Check for frequency differences in common lines
     frequency_diffs = []
     for norm_line in log1_normalized & log2_normalized:
         if log1_counts[norm_line] != log2_counts[norm_line]:
             frequency_diffs.append((norm_line, log1_counts[norm_line], log2_counts[norm_line]))
     
-    if frequency_diffs:
-        print(f"Alpha-equivalent forms with different frequencies ({len(frequency_diffs)}):")
-        print("-" * 50)
-        for norm_line, count1, count2 in sorted(frequency_diffs, key=lambda x: format_normalized_line(x[0])):
-            print(f"  Normalized: {format_normalized_line(norm_line)}")
-            print(f"    {args.log1}: {count1}x")
-            print(f"    {args.log2}: {count2}x")
-            print(f"    Original from log1: {log1_examples[norm_line][0]}")
-            print(f"    Original from log2: {log2_examples[norm_line][0]}")
-            print()
-        print()
+    # Report results
+    print(f"Log 1: {len(log1_lines)} lines ({len(log1_normalized)} unique alpha-equivalent forms)")
+    print(f"Log 2: {len(log2_lines)} lines ({len(log2_normalized)} unique alpha-equivalent forms)")
+    print(f"Common alpha-equivalent forms: {len(log1_normalized & log2_normalized)}")
     
-    if not only_in_log1 and not only_in_log2 and not frequency_diffs:
-        print("✓ Logs are alpha-equivalent (same logical content)")
+    if args.interactive:
+        interactive_diff_mode(log1_lines, log2_lines, args.log1, args.log2, 
+                            only_in_log1, only_in_log2, frequency_diffs,
+                            log1_examples, log2_examples, log1_counts, log2_counts)
+    else:
+        # Original non-interactive output
+        print()
+        
+        if only_in_log1:
+            print(f"Alpha-equivalent forms only in {args.log1} ({len(only_in_log1)}):")
+            print("-" * 50)
+            for norm_line in sorted(only_in_log1, key=lambda x: format_normalized_line(x)):
+                count = log1_counts[norm_line]
+                count_str = f" (appears {count}x)" if count > 1 else ""
+                print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
+                
+                # Always show at least one original example
+                examples = list(set(log1_examples[norm_line]))[:3]  # Show up to 3 unique examples
+                for i, example in enumerate(examples):
+                    if i == 0:
+                        print(f"  Original:   {example}")
+                    else:
+                        print(f"              {example}")
+                if len(set(log1_examples[norm_line])) > 3:
+                    print(f"              ... and {len(set(log1_examples[norm_line])) - 3} more variants")
+                print()
+            print()
+        
+        if only_in_log2:
+            print(f"Alpha-equivalent forms only in {args.log2} ({len(only_in_log2)}):")
+            print("-" * 50)
+            for norm_line in sorted(only_in_log2, key=lambda x: format_normalized_line(x)):
+                count = log2_counts[norm_line]
+                count_str = f" (appears {count}x)" if count > 1 else ""
+                print(f"  Normalized: {format_normalized_line(norm_line)}{count_str}")
+                
+                # Always show at least one original example
+                examples = list(set(log2_examples[norm_line]))[:3]  # Show up to 3 unique examples
+                for i, example in enumerate(examples):
+                    if i == 0:
+                        print(f"  Original:   {example}")
+                    else:
+                        print(f"              {example}")
+                if len(set(log2_examples[norm_line])) > 3:
+                    print(f"              ... and {len(set(log2_examples[norm_line])) - 3} more variants")
+                print()
+            print()
+        
+        if frequency_diffs:
+            print(f"Alpha-equivalent forms with different frequencies ({len(frequency_diffs)}):")
+            print("-" * 50)
+            for norm_line, count1, count2 in sorted(frequency_diffs, key=lambda x: format_normalized_line(x[0])):
+                print(f"  Normalized: {format_normalized_line(norm_line)}")
+                print(f"    {args.log1}: {count1}x")
+                print(f"    {args.log2}: {count2}x")
+                print(f"    Original from log1: {log1_examples[norm_line][0]}")
+                print(f"    Original from log2: {log2_examples[norm_line][0]}")
+                print()
+            print()
+        
+        if not only_in_log1 and not only_in_log2 and not frequency_diffs:
+            print("✓ Logs are alpha-equivalent (same logical content)")
     
     return 0 if not only_in_log1 and not only_in_log2 else 1
 
