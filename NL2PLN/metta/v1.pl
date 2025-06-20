@@ -1,10 +1,13 @@
 collect_used_targets([], _, [], [], []).
+
+%If unification works add to Middle
 collect_used_targets([H|T], Targets, Left, [H|Middle], [MatchedTarget|Used]) :-
     member(MatchedTarget, Targets),
     H = MatchedTarget,
     collect_used_targets(T, Targets, Left, Middle, Used).
+
+%Base case always add to Left
 collect_used_targets([H|T], Targets, [H|Left], Middle, Used) :-
-    %\+ (member(Target, Targets), H = Target),
     collect_used_targets(T, Targets, Left, Middle, Used).
 
 % match_partition(+Input, +Targets, -Left, -Middle, -Right)
