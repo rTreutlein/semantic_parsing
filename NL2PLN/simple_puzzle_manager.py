@@ -9,23 +9,25 @@ from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
 class SimpleProofHandler:
-    def __init__(self, metta_handler,
-                 query: str,
-                 premises: List[str]):
+    def __init__(self, metta_handler):
         self.metta_handler = metta_handler
-        self.query = query
-        self.premises = premises
 
-    def try_to_proof(self) -> bool:
+    def try_to_proof(self,pln_data) -> bool:
         """Attempt to prove conclusion using current KB"""
+        print(pln_data)
+
+
+        query = pln_data.questions[0]
+        premises = pln_data.statements
+
         print("Trying to proof:")
-        for stmt in self.premises:
+        for stmt in premises:
             print(stmt)
             self.metta_handler.add_atom(stmt)
         
         print("Running backward chaining...")
-        print(self.query)
-        proof_steps, proven = self.metta_handler.query(self.query)
+        print(query)
+        proof_steps, proven = self.metta_handler.query(query)
         print("----------------------------------------------")
         print("Backward Results:")
         print(proven)
@@ -60,15 +62,13 @@ class SimplePuzzleProcessor:
         metta_handler = MeTTaHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
         metta_handler.load_kb_from_file()
         
-        proof_handler = SimpleProofHandler(
-            metta_handler,
-            pln_data[i].questions[0],
-            pln_data[i].statements
-        )
-        return proof_handler.try_to_proof()
+        proof_handler = SimpleProofHandler(metta_handler)
+        return proof_handler.try_to_proof(pln_data[i])
 
-    def process_puzzle(self, premises: List[str], query: str):
+    def process_puzzle(self, puzzle: dspy.Prediction):
         """Process a complete puzzle with premises and conclusion."""
+        premises = puzzle.sentences
+        query = puzzle.question
         print(f"Processing puzzle with {len(premises)} premises")
         
         self.puzzle_counter += 1    
@@ -81,7 +81,8 @@ class SimplePuzzleProcessor:
 
             # Run proofs in parallel
             res = 0
-            with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
+            #with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
+            with ThreadPoolExecutor(max_workers=1) as executor:
                 # Submit all proof tasks
                 future_to_index = {
                     executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter): i 

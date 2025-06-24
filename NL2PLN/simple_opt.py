@@ -3,8 +3,9 @@ import json
 from pathlib import Path
 from typing import List
 from dspy.teleprompt import MIPROv2
-from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
+from NL2PLN.simple_puzzle_manager import SimpleProofHandler
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
+from NL2PLN.metta.metta_handler import MeTTaHandler
 
 def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction]:
     """
@@ -57,12 +58,20 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
 lm = dspy.LM('openrouter/anthropic/claude-sonnet-4')
 dspy.configure(lm=lm)
 
-processor = SimplePuzzleProcessor("optimization")
+metta_handler = MeTTaHandler(f"optimizer.metta")
+spp = SimpleProofHandler(metta_handler)
+
+def metricfunction(example, predictions : List[dspy.Prediction], trace=None):
+    cnt = 0
+    for prediction in predictions:
+        if spp.try_to_proof(prediction):
+            cnt += 1
+    return cnt/len(predictions)
 
 # Initialize optimizer
 teleprompter = MIPROv2(
-    metric=processor.process_puzzle,
-    auto="medium", # Can choose between light, medium, and heavy optimization runs
+    metric=metricfunction,
+    auto="light", # Can choose between light, medium, and heavy optimization runs
 )
 
 # Load training dataset from medium difficulty puzzles
@@ -72,7 +81,7 @@ trainset = load_medium_puzzles_dataset('puzzle')
 # Optimize program
 print(f"Optimizing program with MIPROv2...")
 optimized_program = teleprompter.compile(
-    SimpleNL2PLN(n=3),
+    SimpleNL2PLN(n=1),
     trainset=trainset,
     requires_permission_to_run=False,
 )

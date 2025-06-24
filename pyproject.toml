@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.40.0",
     "dspy-ai>=2.5.43",
-    "dspy==2.6.11",
+    "dspy==2.6.27",
     "hyperon==0.2.5",
     "ollama>=0.4.4",
     "pytest>=8.3.4",

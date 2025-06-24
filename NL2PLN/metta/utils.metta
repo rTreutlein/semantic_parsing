@@ -40,12 +40,26 @@
 (= (tracem $msg $a) (let $executed $a (trace! ($msg $executed) $executed)))
 
 ;Time an expression and return the result
-(: time (-> Atom $a))
-(= (time $expr)
+(: mtime (-> Atom $a))
+(= (mtime $expr)
+   (let $start ((py-atom time.time))
+   (let $res (collapse $expr)
+   (let $stop ((py-atom time.time))
+   (Time (- $stop $start) $res)))))
+
+(: tt (-> Atom Atom $a))
+(= (tt $msg $expr)
    (let $start ((py-atom time.time))
    (let $res $expr
    (let $stop ((py-atom time.time))
-   (Time (- $stop $start) $res)))))
+   (trace! (Time (- $stop $start) ($msg $res)) $res)))))
+
+;;Because mettalog eliminates duplicates
+(= (munion-atom $list1 $list2)
+   (if-decons-expr $list1 $head $tail
+      (let $res (munion-atom $tail $list2)
+         (cons-atom $head $res))
+      $list2))
 
 ;lambda
 (: \1 (-> Atom Atom (-> Atom $r)))
@@ -56,7 +70,7 @@
 (= (reverse $list)
    (if-decons-expr $list $head $tail
       (let $ntail (reverse $tail)
-         (union-atom $ntail ($head)))
+         (munion-atom $ntail ($head)))
       ()))
 
 !(assertEqual (reverse (a b c)) (c b a))
@@ -104,13 +118,6 @@
 
 !(assertEqual (foldr (1 2 3) 0 +) 6)
 
-;;Because mettalog eliminates duplicates
-(= (munion-atom $list1 $list2)
-   (if-decons-expr $list1 $head $tail
-      (let $res (munion-atom $tail $list2)
-         (cons-atom $head $res))
-      $list2))
-
 ;;Concat 2 sets together
 ;;If either set is a variable, return the other set
 (= (concat $list1 $list2)
@@ -124,6 +131,8 @@
 
 ;;Check if 3 Atoms are unifiable without modifying them
 (= (=unify $a $b) (eval (sealed ($a $b) (unify $a $b True False))))
+
+!(assertEqualAlpha (let ($v1 $v2) ($a a) ((=unify $v1 $v2) $v1 $v2)) (True $a a))
 
 ;;Remove $elem from set if it can be unified with an element in $list
 ;;Return the unified $elem and the remaining set
@@ -273,6 +282,10 @@
    (if (or (is-variable $list1) (is-variable $list2))
      ($list1 () $list2)
      (foldr $list1 (() () $list2) (overlap_ff removePrf))))
+
+!(assertEqualToResult
+  (overlap ((: a2 (A 2) tv)) ((: $43991898 (A $v) $43991990)))
+  ((((: a2 (A 2) tv)) () ((: $43991898 (A $v) $43991990))) (() ((: a2 (A 2) tv)) ())))
 
 (= (overlapAlphaType $list1 $list2)
    (if (or (is-variable $list1) (is-variable $list2))

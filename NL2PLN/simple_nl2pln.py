@@ -3,7 +3,10 @@ from .utils.prompts import NL2PLN_Signature
 from .utils.cleanPLN import cleanPLN
 
 class SimpleNL2PLN(dspy.Module):
-    def __init__(self):
+    def __init__(self,n):
+        print("SimpleNL2PLN n:")
+        #print(n)
+        self.n = n
         self.convert = dspy.ChainOfThought(NL2PLN_Signature)
         optimized = dspy.load("nl2pln")
         if optimized:
@@ -14,9 +17,7 @@ class SimpleNL2PLN(dspy.Module):
             print("Failed to load optimized")
             exit()
 
-    def forward(self, sentences, previous_sentences=None, n=1):
-        if n > 1:
-            raise NotImplementedError("Only n=1 is supported")
+    def forward(self, sentences, previous_sentences=None):
         # Handle single sentence case
         if isinstance(sentences, str):
             sentences = [sentences]
@@ -34,14 +35,17 @@ class SimpleNL2PLN(dspy.Module):
         print(previous_sentences)
         print("----------------------------------------------")
 
-        res = self.convert(
-            sentences=joined_sentences,
-            similar=selected_examples,
-            previous=previous_sentences,
-        )
 
-        # Post-process all outputs
-        res.statements = [cleanPLN(x) for x in res.statements]
-        res.questions = [cleanPLN(x) for x in res.questions]
-        
-        return res
+        reslist = []
+        with dspy.context(lm=dspy.LM('openrouter/anthropic/claude-sonnet-4',temperature=1,cache=False)):
+            for i in range(self.n):
+                res = self.convert(
+                    sentences=joined_sentences,
+                    similar=selected_examples,
+                    previous=previous_sentences,
+                )
+                res.statements = [cleanPLN(x) for x in res.statements]
+                res.questions = [cleanPLN(x) for x in res.questions]
+                reslist.append(res)
+
+        return reslist[0] if self.n == 1 else reslist
