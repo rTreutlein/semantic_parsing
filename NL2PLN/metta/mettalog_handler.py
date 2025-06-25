@@ -23,9 +23,10 @@ class MettalogHandler:
         if not self._read_only:
             path = os.path.join(relative_path, 'compiler')
             print(path)
-            self._send_command(f"!(import! &self ./{path})")
-            self._send_command("!(bind! &kb (init-kb))")
-            self._send_command("!(&kb)")
+            print("Importing and initalizing")
+            print(self._send_command(f"!(import! &self ./{path})"))
+            print(self._send_command("!(bind! &kb (init-kb))"))
+            print(self._send_command("!(&kb)"))
 
     def _start_process(self):
         """Start the mettalog process with stdin/stdout pipes"""
@@ -52,11 +53,12 @@ class MettalogHandler:
             self.process.stdin.write(command + '\n')
             self.process.stdin.flush()
             
-            # Read output until we get a prompt or empty line
+            # Read output until we get a prompt
             output_lines = []
             while True:
                 line = self.process.stdout.readline()
-                if not line or line.strip() == '':
+                print(line)
+                if not line:
                     break
                 output_lines.append(line.strip())
             
