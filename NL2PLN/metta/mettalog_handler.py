@@ -8,20 +8,77 @@ class MettalogHandler:
     def __init__(self, file: str, read_only: bool = False):
         self.file = file
         self._read_only = read_only
+        self.process = None
+        
         script_dir = os.path.dirname(os.path.abspath(__file__))
         relative_path = os.path.relpath(script_dir, start=os.getcwd())
         print(os.getcwd())
         print(script_dir)
         print(relative_path)
         
-        # Initialize the file with compiler import and KB initialization
+        # Start the mettalog process
+        self._start_process()
+        
+        # Initialize with compiler import and KB initialization
         if not self._read_only:
-            with open(self.file, 'w') as f:
-                path = os.path.join(relative_path, 'compiler')
-                print(path)
-                f.write(f"!(import! &self ./{path})\n")
-                f.write("!(bind! &kb (init-kb))\n")
-                f.write("!(&kb)\n")
+            path = os.path.join(relative_path, 'compiler')
+            print(path)
+            self._send_command(f"!(import! &self ./{path})")
+            self._send_command("!(bind! &kb (init-kb))")
+            self._send_command("!(&kb)")
+
+    def _start_process(self):
+        """Start the mettalog process with stdin/stdout pipes"""
+        try:
+            self.process = subprocess.Popen(
+                ['mettalog'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+        except FileNotFoundError:
+            raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
+    
+    def _send_command(self, command: str) -> List[str]:
+        """Send a command to the mettalog process and return the output"""
+        if self.process is None or self.process.poll() is not None:
+            self._start_process()
+        
+        try:
+            # Send command
+            self.process.stdin.write(command + '\n')
+            self.process.stdin.flush()
+            
+            # Read output until we get a prompt or empty line
+            output_lines = []
+            while True:
+                line = self.process.stdout.readline()
+                if not line or line.strip() == '':
+                    break
+                output_lines.append(line.strip())
+            
+            return output_lines
+            
+        except Exception as e:
+            print(f"Error communicating with mettalog process: {e}")
+            self._restart_process()
+            return []
+    
+    def _restart_process(self):
+        """Restart the mettalog process if it becomes unresponsive"""
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+        self._start_process()
+    
+    def __del__(self):
+        """Clean up the process when the handler is destroyed"""
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
 
     @staticmethod
     def clean_variable_names(expr: str) -> str:
@@ -35,48 +92,24 @@ class MettalogHandler:
 
     def add_atom(self, atom: str) -> None:
         if not self._read_only:
+            self._send_command(f'!(compileAdd &kb {atom})')
+            # Also append to file for persistence
             with open(self.file, 'a') as f:
                 f.write(f'!(compileAdd &kb {atom})\n')
 
     def query(self, atom: str) -> Tuple[List[str], bool]:
-        # Create a temporary file for the query
-        temp_file = f"{self.file}.query_temp"
+        """Query the knowledge base and return results"""
+        output_lines = self._send_command(f'!(query &kb (fromNumber 5) {atom})')
         
-        # Copy current file content and add query
-        if not self._read_only:
-            with open(self.file, 'r') as original:
-                content = original.read()
-            
-            with open(temp_file, 'w') as temp:
-                temp.write(content)
-                temp.write(f'!(query &kb (fromNumber 5) {atom})\n')
+        # Parse the output to extract query results
+        # This is a simplified parser - may need adjustment based on actual mettalog output format
+        results = []
+        for line in output_lines:
+            if line.strip() and not line.startswith('!'):
+                results.append(line.strip())
         
-        # Execute mettalog on the temporary file
-        try:
-            result = subprocess.run(['mettalog', temp_file], 
-                                  capture_output=True, text=True, check=True)
-            output_lines = result.stdout.strip().split('\n')
-            
-            # Parse the output to extract query results
-            # This is a simplified parser - may need adjustment based on actual mettalog output format
-            results = []
-            for line in output_lines:
-                if line.strip() and not line.startswith('!'):
-                    results.append(line.strip())
-            
-            proven = len(results) > 0
-            
-            # Clean up temporary file
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-                
-            return results, proven
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Error running mettalog: {e}")
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-            return [], False
+        proven = len(results) > 0
+        return results, proven
 
     def add_to_context(self, atom: str) -> str | None:
         """Add atom to context if no conflict exists.
@@ -88,19 +121,13 @@ class MettalogHandler:
         return None
         
     def run(self, atom: str):
+        """Run a command and return the output"""
+        output_lines = self._send_command(atom)
         if not self._read_only:
+            # Also append to file for persistence
             with open(self.file, 'a') as f:
                 f.write(f"{atom}\n")
-        
-        # Execute mettalog to get results
-        try:
-            result = subprocess.run(['mettalog', self.file], 
-                                  capture_output=True, text=True, check=True)
-            output_lines = result.stdout.strip().split('\n')
-            return [output_lines]
-        except subprocess.CalledProcessError as e:
-            print(f"Error running mettalog: {e}")
-            return [[]]
+        return [output_lines]
 
     def run_clean(self, atom: str) -> List[str]:
         res = self.run(atom)
@@ -111,14 +138,20 @@ class MettalogHandler:
             print("Warning: Cannot store KB in read-only mode")
             return
         
-        # Add command to match and output KB content
+        # Send command to match and output KB content
+        self._send_command('!(match &kb $a $a)')
+        # Also append to file for persistence
         with open(self.file, 'a') as f:
             f.write('!(match &kb $a $a)\n')
 
     def load_kb_from_file(self):
         if os.path.exists(self.file):
-            # File already exists, KB will be loaded when mettalog runs
-            pass
+            # Load existing file content into the running process
+            with open(self.file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        self._send_command(line)
         else:
             print(f"Warning: File {self.file} does not exist. No KB loaded.")
 
@@ -139,7 +172,7 @@ if __name__ == '__main__':
 
     print(handler.run("!(bind! &file (file-open! \"./out.metta\" \"wc\"))"))
 
-    print(handler.run("!(file-write! &file (show-cs &kb)"))
+    print(handler.run("!(file-write! &file (show-cs &kb))"))
 
     #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
