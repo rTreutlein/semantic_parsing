@@ -60,7 +60,8 @@ class MettalogHandler:
                     break
                 output_lines.append(line.strip())
             
-            return output_lines
+            # Return only the last line as it contains the actual output
+            return [output_lines[-1]] if output_lines else []
             
         except Exception as e:
             print(f"Error communicating with mettalog process: {e}")
