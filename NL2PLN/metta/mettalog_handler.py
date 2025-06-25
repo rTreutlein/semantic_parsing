@@ -12,9 +12,6 @@ class MettalogHandler:
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         relative_path = os.path.relpath(script_dir, start=os.getcwd())
-        print(os.getcwd())
-        print(script_dir)
-        print(relative_path)
         
         # Start the mettalog process
         self._start_process()
@@ -22,8 +19,6 @@ class MettalogHandler:
         # Initialize with compiler import and KB initialization
         if not self._read_only:
             path = os.path.join(relative_path, 'compiler')
-            print(path)
-            print("Importing and initalizing")
             #print(self._send_command(f"!(import! &self ./{path})"))
             #print(self._send_command("!(bind! &kb (init-kb))"))
             #print(self._send_command("!(&kb)"))
@@ -55,8 +50,7 @@ class MettalogHandler:
         
         while True:
             char = self.process.stdout.read(1)
-            if capture_output:
-                print(char, end='')
+            print(char, end='')
             if not char:
                 break
             
