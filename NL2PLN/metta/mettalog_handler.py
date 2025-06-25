@@ -79,8 +79,15 @@ class MettalogHandler:
             # Split into lines and filter out empty lines
             output_lines = [line.strip() for line in output.split('\n') if line.strip()]
             
-            # Return only the last line as it contains the actual output
-            return output_lines[-1]
+            # Return only the last line as it contains the actual output, with ANSI codes removed
+            if output_lines:
+                last_line = output_lines[-1]
+                # Remove ANSI color codes (escape sequences like \x1b[0m)
+                import re
+                last_line = re.sub(r'\x1b\[[0-9;]*m', '', last_line)
+                return last_line
+            else:
+                return ""
             
         except Exception as e:
             print(f"Error communicating with mettalog process: {e}")
