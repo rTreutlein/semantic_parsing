@@ -120,27 +120,15 @@ class MettalogHandler:
         results = []
         try:
             # The output format appears to be: [(((: $var expr tv)) |- ((: rule conclusion tv)))]
-            # We want to extract the conclusions from the proof results
+            # We want to extract the entire elements from the list
             
-            # Remove outer brackets and split by proof entries
+            # Remove outer brackets and extract the content
             if output.startswith('[') and output.endswith(']'):
                 content = output[1:-1].strip()
                 
-                # Look for proof patterns: ((: ... )) |- ((: ... ))
-                import re
-                proof_pattern = r'\(\(\(: [^)]+\)\) \|- \(\(: ([^)]+) ([^)]+) \([^)]+\)\)\)\)'
-                matches = re.findall(proof_pattern, content)
-                
-                for match in matches:
-                    rule_name, conclusion = match
-                    results.append(conclusion.strip())
-                
-                # If no matches found with the complex pattern, try simpler extraction
-                if not results and content:
-                    # Look for any (: ... ) patterns and extract the middle part
-                    simple_pattern = r'\(: [^)]+ ([^)]+) \([^)]+\)\)'
-                    simple_matches = re.findall(simple_pattern, content)
-                    results.extend([match.strip() for match in simple_matches])
+                # If there's content, add the entire element as a single result
+                if content:
+                    results.append(content)
             
         except Exception as e:
             print(f"Error parsing query output: {e}")
