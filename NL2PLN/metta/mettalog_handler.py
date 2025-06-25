@@ -27,7 +27,7 @@ class MettalogHandler:
             #print(self._send_command(f"!(import! &self ./{path})"))
             #print(self._send_command("!(bind! &kb (init-kb))"))
             #print(self._send_command("!(&kb)"))
-            print(self._send_command("!(+ 1 1)"))
+            print("\nOUT: " + self._send_command("!(+ 1 1)"))
 
     def _start_process(self):
         """Start the mettalog process with stdin/stdout pipes"""
