@@ -41,8 +41,31 @@ class MettalogHandler:
                 bufsize=1,
                 universal_newlines=True
             )
+            
+            # Read initial output until we see the first prompt
+            self._wait_for_prompt()
+            
         except FileNotFoundError:
             raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
+    
+    def _wait_for_prompt(self):
+        """Wait for the mettalog prompt to appear, discarding any initial output"""
+        prompt_buffer = ""
+        
+        while True:
+            char = self.process.stdout.read(1)
+            if not char:
+                break
+            
+            prompt_buffer += char
+            
+            # Keep only the last 7 characters in prompt_buffer to check for "metta+>"
+            if len(prompt_buffer) > 7:
+                prompt_buffer = prompt_buffer[-7:]
+            
+            # Check if we've seen the prompt
+            if prompt_buffer.endswith('metta+>'):
+                break
     
     def _send_command(self, command: str) -> str:
         """Send a command to the mettalog process and return the output"""
