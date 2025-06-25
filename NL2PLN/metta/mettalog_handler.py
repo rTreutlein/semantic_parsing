@@ -48,15 +48,20 @@ class MettalogHandler:
         except FileNotFoundError:
             raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
     
-    def _wait_for_prompt(self):
-        """Wait for the mettalog prompt to appear, discarding any initial output"""
+    def _read_until_prompt(self, capture_output: bool = False) -> str:
+        """Read from mettalog output until we see the prompt, optionally capturing output"""
+        output = ""
         prompt_buffer = ""
         
         while True:
             char = self.process.stdout.read(1)
+            if capture_output:
+                print(char, end='')
             if not char:
                 break
             
+            if capture_output:
+                output += char
             prompt_buffer += char
             
             # Keep only the last 7 characters in prompt_buffer to check for "metta+>"
@@ -65,7 +70,16 @@ class MettalogHandler:
             
             # Check if we've seen the prompt
             if prompt_buffer.endswith('metta+>'):
+                if capture_output:
+                    # Remove the prompt from the output
+                    output = output[:-7]
                 break
+        
+        return output if capture_output else ""
+
+    def _wait_for_prompt(self):
+        """Wait for the mettalog prompt to appear, discarding any initial output"""
+        self._read_until_prompt(capture_output=False)
     
     def _send_command(self, command: str) -> str:
         """Send a command to the mettalog process and return the output"""
@@ -77,28 +91,8 @@ class MettalogHandler:
             self.process.stdin.write(command + '\n')
             self.process.stdin.flush()
             
-            # Read output character by character until we see the prompt pattern
-            output = ""
-            prompt_buffer = ""
-            
-            while True:
-                char = self.process.stdout.read(1)
-                print(char, end='')
-                if not char:
-                    break
-                
-                output += char
-                prompt_buffer += char
-                
-                # Keep only the last 7 characters in prompt_buffer to check for "metta+>"
-                if len(prompt_buffer) > 7:
-                    prompt_buffer = prompt_buffer[-7:]
-                
-                # Check if we've seen the prompt
-                if prompt_buffer.endswith('metta+>'):
-                    # Remove the prompt from the output
-                    output = output[:-7]
-                    break
+            # Read output until we see the prompt pattern
+            output = self._read_until_prompt(capture_output=True)
             
             # Split into lines and filter out empty lines
             output_lines = [line.strip() for line in output.split('\n') if line.strip()]
@@ -116,7 +110,7 @@ class MettalogHandler:
         except Exception as e:
             print(f"Error communicating with mettalog process: {e}")
             self._restart_process()
-            return []
+            return ""
     
     def _restart_process(self):
         """Restart the mettalog process if it becomes unresponsive"""
