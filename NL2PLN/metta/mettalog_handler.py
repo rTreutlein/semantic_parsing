@@ -24,9 +24,10 @@ class MettalogHandler:
             path = os.path.join(relative_path, 'compiler')
             print(path)
             print("Importing and initalizing")
-            print(self._send_command(f"!(import! &self ./{path})"))
-            print(self._send_command("!(bind! &kb (init-kb))"))
-            print(self._send_command("!(&kb)"))
+            #print(self._send_command(f"!(import! &self ./{path})"))
+            #print(self._send_command("!(bind! &kb (init-kb))"))
+            #print(self._send_command("!(&kb)"))
+            print(self._send_command("!(+ 1 1)"))
 
     def _start_process(self):
         """Start the mettalog process with stdin/stdout pipes"""
@@ -59,7 +60,7 @@ class MettalogHandler:
             
             while True:
                 char = self.process.stdout.read(1)
-                #print(char, end='')
+                print(char, end='')
                 if not char:
                     break
                 
@@ -188,13 +189,13 @@ class MettalogHandler:
 if __name__ == '__main__':
     handler = MettalogHandler('kb_backup.metta', read_only=False)
 
-    print("Testing:")
+    #print("Testing:")
 
-    print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
-    print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
+    #print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    #print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
-    print(handler.run("!(show-cs &kb)"))
+    #print(handler.run("!(show-cs &kb)"))
 
-    print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
 
