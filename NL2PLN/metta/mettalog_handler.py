@@ -53,19 +53,30 @@ class MettalogHandler:
             self.process.stdin.write(command + '\n')
             self.process.stdin.flush()
             
-            # Read output until we see the prompt pattern
-            output_lines = []
+            # Read output character by character until we see the prompt pattern
+            output = ""
+            prompt_buffer = ""
+            
             while True:
-                line = self.process.stdout.readline()
-                if not line:
+                char = self.process.stdout.read(1)
+                if not char:
                     break
-                line = line.strip()
                 
-                # Check if this is the prompt indicating mettalog is ready for next input
-                if line == 'metta+>':
+                output += char
+                prompt_buffer += char
+                
+                # Keep only the last 7 characters in prompt_buffer to check for "metta+>"
+                if len(prompt_buffer) > 7:
+                    prompt_buffer = prompt_buffer[-7:]
+                
+                # Check if we've seen the prompt
+                if prompt_buffer.endswith('metta+>'):
+                    # Remove the prompt from the output
+                    output = output[:-7]
                     break
-                    
-                output_lines.append(line)
+            
+            # Split into lines and filter out empty lines
+            output_lines = [line.strip() for line in output.split('\n') if line.strip()]
             
             # Return only the last line as it contains the actual output
             return [output_lines[-1]] if output_lines else []
