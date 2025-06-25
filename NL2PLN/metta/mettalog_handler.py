@@ -43,7 +43,7 @@ class MettalogHandler:
         except FileNotFoundError:
             raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
     
-    def _send_command(self, command: str) -> List[str]:
+    def _send_command(self, command: str) -> str:
         """Send a command to the mettalog process and return the output"""
         if self.process is None or self.process.poll() is not None:
             self._start_process()
@@ -59,6 +59,7 @@ class MettalogHandler:
             
             while True:
                 char = self.process.stdout.read(1)
+                #print(char, end='')
                 if not char:
                     break
                 
@@ -79,7 +80,7 @@ class MettalogHandler:
             output_lines = [line.strip() for line in output.split('\n') if line.strip()]
             
             # Return only the last line as it contains the actual output
-            return [output_lines[-1]] if output_lines else []
+            return output_lines[-1]
             
         except Exception as e:
             print(f"Error communicating with mettalog process: {e}")
@@ -118,14 +119,10 @@ class MettalogHandler:
 
     def query(self, atom: str) -> Tuple[List[str], bool]:
         """Query the knowledge base and return results"""
-        output_lines = self._send_command(f'!(query &kb (fromNumber 5) {atom})')
+        output = self._send_command(f'!(query &kb (fromNumber 5) {atom})')
         
-        # Parse the output to extract query results
-        # This is a simplified parser - may need adjustment based on actual mettalog output format
-        results = []
-        for line in output_lines:
-            if line.strip() and not line.startswith('!'):
-                results.append(line.strip())
+        print("Implmente Query output parsing")
+        return [], False
         
         proven = len(results) > 0
         return results, proven
@@ -141,12 +138,12 @@ class MettalogHandler:
         
     def run(self, atom: str):
         """Run a command and return the output"""
-        output_lines = self._send_command(atom)
+        output = self._send_command(atom)
         if not self._read_only:
             # Also append to file for persistence
             with open(self.file, 'a') as f:
                 f.write(f"{atom}\n")
-        return [output_lines]
+        return output
 
     def run_clean(self, atom: str) -> List[str]:
         res = self.run(atom)
@@ -191,6 +188,6 @@ if __name__ == '__main__':
 
     print(handler.run("!(show-cs &kb)"))
 
-    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+    print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
 
