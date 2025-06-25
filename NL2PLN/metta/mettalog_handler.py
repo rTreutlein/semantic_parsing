@@ -112,6 +112,42 @@ class MettalogHandler:
             self.process.wait()
         self._start_process()
     
+    def _parse_query_output(self, output: str) -> List[str]:
+        """Parse the query output from mettalog format"""
+        if not output or output.strip() == "[]":
+            return []
+        
+        results = []
+        try:
+            # The output format appears to be: [(((: $var expr tv)) |- ((: rule conclusion tv)))]
+            # We want to extract the conclusions from the proof results
+            
+            # Remove outer brackets and split by proof entries
+            if output.startswith('[') and output.endswith(']'):
+                content = output[1:-1].strip()
+                
+                # Look for proof patterns: ((: ... )) |- ((: ... ))
+                import re
+                proof_pattern = r'\(\(\(: [^)]+\)\) \|- \(\(: ([^)]+) ([^)]+) \([^)]+\)\)\)\)'
+                matches = re.findall(proof_pattern, content)
+                
+                for match in matches:
+                    rule_name, conclusion = match
+                    results.append(conclusion.strip())
+                
+                # If no matches found with the complex pattern, try simpler extraction
+                if not results and content:
+                    # Look for any (: ... ) patterns and extract the middle part
+                    simple_pattern = r'\(: [^)]+ ([^)]+) \([^)]+\)\)'
+                    simple_matches = re.findall(simple_pattern, content)
+                    results.extend([match.strip() for match in simple_matches])
+            
+        except Exception as e:
+            print(f"Error parsing query output: {e}")
+            print(f"Raw output: {output}")
+        
+        return results
+    
     def __del__(self):
         """Clean up the process when the handler is destroyed"""
         if self.process:
@@ -139,9 +175,7 @@ class MettalogHandler:
         """Query the knowledge base and return results"""
         output = self._send_command(f'!(query &kb (fromNumber 5) {atom})')
         
-        print("Implmente Query output parsing")
-        return [], False
-        
+        results = self._parse_query_output(output)
         proven = len(results) > 0
         return results, proven
 
