@@ -228,6 +228,4 @@ if __name__ == '__main__':
 
     handler.run("!(show-cs &kb)")
 
-    handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)")
-
-
+    print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))

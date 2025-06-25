@@ -65,7 +65,7 @@
   (let* (($avars (unique= (extract-vars $a)))
          ($bvars (unique= (extract-vars $b)))
          ($onlyb (unique= (subtraction-atom $bvars $avars))))
-  (foldl-atom $onlyb $b $accum $elem (atom-subst (exists $prf) $elem $accum))
+  (foldl-atom $onlyb $b $accum $elem (let $elem (exists $prf) $accum))
 ))
 
 (= (updatePremises $premises)
@@ -207,3 +207,5 @@
 ;!(query &kb (fromNumber 5) (: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv))
 
 ;!(compile (: rule1 (Implication a (Or b c)) (STV 1.0 1.0)))
+
+;!(compileQuery (: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv))

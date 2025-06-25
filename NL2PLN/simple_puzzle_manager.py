@@ -4,7 +4,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from NL2PLN.utils.proof_assistant import ProofAnalyzer
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
-from NL2PLN.metta.metta_handler import MeTTaHandler
+#from NL2PLN.metta.metta_handler import MeTTaHandler
+from NL2PLN.metta.mettalog_handler import MettalogHandler
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
@@ -46,7 +47,7 @@ class SimplePuzzleProcessor:
         self.n = 5
         
         # Initialize components
-        self.metta_handler = MeTTaHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
+        self.metta_handler = MettalogHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
         
         if verify:
             self.nl2pln = VerifiedPredictor(
@@ -59,7 +60,7 @@ class SimplePuzzleProcessor:
 
     def _run_single_proof(self, i: int, pln_data, puzzle_counter: int) -> bool:
         """Run a single proof attempt - helper method for parallel execution."""
-        metta_handler = MeTTaHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
+        metta_handler = MettalogHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
         metta_handler.load_kb_from_file()
         
         proof_handler = SimpleProofHandler(metta_handler)

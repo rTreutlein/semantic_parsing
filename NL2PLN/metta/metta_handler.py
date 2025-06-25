@@ -15,6 +15,8 @@ class MeTTaHandler:
         print(script_dir)
         print(relative_path)
         #self.metta.run(f"!(import! &self {os.path.join(script_dir, 'compiler')})")
+        if (relative_path.startswith('.')):
+            relative_path = relative_path[1:]
         path = os.path.join(relative_path, 'compiler').replace('/', ':')
         print(path)
         self.metta.run(f"!(import! &self {path})")
@@ -102,12 +104,12 @@ if __name__ == '__main__':
 
     print("Adding atoms")
 
-    #rint(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
-    #rint(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
+    print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
-    #print(handler.run("!(show-cs &kb)"))
+    print(handler.run("!(show-cs &kb)"))
 
-    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+    print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
     #print(handler.add_atom("(: rule1 (WithTV (Implication (And (Book $book) (CheckoutCount $book $count) (GreaterThan $count 10)) (NeedsInspection $book)) (STV 1.0 1.0)))"))
     #print(handler.add_atom("(: fact1 (WithTV (Book vanishing_key) (STV 1.0 1.0)))"))

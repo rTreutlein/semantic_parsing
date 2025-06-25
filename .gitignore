@@ -10,3 +10,5 @@ embeddings_cache
 pdfs
 progress.json
 rules_progress.json
+*.metta.html
+*.metta.pl
