@@ -170,9 +170,7 @@ if __name__ == '__main__':
     print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
     print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
-    print(handler.run("!(bind! &file (file-open! \"./out.metta\" \"wc\"))"))
-
-    print(handler.run("!(file-write! &file (show-cs &kb))"))
+    print(handler.run("!(show-cs &kb)"))
 
     #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
