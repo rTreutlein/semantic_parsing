@@ -17,9 +17,9 @@ class MettalogHandler:
         # Initialize the file with compiler import and KB initialization
         if not self._read_only:
             with open(self.file, 'w') as f:
-                path = os.path.join(relative_path, 'compiler').replace('/', ':')
+                path = os.path.join(relative_path, 'compiler')
                 print(path)
-                f.write(f"!(import! &self {path})\n")
+                f.write(f"!(import! &self ./{path})\n")
                 f.write("!(bind! &kb (init-kb))\n")
                 f.write("!(&kb)\n")
 
@@ -132,8 +132,15 @@ class MettalogHandler:
 if __name__ == '__main__':
     handler = MettalogHandler('kb_backup.metta', read_only=False)
 
-    print("Adding atoms")
+    print("Testing:")
 
-    # Example usage - these would append commands to the file
-    # handler.add_atom("(: rule1 (WithTV (Implication (WonPrize $book) (Or (InAwardsSection $book) (InNewReleasesSection $book))) (STV 1.0 1.0)))")
-    # handler.query("(: $query (WithTV (InAwardsSection whispers_of_dawn) $tv))")
+    print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
+
+    print(handler.run("!(bind! &file (file-open! \"./out.metta\" \"wc\"))"))
+
+    print(handler.run("!(file-write! &file (show-cs &kb)"))
+
+    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+
+
