@@ -9,6 +9,7 @@ class MettalogHandler:
         self.file = file
         self._read_only = read_only
         self.process = None
+        self.kb_ref = None
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         relative_path = os.path.relpath(script_dir, start=os.getcwd())
@@ -20,8 +21,7 @@ class MettalogHandler:
         if not self._read_only:
             path = os.path.join(relative_path, 'compiler')
             print(self._send_command(f"!(import! &self ./{path})"))
-            print(self._send_command("!(bind! &kb (init-kb))"))
-            print(self._send_command("!(&kb)"))
+            self._init_fresh_kb()
 
     def _start_process(self):
         """Start the mettalog process with stdin/stdout pipes"""
@@ -112,6 +112,17 @@ class MettalogHandler:
             self.process.wait()
         self._start_process()
     
+    def _init_fresh_kb(self):
+        """Initialize a fresh KB and store its reference"""
+        kb_output = self._send_command("!(init-kb)")
+        self.kb_ref = kb_output.strip() if kb_output else "(init-kb)"
+        print(f"Initialized fresh KB: {self.kb_ref}")
+    
+    def create_fresh_environment(self):
+        """Create a fresh KB environment without reloading dependencies"""
+        if not self._read_only:
+            self._init_fresh_kb()
+    
     def _parse_query_output(self, output: str) -> List[str]:
         """Parse the query output from mettalog format"""
         if not output or output.strip() == "[]":
@@ -161,15 +172,15 @@ class MettalogHandler:
 
     def add_atom(self, atom: str) -> str:
         if not self._read_only:
-            res = self._send_command(f'!(compileAdd &kb {atom})')
+            res = self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
             # Also append to file for persistence
             with open(self.file, 'a') as f:
-                f.write(f'!(compileAdd &kb {atom})\n')
+                f.write(f'!(compileAdd {self.kb_ref} {atom})\n')
             return res
 
     def query(self, atom: str) -> Tuple[List[str], bool]:
         """Query the knowledge base and return results"""
-        output = self._send_command(f'!(query &kb (fromNumber 5) {atom})')
+        output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})')
         
         results = self._parse_query_output(output)
         proven = len(results) > 0
@@ -203,10 +214,10 @@ class MettalogHandler:
             return
         
         # Send command to match and output KB content
-        self._send_command('!(match &kb $a $a)')
+        self._send_command(f'!(match {self.kb_ref} $a $a)')
         # Also append to file for persistence
         with open(self.file, 'a') as f:
-            f.write('!(match &kb $a $a)\n')
+            f.write(f'!(match {self.kb_ref} $a $a)\n')
 
     def load_kb_from_file(self):
         if os.path.exists(self.file):
@@ -234,6 +245,6 @@ if __name__ == '__main__':
     handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))")
     handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))")
 
-    handler.run("!(show-cs &kb)")
+    handler.run(f"!(show-cs {handler.kb_ref})")
 
     print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
