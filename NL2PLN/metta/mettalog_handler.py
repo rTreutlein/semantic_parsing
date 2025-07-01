@@ -115,6 +115,7 @@ class MettalogHandler:
     def _init_fresh_kb(self):
         """Initialize a fresh KB and store its reference"""
         kb_output = self._send_command("!(init-kb)")
+        print(f"Initialized fresh KB: {kb_output}")
         self.kb_ref = kb_output.strip() if kb_output else "(init-kb)"
         print(f"Initialized fresh KB: {self.kb_ref}")
     
