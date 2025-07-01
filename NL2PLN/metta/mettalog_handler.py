@@ -49,7 +49,7 @@ class MettalogHandler:
         
         while True:
             char = self.process.stdout.read(1)
-            print(char, end='')
+            #print(char, end='')
             if not char:
                 break
             
@@ -135,6 +135,13 @@ class MettalogHandler:
             print(f"Raw output: {output}")
         
         return results
+
+    def close(self):
+        """Close the process and clean up resources"""
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+        self.process = None
     
     def __del__(self):
         """Clean up the process when the handler is destroyed"""
@@ -152,12 +159,13 @@ class MettalogHandler:
     def read_only(self) -> bool:
         return self._read_only
 
-    def add_atom(self, atom: str) -> None:
+    def add_atom(self, atom: str) -> str:
         if not self._read_only:
-            self._send_command(f'!(compileAdd &kb {atom})')
+            res = self._send_command(f'!(compileAdd &kb {atom})')
             # Also append to file for persistence
             with open(self.file, 'a') as f:
                 f.write(f'!(compileAdd &kb {atom})\n')
+            return res
 
     def query(self, atom: str) -> Tuple[List[str], bool]:
         """Query the knowledge base and return results"""
