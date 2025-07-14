@@ -7,13 +7,23 @@ from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.utils.sample_generator import SampleGenerator
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+PUZZLES_PER_LEVEL = 3
+
 def configure_lm(model_name: str = 'openai/gpt-4o'):
     """Configure the LM for DSPY."""
     lm = dspy.LM(model_name)
     dspy.configure(lm=lm)
 
 def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
-    """Generate samples with increasing difficulty, collecting 10 medium-difficulty puzzles per sentence count."""
+    """Generate samples with increasing difficulty, collecting 3 medium-difficulty puzzles per sentence count."""
     puzzle_gen = SampleGenerator()
     nl2pln = SimpleNL2PLN(n=5)
     nl2pln.load(f"optimized.json")
@@ -26,14 +36,14 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
     num_sentences = 6
     
     while total_saved < num_puzzles:
-        print(f"\nGenerating puzzles with {num_sentences} sentences...")
+        logger.info(f"Generating puzzles with {num_sentences} sentences...")
         saved_for_this_level = 0
         attempts = 0
         max_attempts = 100  # Prevent infinite loops
         
-        while saved_for_this_level < 3 and total_saved < num_puzzles and attempts < max_attempts:
+        while saved_for_this_level < PUZZLES_PER_LEVEL and total_saved < num_puzzles and attempts < max_attempts:
             attempts += 1
-            print(f"Attempt {attempts} for {num_sentences} sentences (saved: {saved_for_this_level}/10)")
+            logger.info(f"Attempt {attempts} for {num_sentences} sentences (saved: {saved_for_this_level}/{PUZZLES_PER_LEVEL})")
             
             # Generate puzzle
             puzzle = puzzle_gen.generate_sample(numberOfSentences=num_sentences)
@@ -49,20 +59,20 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
                 
                 saved_for_this_level += 1
                 total_saved += 1
-                print(f"Saved medium difficulty puzzle (score: {score}) to {puzzle_path}")
-                print(f"Progress: {total_saved}/{num_puzzles} total puzzles saved")
+                logger.info(f"Saved medium difficulty puzzle (score: {score}) to {puzzle_path}")
+                logger.info(f"Progress: {total_saved}/{num_puzzles} total puzzles saved")
         
         if attempts >= max_attempts:
-            print(f"Warning: Reached maximum attempts ({max_attempts}) for {num_sentences} sentences")
+            logger.warning(f"Reached maximum attempts ({max_attempts}) for {num_sentences} sentences")
         
         num_sentences += 1
         
         # Safety check to prevent infinite loop
         if num_sentences > 10:
-            print("Warning: Reached maximum sentence count (10), stopping generation")
+            logger.warning("Reached maximum sentence count (10), stopping generation")
             break
     
-    print(f"\nGeneration complete! Saved {total_saved} puzzles to {storage_dir} using {attempts} attempts.")
+    logger.info(f"Generation complete! Saved {total_saved} puzzles to {storage_dir} using {attempts} attempts.")
 
 def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
@@ -88,7 +98,7 @@ def main():
     processor = SimplePuzzleProcessor(args.output, verify=args.verify)
     
     for i in range(args.num_puzzles):
-        print(f"\nProcessing puzzle {i+1}/{args.num_puzzles}")
+        logger.info(f"Processing puzzle {i+1}/{args.num_puzzles}")
         
         if args.load_puzzle:
             # Load puzzle from file
@@ -107,7 +117,7 @@ def main():
                 with open(args.save_puzzle, 'w') as f:
                     json.dump(puzzle.__dict__['_store'], f, indent=2)
         
-        print("Processed puzzle:")
+        logger.info("Processed puzzle:")
         print(puzzle)
         score = processor.process_puzzle(puzzle)
 
