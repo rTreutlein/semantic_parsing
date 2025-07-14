@@ -48,4 +48,4 @@ class SimpleNL2PLN(dspy.Module):
                 res.questions = [cleanPLN(x) for x in res.questions]
                 reslist.append(res)
 
-        return reslist[0] if self.n == 1 else reslist
+        return reslist
