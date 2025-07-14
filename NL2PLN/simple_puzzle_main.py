@@ -5,6 +5,7 @@ import datetime
 from pathlib import Path
 from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.utils.sample_generator import SampleGenerator
+from NL2PLN.simple_nl2pln import SimpleNL2PLN
 
 def configure_lm(model_name: str = 'openai/gpt-4o'):
     """Configure the LM for DSPY."""
@@ -14,13 +15,15 @@ def configure_lm(model_name: str = 'openai/gpt-4o'):
 def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
     """Generate samples with increasing difficulty, collecting 10 medium-difficulty puzzles per sentence count."""
     puzzle_gen = SampleGenerator()
-    processor = SimplePuzzleProcessor("sample", verify=verify)
+    nl2pln = SimpleNL2PLN(n=5)
+    nl2pln.load(f"optimized.json")
+    processor = SimplePuzzleProcessor("sample",nl2pln=nl2pln,verify=verify)
     
     storage_dir = Path(output_dir)
     storage_dir.mkdir(parents=True, exist_ok=True)
     
     total_saved = 0
-    num_sentences = 1
+    num_sentences = 6
     
     while total_saved < num_puzzles:
         print(f"\nGenerating puzzles with {num_sentences} sentences...")
@@ -28,7 +31,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
         attempts = 0
         max_attempts = 100  # Prevent infinite loops
         
-        while saved_for_this_level < 10 and total_saved < num_puzzles and attempts < max_attempts:
+        while saved_for_this_level < 3 and total_saved < num_puzzles and attempts < max_attempts:
             attempts += 1
             print(f"Attempt {attempts} for {num_sentences} sentences (saved: {saved_for_this_level}/10)")
             
@@ -59,7 +62,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
             print("Warning: Reached maximum sentence count (10), stopping generation")
             break
     
-    print(f"\nGeneration complete! Saved {total_saved} puzzles to {storage_dir}")
+    print(f"\nGeneration complete! Saved {total_saved} puzzles to {storage_dir} using {attempts} attempts.")
 
 def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
