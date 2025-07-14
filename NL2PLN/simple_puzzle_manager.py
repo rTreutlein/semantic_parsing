@@ -10,61 +10,59 @@ from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
 class SimpleProofHandler:
-    def __init__(self, metta_handler):
+    def __init__(self, metta_handler, log: bool = True):
         self.metta_handler = metta_handler
+        self.log = log
 
-    def try_to_proof(self,pln_data) -> bool:
+    def try_to_proof(self,pln_data,idx) -> bool:
         """Attempt to prove conclusion using current KB"""
-        print(pln_data)
-
-
         query = pln_data.questions[0]
         premises = pln_data.statements
 
-        print("Trying to proof:")
+        if self.log:
+            print("Trying to proof idx: " + str(idx) + "\n" + pln_data)
         for stmt in premises:
-            print(stmt)
+            #if self.log:
+                #print(stmt)
             self.metta_handler.add_atom(stmt)
-        
-        print("Running backward chaining...")
-        print(query)
+        if self.log:
+            print("Running backward chaining... Idx: " + str(idx) + "\n" + query)
         proof_steps, proven = self.metta_handler.query(query)
-        print("----------------------------------------------")
-        print("Backward Results:")
-        print(proven)
-        print(proof_steps)
+        if self.log:
+            print("----------------------------------------------")
+            print("Backward Results Idx: " + str(idx) + "\n" + proven + "\n" + proof_steps)
 
-        if not proven:
-            print("Failed to prove query")
-            #print(self.metta_handler.run("!(show-cs &kb)"))
-            #print(self.metta_handler.run("!(compileQuery " + self.query + ")"))
+        if not proven and self.log:
+            print("Failed to prove query Idx: " + str(idx))
         return proven
 
 class SimplePuzzleProcessor:
-    def __init__(self, output_base: str, verify: bool = False):
+    def __init__(self, output_base: str, nl2pln, verify: bool = False):
         self.output_base = output_base
         self.puzzle_counter = 0
-        self.n = 5
+        self.n = nl2pln.n
         
         # Initialize components
-        self.metta_handler = MettalogHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
+        #self.metta_handler = MettalogHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
+        self.metta_handler = MettalogHandler()
         
         if verify:
             self.nl2pln = VerifiedPredictor(
-                predictor=SimpleNL2PLN(n=self.n),
+                predictor=nl2pln,
                 verify_func=human_verify_prediction,
                 cache_file=f"{output_base}_verified_simple_nl2pln.json"
             )
         else:
-            self.nl2pln = SimpleNL2PLN(n=self.n)
+            self.nl2pln = nl2pln
 
     def _run_single_proof(self, i: int, pln_data, puzzle_counter: int) -> bool:
         """Run a single proof attempt - helper method for parallel execution."""
-        metta_handler = MettalogHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
-        metta_handler.load_kb_from_file()
+        #metta_handler = MettalogHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
+        metta_handler = MettalogHandler()
         
         proof_handler = SimpleProofHandler(metta_handler)
-        return proof_handler.try_to_proof(pln_data[i])
+
+        return proof_handler.try_to_proof(pln_data[i],i)
 
     def process_puzzle(self, puzzle: dspy.Prediction):
         """Process a complete puzzle with premises and conclusion."""
@@ -82,8 +80,7 @@ class SimplePuzzleProcessor:
 
             # Run proofs in parallel
             res = 0
-            #with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
-            with ThreadPoolExecutor(max_workers=1) as executor:
+            with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
                 # Submit all proof tasks
                 future_to_index = {
                     executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter): i 
