@@ -12,7 +12,7 @@ pln_data = {
     'questions': questions
 }
 
-print(pln_data.questions)
+print(pln_data['questions'])
 
 #metta_handler = MettalogHandler()
 #proof_handler = SimpleProofHandler(metta_handler)
