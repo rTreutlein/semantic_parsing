@@ -1,6 +1,9 @@
 from typing import List, Tuple
 import dspy
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+logger = logging.getLogger(__name__)
 from NL2PLN.utils.proof_assistant import ProofAnalyzer
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
@@ -20,20 +23,20 @@ class SimpleProofHandler:
         premises = pln_data.statements
 
         if self.log:
-            print("Trying to proof idx: " + str(idx) + "\n" + pln_data)
+            logger.info("Trying to proof idx: %s\n%s", idx, pln_data)
         for stmt in premises:
             #if self.log:
                 #print(stmt)
             self.metta_handler.add_atom(stmt)
         if self.log:
-            print("Running backward chaining... Idx: " + str(idx) + "\n" + query)
+            logger.info("Running backward chaining... Idx: %s\n%s", idx, query)
         proof_steps, proven = self.metta_handler.query(query)
         if self.log:
-            print("----------------------------------------------")
-            print("Backward Results Idx: " + str(idx) + "\n" + proven + "\n" + proof_steps)
+            logger.info("----------------------------------------------")
+            logger.info("Backward Results Idx: %s\n%s\n%s", idx, proven, proof_steps)
 
         if not proven and self.log:
-            print("Failed to prove query Idx: " + str(idx))
+            logger.warning("Failed to prove query Idx: %s", idx)
         return proven
 
 class SimplePuzzleProcessor:
@@ -68,7 +71,7 @@ class SimplePuzzleProcessor:
         """Process a complete puzzle with premises and conclusion."""
         premises = puzzle.sentences
         query = puzzle.question
-        print(f"Processing puzzle with {len(premises)} premises")
+        logger.info("Processing puzzle with %s premises", len(premises))
         
         self.puzzle_counter += 1    
         
@@ -94,10 +97,10 @@ class SimplePuzzleProcessor:
                         if future.result():
                             res += 1
                     except Exception as e:
-                        print(f"Error in proof {i}: {e}")
+                        logger.error("Error in proof %s: %s", i, e)
             
-            print(f"Proved {res}/{self.n} statements")
+            logger.info("Proved %s/%s statements", res, self.n)
             return res/self.n
         except Exception as e:
-            print(f"Error processing puzzle: {e}")
+            logger.error("Error processing puzzle: %s", e)
             raise
