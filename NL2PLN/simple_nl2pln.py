@@ -1,4 +1,5 @@
 import dspy
+import concurrent.futures
 from .utils.prompts import NL2PLN_Signature
 from .utils.cleanPLN import cleanPLN
 
@@ -36,9 +37,8 @@ class SimpleNL2PLN(dspy.Module):
         print("----------------------------------------------")
 
 
-        reslist = []
-        with dspy.context(lm=dspy.LM('openrouter/anthropic/claude-sonnet-4',temperature=1,cache=False)):
-            for i in range(self.n):
+        def _convert_worker(_):
+            with dspy.context(lm=dspy.LM('openrouter/anthropic/claude-sonnet-4', temperature=1, cache=False)):
                 res = self.convert(
                     sentences=joined_sentences,
                     similar=selected_examples,
@@ -46,6 +46,10 @@ class SimpleNL2PLN(dspy.Module):
                 )
                 res.statements = [cleanPLN(x) for x in res.statements]
                 res.questions = [cleanPLN(x) for x in res.questions]
-                reslist.append(res)
+                return res
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.n) as executor:
+            futures = [executor.submit(_convert_worker, i) for i in range(self.n)]
+            reslist = [f.result() for f in futures]
 
         return reslist
