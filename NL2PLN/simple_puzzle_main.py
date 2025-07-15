@@ -8,6 +8,8 @@ from NL2PLN.utils.sample_generator import SampleGenerator
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 
 import logging
+import concurrent.futures
+import queue
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -22,57 +24,92 @@ def configure_lm(model_name: str = 'openai/gpt-4o'):
     lm = dspy.LM(model_name)
     dspy.configure(lm=lm)
 
-def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False):
-    """Generate samples with increasing difficulty, collecting 3 medium-difficulty puzzles per sentence count."""
+def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, max_workers: int = 4):
+    """
+    Generate samples with increasing difficulty, collecting 3 medium-difficulty
+    puzzles per sentence count.
+
+    Puzzle generation and processing are executed concurrently: a background
+    worker creates puzzles and immediately feeds them to a queue that a thread
+    pool pulls from to perform the expensive `process_puzzle` calls.
+    """
     puzzle_gen = SampleGenerator()
     nl2pln = SimpleNL2PLN(n=5)
-    nl2pln.load(f"optimized.json")
-    processor = SimplePuzzleProcessor("sample",nl2pln=nl2pln,verify=verify)
-    
+    nl2pln.load("optimized.json")
+    processor = SimplePuzzleProcessor("sample", nl2pln=nl2pln, verify=verify)
+
     storage_dir = Path(output_dir)
     storage_dir.mkdir(parents=True, exist_ok=True)
-    
+
     total_saved = 0
     num_sentences = 6
-    
-    while total_saved < num_puzzles:
-        logger.info(f"Generating puzzles with {num_sentences} sentences...")
-        saved_for_this_level = 0
-        attempts = 0
-        max_attempts = 100  # Prevent infinite loops
-        
-        while saved_for_this_level < PUZZLES_PER_LEVEL and total_saved < num_puzzles and attempts < max_attempts:
-            attempts += 1
-            logger.info(f"Attempt {attempts} for {num_sentences} sentences (saved: {saved_for_this_level}/{PUZZLES_PER_LEVEL})")
-            
-            # Generate puzzle
-            puzzle = puzzle_gen.generate_sample(numberOfSentences=num_sentences)
+    max_attempts = 100  # per difficulty level
+
+    # Result queue shared between workers and the main thread
+    result_queue: queue.Queue[tuple] = queue.Queue(maxsize=max_workers * 2)
+
+    def worker(sentence_count: int):
+        """Generate a puzzle and process it, then put the result on the queue."""
+        try:
+            puzzle = puzzle_gen.generate_sample(numberOfSentences=sentence_count)
             score = processor.process_puzzle(puzzle)
-            
-            # Check if it's medium difficulty (score != 0 and != 1)
-            if score != 0 and score != 1:
-                puzzle_filename = f"puzzle_sentences_{num_sentences}_count_{saved_for_this_level + 1}_score_{score}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-                puzzle_path = storage_dir / puzzle_filename
-                
-                with open(puzzle_path, 'w') as f:
-                    json.dump(puzzle.__dict__['_store'], f, indent=2)
-                
-                saved_for_this_level += 1
-                total_saved += 1
-                logger.info(f"Saved medium difficulty puzzle (score: {score}) to {puzzle_path}")
-                logger.info(f"Progress: {total_saved}/{num_puzzles} total puzzles saved")
-        
-        if attempts >= max_attempts:
-            logger.warning(f"Reached maximum attempts ({max_attempts}) for {num_sentences} sentences")
-        
-        num_sentences += 1
-        
-        # Safety check to prevent infinite loop
-        if num_sentences > 10:
-            logger.warning("Reached maximum sentence count (10), stopping generation")
-            break
-    
-    logger.info(f"Generation complete! Saved {total_saved} puzzles to {storage_dir} using {attempts} attempts.")
+            result_queue.put((puzzle, score, sentence_count), block=True)
+        except Exception as exc:
+            logger.exception("Worker failed: %s", exc)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        while total_saved < num_puzzles and num_sentences <= 10:
+            logger.info("Generating puzzles with %s sentences…", num_sentences)
+            saved_for_this_level = 0
+            attempts = 0
+
+            # Kick off an initial batch of workers
+            while attempts < max_attempts and result_queue.qsize() < result_queue.maxsize:
+                executor.submit(worker, num_sentences)
+                attempts += 1
+
+            # Consume and launch workers until we collect enough medium puzzles
+            while saved_for_this_level < PUZZLES_PER_LEVEL and total_saved < num_puzzles and attempts < max_attempts:
+                # Keep the pipeline full
+                if attempts < max_attempts:
+                    executor.submit(worker, num_sentences)
+                    attempts += 1
+
+                try:
+                    puzzle, score, sentence_count = result_queue.get(timeout=120)
+                except queue.Empty:
+                    logger.warning("No puzzle returned within 120 s – continuing")
+                    continue
+
+                # Medium difficulty check
+                if score not in (0, 1):
+                    filename = (
+                        f"puzzle_sentences_{sentence_count}_count_{saved_for_this_level + 1}"
+                        f"_score_{score}_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S'}.json"
+                    )
+                    path = storage_dir / filename
+                    with open(path, "w") as f:
+                        json.dump(puzzle.__dict__['_store'], f, indent=2)
+
+                    saved_for_this_level += 1
+                    total_saved += 1
+                    logger.info(
+                        "Saved medium difficulty puzzle (score: %s) to %s", score, path
+                    )
+                    logger.info(
+                        "Progress: %s/%s total puzzles saved", total_saved, num_puzzles
+                    )
+
+            if attempts >= max_attempts:
+                logger.warning(
+                    "Reached maximum attempts (%s) for %s sentences",
+                    max_attempts,
+                    num_sentences,
+                )
+
+            num_sentences += 1
+
+    logger.info("Generation complete! Saved %s puzzles to %s", total_saved, storage_dir)
 
 def main():
     parser = argparse.ArgumentParser(description="Generate and process logic puzzles using OpenCog PLN.")
