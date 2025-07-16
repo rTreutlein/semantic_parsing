@@ -37,7 +37,7 @@ class MettalogHandler:
                 ['mettalog'],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
                 universal_newlines=True
@@ -52,7 +52,7 @@ class MettalogHandler:
     def _wait_for_prompt(self):
         """Wait for the mettalog prompt to appear, discarding any initial output"""
         # Use the same timeout mechanism as _send_command
-        self._send_command("", timeout=30.0)
+        self._send_command("\n", timeout=30.0)
 
     def _send_command(self, command: str, log: bool = False, timeout: float = 180.0) -> str:
         """Send a command to the mettalog process and return the output.
@@ -101,19 +101,19 @@ class MettalogHandler:
                         print(text, end='')
                     chunks.append(text)
                 
-                # Check if we've seen the prompt
-                output = ''.join(chunks)
+                # Check if we've seen the prompt (strip ANSI codes first)
+                output = re.sub(r'\x1b\[[0-9;]*m', '', ''.join(chunks))
                 if 'metta+>' in output:
                     break
             else:
                 raise TimeoutError(f"mettalog command exceeded {timeout}s")
             
             # Remove the prompt and ANSI codes
-            output = ''.join(chunks)
-            if 'metta+>' in output:
-                output = output.rsplit('metta+>', 1)[0]
-            output = re.sub(r'\x1b\[[0-9;]*m', '', output).strip()
-            return output
+            raw_output = ''.join(chunks)
+            clean_output = re.sub(r'\x1b\[[0-9;]*m', '', raw_output)
+            if 'metta+>' in clean_output:
+                clean_output = clean_output.rsplit('metta+>', 1)[0]
+            return clean_output.strip()
             
         finally:
             sel.close()
