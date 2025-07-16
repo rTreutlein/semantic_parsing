@@ -77,6 +77,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
 
                 try:
                     puzzle, score, sentence_count = result_queue.get(timeout=120)
+                    logger.info(f"Received puzzle: {puzzle} with score: {score}")
                 except queue.Empty:
                     logger.warning("No puzzle returned within 120 s – continuing")
                     continue
@@ -132,7 +133,9 @@ def main():
 
     # Initialize puzzle generator and processor
     puzzle_gen = SampleGenerator()
-    processor = SimplePuzzleProcessor(args.output, verify=args.verify)
+    nl2pln = SimpleNL2PLN(n=5)
+    nl2pln.load("optimized.json")
+    processor = SimplePuzzleProcessor(args.output, nl2pln=nl2pln, verify=args.verify)
     
     for i in range(args.num_puzzles):
         logger.info(f"Processing puzzle {i+1}/{args.num_puzzles}")
