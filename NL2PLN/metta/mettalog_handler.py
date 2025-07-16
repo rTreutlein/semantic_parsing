@@ -54,7 +54,7 @@ class MettalogHandler:
         # Use the same timeout mechanism as _send_command
         self._send_command("\n", timeout=30.0)
 
-    def _send_command(self, command: str, log: bool = False, timeout: float = 180.0) -> str:
+    def _send_command(self, command: str, log: bool = True, timeout: float = 180.0) -> str:
         """Send a command to the mettalog process and return the output.
         
         Args:
@@ -129,6 +129,10 @@ class MettalogHandler:
     def _init_fresh_kb(self):
         """Initialize a fresh KB and store its reference"""
         kb_output = self._send_command("!(init-kb)")
+
+        print("Init KB output:")
+        print(kb_output)
+        print("---")
         
         if not kb_output or not kb_output.strip():
             raise RuntimeError("Failed to initialize KB: no output from !(init-kb)")
