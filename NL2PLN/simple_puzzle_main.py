@@ -100,7 +100,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
                 if score not in (0, 1):
                     filename = (
                         f"puzzle_sentences_{sentence_count}_count_{saved_for_this_level + 1}"
-                        f"_score_{score}_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S'}.json"
+                        f"_score_{score}_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.json"
                     )
                     path = storage_dir / filename
                     with open(path, "w") as f:
