@@ -113,7 +113,10 @@ class MettalogHandler:
             clean_output = re.sub(r'\x1b\[[0-9;]*m', '', raw_output)
             if 'metta+>' in clean_output:
                 clean_output = clean_output.rsplit('metta+>', 1)[0]
-            return clean_output.strip()
+            # Return only the last non-empty line before the prompt
+            lines = [ln.strip() for ln in clean_output.splitlines() if ln.strip()]
+            last_line = lines[-1] if lines else ''
+            return last_line
             
         finally:
             sel.close()
