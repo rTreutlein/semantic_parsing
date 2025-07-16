@@ -63,8 +63,9 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             saved_for_this_level = 0
             attempts = 0
 
-            # Kick off an initial batch of workers
-            while attempts < max_attempts and result_queue.qsize() < result_queue.maxsize:
+            # Kick off an initial batch of at most `max_workers` workers
+            initial_batch = min(max_workers, max_attempts)
+            for _ in range(initial_batch):
                 executor.submit(worker, num_sentences)
                 attempts += 1
 
