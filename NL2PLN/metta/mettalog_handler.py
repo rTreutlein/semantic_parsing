@@ -2,7 +2,14 @@ import random
 import string
 import os
 import subprocess
+import time
+import selectors
+import re
 from typing import List, Tuple
+
+class TimeoutError(RuntimeError):
+    """Raised when a mettalog command exceeds the allotted time."""
+    pass
 
 class MettalogHandler:                                                          
     def __init__(self, file: str = None, read_only: bool = False):
@@ -42,69 +49,75 @@ class MettalogHandler:
         except FileNotFoundError:
             raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
     
-    def _read_until_prompt(self, capture_output: bool = False, log: bool = False) -> str:
-        """Read from mettalog output until we see the prompt, optionally capturing output"""
-        output = ""
-        prompt_buffer = ""
-        
-        while True:
-            char = self.process.stdout.read(1)
-            if log:
-                print(char, end='')
-            if not char:
-                break
-            
-            if capture_output:
-                output += char
-            prompt_buffer += char
-            
-            # Keep only the last 7 characters in prompt_buffer to check for "metta+>"
-            if len(prompt_buffer) > 7:
-                prompt_buffer = prompt_buffer[-7:]
-            
-            # Check if we've seen the prompt
-            if prompt_buffer.endswith('metta+>'):
-                if capture_output:
-                    # Remove the prompt from the output
-                    output = output[:-7]
-                break
-        
-        return output if capture_output else ""
-
     def _wait_for_prompt(self):
         """Wait for the mettalog prompt to appear, discarding any initial output"""
-        self._read_until_prompt(capture_output=False)
-    
-    def _send_command(self, command: str, log: bool = False) -> str:
-        """Send a command to the mettalog process and return the output"""
+        # Use the same timeout mechanism as _send_command
+        self._send_command("", timeout=30.0)
+
+    def _send_command(self, command: str, log: bool = False, timeout: float = 300.0) -> str:
+        """Send a command to the mettalog process and return the output.
+        
+        Args:
+            command: The command to send
+            log: Whether to log the output
+            timeout: Maximum time in seconds to wait for completion
+            
+        Returns:
+            The output string
+            
+        Raises:
+            TimeoutError: If the command takes longer than timeout seconds
+        """
         if self.process is None or self.process.poll() is not None:
             self._start_process()
         
+        # Make stdout non-blocking so we can poll with a timeout
+        fd = self.process.stdout.fileno()
+        os.set_blocking(fd, False)
+        
+        sel = selectors.DefaultSelector()
+        sel.register(fd, selectors.EVENT_READ)
+        
         try:
-            # Send command
-            self.process.stdin.write(command + '\n')
-            self.process.stdin.flush()
+            if command:
+                self.process.stdin.write(command + '\n')
+                self.process.stdin.flush()
             
-            # Read output until we see the prompt pattern
-            output = self._read_until_prompt(capture_output=True,log=log)
+            deadline = time.monotonic() + timeout
+            chunks = []
             
-            # Split into lines and filter out empty lines
-            output_lines = [line.strip() for line in output.split('\n') if line.strip()]
-            
-            # Return only the last line as it contains the actual output, with ANSI codes removed
-            if output_lines:
-                last_line = output_lines[-1]
-                # Remove ANSI color codes (escape sequences like \x1b[0m)
-                import re
-                last_line = re.sub(r'\x1b\[[0-9;]*m', '', last_line)
-                return last_line
+            while time.monotonic() < deadline:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError(f"mettalog command exceeded {timeout}s")
+                
+                # Wait for data with a small timeout to allow checking the deadline
+                for key, _ in sel.select(timeout=min(remaining, 1.0)):
+                    data = os.read(key.fd, 8192)
+                    if not data:  # EOF
+                        break
+                    text = data.decode()
+                    if log:
+                        print(text, end='')
+                    chunks.append(text)
+                
+                # Check if we've seen the prompt
+                output = ''.join(chunks)
+                if 'metta+>' in output:
+                    break
             else:
-                return ""
+                raise TimeoutError(f"mettalog command exceeded {timeout}s")
             
-        except Exception as e:
-            print(f"Error communicating with mettalog process: {e}")
-            self._restart_process()
-            return ""
+            # Remove the prompt and ANSI codes
+            output = ''.join(chunks)
+            if 'metta+>' in output:
+                output = output.rsplit('metta+>', 1)[0]
+            output = re.sub(r'\x1b\[[0-9;]*m', '', output).strip()
+            return output
+            
+        finally:
+            sel.close()
+            os.set_blocking(fd, True)  # restore blocking mode
     
     def _restart_process(self):
         """Restart the mettalog process if it becomes unresponsive"""
@@ -132,30 +145,6 @@ class MettalogHandler:
         if not self._read_only:
             self._init_fresh_kb()
     
-    def _parse_query_output(self, output: str) -> List[str]:
-        """Parse the query output from mettalog format"""
-        if not output or output.strip() == "[]":
-            return []
-        
-        results = []
-        try:
-            # The output format appears to be: [(((: $var expr tv)) |- ((: rule conclusion tv)))]
-            # We want to extract the entire elements from the list
-            
-            # Remove outer brackets and extract the content
-            if output.startswith('[') and output.endswith(']'):
-                content = output[1:-1].strip()
-                
-                # If there's content, add the entire element as a single result
-                if content:
-                    results.append(content)
-            
-        except Exception as e:
-            print(f"Error parsing query output: {e}")
-            print(f"Raw output: {output}")
-        
-        return results
-
     def close(self):
         """Close the process and clean up resources"""
         if self.process:
@@ -172,7 +161,6 @@ class MettalogHandler:
     @staticmethod
     def clean_variable_names(expr: str) -> str:
         """Remove #numbers from variable names like $var#1234"""
-        import re
         return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
 
     @property
@@ -188,9 +176,18 @@ class MettalogHandler:
                     f.write(f'!(compileAdd {self.kb_ref} {atom})\n')
             return res
 
-    def query(self, atom: str, log: bool = False) -> Tuple[List[str], bool]:
-        """Query the knowledge base and return results"""
-        output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})', log=log)
+    def query(self, atom: str, log: bool = False, timeout: float = 300.0) -> Tuple[List[str], bool]:
+        """Query the knowledge base and return results
+        
+        Args:
+            atom: The atom to query
+            log: Whether to log the output
+            timeout: Maximum time in seconds to wait for completion
+            
+        Returns:
+            Tuple of (results_list, proven_boolean)
+        """
+        output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})', log=log, timeout=timeout)
         
         results = self._parse_query_output(output)
         proven = len(results) > 0
@@ -205,13 +202,20 @@ class MettalogHandler:
         """
         return None
         
-    def run(self, atom: str):
-        """Run a command and return the output"""
-        output = self._send_command(atom)
-        return output
+    def run(self, atom: str, timeout: float = 300.0):
+        """Run a command and return the output
+        
+        Args:
+            atom: The command to run
+            timeout: Maximum time in seconds to wait for completion
+            
+        Returns:
+            The output string
+        """
+        return self._send_command(atom, timeout=timeout)
 
-    def run_clean(self, atom: str) -> List[str]:
-        res = self.run(atom)
+    def run_clean(self, atom: str, timeout: float = 300.0) -> List[str]:
+        res = self.run(atom, timeout=timeout)
         return [self.clean_variable_names(str(elem)) for elem in res[0]]
                                                                              
     def store_kb_to_file(self):
@@ -254,6 +258,30 @@ class MettalogHandler:
         with open(self.file, 'a') as f:
             f.write(elem)
 
+    def _parse_query_output(self, output: str) -> List[str]:
+        """Parse the query output from mettalog format"""
+        if not output or output.strip() == "[]":
+            return []
+        
+        results = []
+        try:
+            # The output format appears to be: [(((: $var expr tv)) |- ((: rule conclusion tv)))]
+            # We want to extract the entire elements from the list
+            
+            # Remove outer brackets and extract the content
+            if output.startswith('[') and output.endswith(']'):
+                content = output[1:-1].strip()
+                
+                # If there's content, add the entire element as a single result
+                if content:
+                    results.append(content)
+            
+        except Exception as e:
+            print(f"Error parsing query output: {e}")
+            print(f"Raw output: {output}")
+        
+        return results
+
 if __name__ == '__main__':
     handler = MettalogHandler('kb_backup.metta', read_only=False)
 
@@ -263,7 +291,3 @@ if __name__ == '__main__':
     print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
     print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
-
-    #print(handler.add_atom("(: rule2 a (STV 1.0 1.0))"))
-
-    #print(handler.query("(: $query a $tv)"))

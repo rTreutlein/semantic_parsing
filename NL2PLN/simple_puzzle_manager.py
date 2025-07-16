@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 from NL2PLN.utils.proof_assistant import ProofAnalyzer
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 from NL2PLN.utils.verifier import VerifiedPredictor
-#from NL2PLN.metta.metta_handler import MeTTaHandler
-from NL2PLN.metta.mettalog_handler import MettalogHandler
+from NL2PLN.metta.mettalog_handler import MettalogHandler, TimeoutError
 from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
@@ -17,7 +16,7 @@ class SimpleProofHandler:
         self.metta_handler = metta_handler
         self.log = log
 
-    def try_to_proof(self,pln_data,idx) -> bool:
+    def try_to_proof(self, pln_data, idx, timeout: float = 300.0) -> bool:
         """Attempt to prove conclusion using current KB"""
         query = pln_data.questions[0]
         premises = pln_data.statements
@@ -25,12 +24,15 @@ class SimpleProofHandler:
         if self.log:
             logger.info("Trying to proof idx: %s\n%s", idx, pln_data)
         for stmt in premises:
-            #if self.log:
-                #print(stmt)
             self.metta_handler.add_atom(stmt)
         if self.log:
             logger.info("Running backward chaining... Idx: %s\n%s", idx, query)
-        proof_steps, proven = self.metta_handler.query(query, log=self.log)
+        try:
+            proof_steps, proven = self.metta_handler.query(query, log=self.log, timeout=timeout)
+        except TimeoutError:
+            logger.warning("Query timed out for idx: %s", idx)
+            return False
+            
         if self.log:
             logger.info("----------------------------------------------")
             logger.info("Backward Results Idx: %s\n%s\n%s", idx, proven, proof_steps)
@@ -46,7 +48,6 @@ class SimplePuzzleProcessor:
         self.n = nl2pln.n
         
         # Initialize components
-        #self.metta_handler = MettalogHandler(f"{self.output_base}_{self.puzzle_counter}.metta")
         self.metta_handler = MettalogHandler()
         
         if verify:
@@ -60,12 +61,14 @@ class SimplePuzzleProcessor:
 
     def _run_single_proof(self, i: int, pln_data, puzzle_counter: int) -> bool:
         """Run a single proof attempt - helper method for parallel execution."""
-        #metta_handler = MettalogHandler(f"{self.output_base}_{puzzle_counter}_{i}.metta")
         metta_handler = MettalogHandler()
-        
         proof_handler = SimpleProofHandler(metta_handler)
 
-        return proof_handler.try_to_proof(pln_data[i],i)
+        try:
+            return proof_handler.try_to_proof(pln_data[i], i, timeout=300.0)
+        except TimeoutError:
+            logger.warning("Proof %s timed out", i)
+            return False
 
     def process_puzzle(self, puzzle: dspy.Prediction):
         """Process a complete puzzle with premises and conclusion."""
