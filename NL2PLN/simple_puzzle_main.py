@@ -42,7 +42,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
     storage_dir.mkdir(parents=True, exist_ok=True)
 
     total_saved = 0
-    num_sentences = 6
+    num_sentences = 1
     max_attempts = 100  # per difficulty level
 
     # Result queue shared between workers and the main thread
@@ -58,7 +58,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             logger.exception("Worker failed: %s", exc)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        while total_saved < num_puzzles and num_sentences <= 10:
+        while total_saved < num_puzzles:
             logger.info("Generating puzzles with %s sentences…", num_sentences)
             saved_for_this_level = 0
             attempts = 0
