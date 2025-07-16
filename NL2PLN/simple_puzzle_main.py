@@ -62,6 +62,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             logger.info("Generating puzzles with %s sentences…", num_sentences)
             saved_for_this_level = 0
             attempts = 0
+            pending_futures: set[concurrent.futures.Future] = set()
 
             # Kick off an initial batch of at most `max_workers` workers
             initial_batch = min(max_workers, max_attempts)
@@ -74,6 +75,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             for _ in range(initial_batch):
                 fut = executor.submit(worker, num_sentences)
                 fut.add_done_callback(_decrement_active)
+                pending_futures.add(fut)
                 attempts += 1
                 active_workers += 1
 
@@ -83,6 +85,7 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
                 while active_workers < max_workers and attempts < max_attempts:
                     fut = executor.submit(worker, num_sentences)
                     fut.add_done_callback(_decrement_active)
+                    pending_futures.add(fut)
                     attempts += 1
                     active_workers += 1
 
@@ -111,6 +114,12 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
                     logger.info(
                         "Progress: %s/%s total puzzles saved", total_saved, num_puzzles
                     )
+
+            # Cancel any remaining workers for this difficulty level
+            for fut in pending_futures:
+                if not fut.done():
+                    fut.cancel()
+            pending_futures.clear()
 
             if attempts >= max_attempts:
                 logger.warning(
