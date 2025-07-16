@@ -66,8 +66,14 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             # Kick off an initial batch of at most `max_workers` workers
             initial_batch = min(max_workers, max_attempts)
             active_workers = 0
+
+            def _decrement_active(_):
+                nonlocal active_workers
+                active_workers -= 1
+
             for _ in range(initial_batch):
-                executor.submit(worker, num_sentences)
+                fut = executor.submit(worker, num_sentences)
+                fut.add_done_callback(_decrement_active)
                 attempts += 1
                 active_workers += 1
 
@@ -75,17 +81,10 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
             while saved_for_this_level < PUZZLES_PER_LEVEL and total_saved < num_puzzles and attempts < max_attempts:
                 # Refill the pool so that at most `max_workers` tasks are running
                 while active_workers < max_workers and attempts < max_attempts:
-                    executor.submit(worker, num_sentences)
+                    fut = executor.submit(worker, num_sentences)
+                    fut.add_done_callback(_decrement_active)
                     attempts += 1
                     active_workers += 1
-
-                try:
-                    puzzle, score, sentence_count = result_queue.get(timeout=120)
-                    active_workers -= 1  # one worker finished
-                    logger.info(f"Received puzzle: {puzzle} with score: {score}")
-                except queue.Empty:
-                    logger.warning("No puzzle returned within 120 s – continuing")
-                    continue
 
                 try:
                     puzzle, score, sentence_count = result_queue.get(timeout=120)
