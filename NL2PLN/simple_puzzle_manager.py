@@ -30,7 +30,7 @@ class SimpleProofHandler:
             self.metta_handler.add_atom(stmt)
         if self.log:
             logger.info("Running backward chaining... Idx: %s\n%s", idx, query)
-        proof_steps, proven = self.metta_handler.query(query)
+        proof_steps, proven = self.metta_handler.query(query, log=self.log)
         if self.log:
             logger.info("----------------------------------------------")
             logger.info("Backward Results Idx: %s\n%s\n%s", idx, proven, proof_steps)
@@ -83,21 +83,14 @@ class SimplePuzzleProcessor:
 
             # Run proofs in parallel
             res = 0
+            reslist = []
             with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
-                # Submit all proof tasks
-                future_to_index = {
-                    executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter): i 
-                    for i in range(self.n)
-                }
-                
-                # Collect results as they complete
-                for future in as_completed(future_to_index):
-                    i = future_to_index[future]
-                    try:
-                        if future.result():
-                            res += 1
-                    except Exception as e:
-                        logger.error("Error in proof %s: %s", i, e)
+                futures = [executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter) for i in range(self.n)]
+                reslist = [f.result() for f in futures]
+
+            for elem in reslist:
+                if elem:
+                    res += 1
             
             logger.info("Proved %s/%s statements", res, self.n)
             return res/self.n

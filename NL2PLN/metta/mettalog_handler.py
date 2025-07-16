@@ -5,7 +5,7 @@ import subprocess
 from typing import List, Tuple
 
 class MettalogHandler:                                                          
-    def __init__(self, file: str, read_only: bool = False):
+    def __init__(self, file: str = None, read_only: bool = False):
         self.file = file
         self._read_only = read_only
         self.process = None
@@ -20,7 +20,7 @@ class MettalogHandler:
         # Initialize with compiler import and KB initialization
         if not self._read_only:
             path = os.path.join(relative_path, 'compiler')
-            print(self._send_command(f"!(import! &self ./{path})"))
+            self._send_command(f"!(import! &self ./{path})")
             self._init_fresh_kb()
 
     def _start_process(self):
@@ -42,14 +42,15 @@ class MettalogHandler:
         except FileNotFoundError:
             raise RuntimeError("mettalog executable not found. Please ensure it's installed and in PATH.")
     
-    def _read_until_prompt(self, capture_output: bool = False) -> str:
+    def _read_until_prompt(self, capture_output: bool = False, log: bool = False) -> str:
         """Read from mettalog output until we see the prompt, optionally capturing output"""
         output = ""
         prompt_buffer = ""
         
         while True:
             char = self.process.stdout.read(1)
-            #print(char, end='')
+            if log:
+                print(char, end='')
             if not char:
                 break
             
@@ -74,7 +75,7 @@ class MettalogHandler:
         """Wait for the mettalog prompt to appear, discarding any initial output"""
         self._read_until_prompt(capture_output=False)
     
-    def _send_command(self, command: str) -> str:
+    def _send_command(self, command: str, log: bool = False) -> str:
         """Send a command to the mettalog process and return the output"""
         if self.process is None or self.process.poll() is not None:
             self._start_process()
@@ -85,7 +86,7 @@ class MettalogHandler:
             self.process.stdin.flush()
             
             # Read output until we see the prompt pattern
-            output = self._read_until_prompt(capture_output=True)
+            output = self._read_until_prompt(capture_output=True,log=log)
             
             # Split into lines and filter out empty lines
             output_lines = [line.strip() for line in output.split('\n') if line.strip()]
@@ -115,7 +116,6 @@ class MettalogHandler:
     def _init_fresh_kb(self):
         """Initialize a fresh KB and store its reference"""
         kb_output = self._send_command("!(init-kb)")
-        print(f"Raw KB output: {kb_output}")
         
         if not kb_output or not kb_output.strip():
             raise RuntimeError("Failed to initialize KB: no output from !(init-kb)")
@@ -126,7 +126,6 @@ class MettalogHandler:
         
         # Remove first and last characters
         self.kb_ref = kb_output[1:-1]
-        print(f"Initialized fresh KB: {self.kb_ref}")
     
     def create_fresh_environment(self):
         """Create a fresh KB environment without reloading dependencies"""
@@ -184,13 +183,14 @@ class MettalogHandler:
         if not self._read_only:
             res = self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
             # Also append to file for persistence
-            with open(self.file, 'a') as f:
-                f.write(f'!(compileAdd {self.kb_ref} {atom})\n')
+            if self.file:
+                with open(self.file, 'a') as f:
+                    f.write(f'!(compileAdd {self.kb_ref} {atom})\n')
             return res
 
-    def query(self, atom: str) -> Tuple[List[str], bool]:
+    def query(self, atom: str, log: bool = False) -> Tuple[List[str], bool]:
         """Query the knowledge base and return results"""
-        output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})')
+        output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})', log=log)
         
         results = self._parse_query_output(output)
         proven = len(results) > 0
@@ -208,10 +208,6 @@ class MettalogHandler:
     def run(self, atom: str):
         """Run a command and return the output"""
         output = self._send_command(atom)
-        if not self._read_only:
-            # Also append to file for persistence
-            with open(self.file, 'a') as f:
-                f.write(f"{atom}\n")
         return output
 
     def run_clean(self, atom: str) -> List[str]:
@@ -222,6 +218,10 @@ class MettalogHandler:
         if self.read_only:
             print("Warning: Cannot store KB in read-only mode")
             return
+
+        if not self.file:
+            print("Warning: No file specified to store KB to")
+            return
         
         # Send command to match and output KB content
         self._send_command(f'!(match {self.kb_ref} $a $a)')
@@ -230,6 +230,10 @@ class MettalogHandler:
             f.write(f'!(match {self.kb_ref} $a $a)\n')
 
     def load_kb_from_file(self):
+        if not self.file:
+            print("Warning: No file specified to load KB from")
+            return
+
         if os.path.exists(self.file):
             # Load existing file content into the running process
             with open(self.file, 'r') as f:
@@ -241,6 +245,9 @@ class MettalogHandler:
             print(f"Warning: File {self.file} does not exist. No KB loaded.")
 
     def append_to_file(self, elem: str):
+        if not self.file:
+            print("Warning: No file specified to append to")
+            return
         if self.read_only:
             print("Warning: Cannot append to file in read-only mode")
             return
@@ -252,9 +259,11 @@ if __name__ == '__main__':
 
     print("Testing:")
 
-    handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))")
-    handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))")
-
-    handler.run(f"!(show-cs {handler.kb_ref})")
+    print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
     print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+
+    #print(handler.add_atom("(: rule2 a (STV 1.0 1.0))"))
+
+    #print(handler.query("(: $query a $tv)"))
