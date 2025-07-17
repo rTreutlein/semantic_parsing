@@ -43,16 +43,17 @@
 (: mtime (-> Atom $a))
 (= (mtime $expr)
    (let $start ((py-atom time.time))
-   (let $res (collapse $expr)
+   (let $res (eval (collapse $expr))
    (let $stop ((py-atom time.time))
    (Time (- $stop $start) $res)))))
 
 (: tt (-> Atom Atom $a))
 (= (tt $msg $expr)
-   (let $start ((py-atom time.time))
-   (let $res $expr
-   (let $stop ((py-atom time.time))
-   (trace! (Time (- $stop $start) ($msg $res)) $res)))))
+   (tracem $msg $expr))
+   ;(let $start ((py-atom time.time))
+   ;(let $res (eval (collapse $expr))
+   ;(let $stop ((py-atom time.time))
+   ;(trace! (Time (- $stop $start) ($msg $res)) (superpose $res))))))
 
 ;;Because mettalog eliminates duplicates
 (= (munion-atom $list1 $list2)
