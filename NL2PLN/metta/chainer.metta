@@ -24,7 +24,7 @@
    ($cs $ps))
 )
 
-(= (show-cs ($cs $ps)) (println! (CS Element:  (match $cs $a $a))))
+(= (show-cs ($cs $ps)) (CS Element:  (match $cs $a $a)))
 (= (show-ps ($cs $ps)) (sstostring (get-state $ps)))
 
 (= (add-atom-nodup $space $atom)
@@ -88,7 +88,7 @@
  (let ($npset |- $ncset) (normalize $query)
   (if (is-variable $ncset)
    (combine (collapse (bcsingle $kb $depthNNfull ($npset |- $ncset) ())))
-   (bcset $kb $depthNNfull ($npset |- $ncset) ())
+   (tracem finalbcout (bcset $kb $depthNNfull ($npset |- $ncset) ()))
   )
  )
 )
@@ -119,7 +119,7 @@
      (let ($ppset |- $pcset) (tracem sout (combine (tracem precombine (collapse (bcsingle $kb $depthNNfull (tracem sin ($pset |- $ccls)) $targets)))))
      ;(let ($ppset |- $pcset) (combine (collapse (bcsingle $kb $depthNNfull ($pset |- $ccls) $targets)))
      (let ($ccls $otherc) (removeAlt $pcset $ccls)
-     (let ($fpset |- $fcset) (postfilter ($ppset |- ($ccls)))
+     (let ($fpset |- $fcset) (tracem (pf $ctail) (postfilter ($ppset |- ($ccls))))
       (if (== $ctail ()) ;Don't recurse if there is nothing left to do
        ;($ppset |- (cons-atom $ccls $otherc)) ;TODO evalaute if it's worth to return $other
        ($fpset |- $fcset)
@@ -131,7 +131,9 @@
          (($rpset |- $rcset) (bcset $kb $depthNNfull ($pset |- $ctail) $targets))
         )
         ;(normalize (unionStmt ($ppset |- $npcset) ($rpset |- $rcset)))
+
         (normalize (unionStmt ($fpset |- $fcset) ($rpset |- $rcset)))
+        ;(unionStmt (normalize ($fpset |- $rcset)) (normalize ($rpset |- $fcset))) ;Optimized don't normalie as one
        )
       )
      )
@@ -181,7 +183,7 @@
       (((: $nprf $Type $tv) ($lcNNpset |- $lcNNcset)) (tt lokkup-ccls (lookup-ccls $kb (: $nprf $Type $tv)))) ;Get rule to prove $ccls
       ;(((: $nprf $Type $tv) ($lcNNpset |- $lcNNcset)) (lookup-ccls $kb (: $nprf $Type $tv))) ;Get rule to prove $ccls
       (($NNts () $NNps) (tt oat (overlapAlphaType $targets $lcNNpset)))
-      (($notnededpset $opset $ppset) (overlap $pset $lcNNpset)) ;Check if we have already prooved $lcNNpset
+      (($notnededpset $opset $ppset) (tt ovlp (overlap $pset $lcNNpset))) ;Check if we have already prooved $lcNNpset
       ;(debug (trace! (Overlap $pset $lcNNpset $notnededpset $opset $ppset) debug))
      )
      ;Alternate to a forward step
@@ -190,9 +192,10 @@
       ($lcNNpset |- $lcNNcset)
       ;Premises left to prove
       (unify $depthNNfull (S $depth)
-       ;(let ($a |- $b) (tracem bcout (bcset $kb $depth ($pset |- $ppset) (cons-atom $ccls $targets))) ;)Proof the premises
-       (let ($a |- $b) (bcset $kb $depth ($pset |- $ppset) (cons-atom $ccls $targets)) ;Proof the premises
-        (normalize (unionStmt ($lcNNpset |- $lcNNcset) ($a |- $b))))
+       (let ($a |- $b) (tracem (bcout $ppset) (bcset $kb $depth (tracem bcin ($pset |- $ppset)) (cons-atom $ccls $targets))) ;)Proof the premises
+       ;(let ($a |- $b) (bcset $kb $depth ($pset |- $ppset) (cons-atom $ccls $targets)) ;Proof the premises
+        (tracem postnorm (normalize (tracem prenorm (unionStmt ($lcNNpset |- $lcNNcset) ($a |- $b))))))
+        ;(unionStmt ($opset |- $lcNNcset) (tracem postnorm (normalize (tracem prenorm ($ppset |- $b)))))) ;Optimized don't need to normalize the whole thing
        (if (is-variable $pset)
         ($lcNNpset |- $lcNNcset)
         Empty))))))))

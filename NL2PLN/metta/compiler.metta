@@ -170,7 +170,7 @@
   (if (is-variable $Type)
    ( (() |- ((: $prf $Type $tv))) ())
    (unify $Type ($relation $a $b)
-    (if (tracem $relation (== $relation Implication))
+    (if (== $relation Implication)
      ((postQuery (((: $prfa $a (STV 1.0 1.0))) |- ((: $prfb $b $itv))))
       (collapse (postQuery (superpose ( (in (: $prfb $b $btv)) (out (: $prfa $a $atv)) ))))
      )
@@ -187,7 +187,7 @@
 (= (query $kb $depth $query)
    (let ($cquery $stmts) (tracem cq (compileQuery $query))
          (let $NN (collapse (add-to-kb $kb (superpose $stmts)))
-            (bc $kb $depth $cquery))))
+            (tracem qbcout (bc $kb $depth $cquery)))))
 
 ;!(compile (: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0)))
 ;!(compile (: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0)))
@@ -209,3 +209,6 @@
 ;!(compile (: rule1 (Implication a (Or b c)) (STV 1.0 1.0)))
 
 ;!(compileQuery (: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv))
+
+
+!(mcompile (: library-book-sale-fact1 (WithTV (And (RaisedAmount LibraryBookSale $2847) (HeldOn LibraryBookSale LastSaturday) (PopularCategory LibraryBookSale MysteryNovels)) (STV 1.0 1.0))))

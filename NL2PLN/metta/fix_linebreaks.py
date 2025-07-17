@@ -27,12 +27,12 @@ def fix_linebreaks(content):
     paren_balance = 0
     
     for line in lines:
-        stripped = line.strip()
+        stripped = line
         
         # Skip empty lines
         if not stripped:
             if current_line and paren_balance == 0:
-                result.append(current_line.strip())
+                result.append(current_line)
                 current_line = ""
             continue
         
@@ -40,25 +40,25 @@ def fix_linebreaks(content):
         if stripped.startswith('(') and paren_balance == 0:
             # Save any previous complete expression
             if current_line:
-                result.append(current_line.strip())
+                result.append(current_line)
             current_line = stripped
             paren_balance = count_parens(stripped)
         else:
             # Continue building the current expression
             if current_line:
-                current_line += " " + stripped
+                current_line += stripped
             else:
                 current_line = stripped
             paren_balance += count_parens(stripped)
         
         # If parentheses are balanced, we have a complete expression
         if paren_balance == 0 and current_line:
-            result.append(current_line.strip())
+            result.append(current_line)
             current_line = ""
     
     # Add any remaining content
     if current_line:
-        result.append(current_line.strip())
+        result.append(current_line)
     
     return '\n'.join(result)
 
