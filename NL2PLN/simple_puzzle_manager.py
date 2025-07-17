@@ -12,7 +12,7 @@ from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
 class SimpleProofHandler:
-    def __init__(self, metta_handler, log: bool = True):
+    def __init__(self, metta_handler, log: bool = False):
         self.metta_handler = metta_handler
         self.log = log
 
@@ -65,7 +65,7 @@ class SimplePuzzleProcessor:
         proof_handler = SimpleProofHandler(metta_handler)
 
         try:
-            return proof_handler.try_to_proof(pln_data[i], i, timeout=300.0)
+            return proof_handler.try_to_proof(pln_data[i], i, timeout=120.0)
         except TimeoutError:
             logger.warning("Proof %s timed out", i)
             return False

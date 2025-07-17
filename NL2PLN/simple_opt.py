@@ -59,10 +59,9 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
 lm = dspy.LM('openrouter/anthropic/claude-sonnet-4')
 dspy.configure(lm=lm)
 
-
 def metricfunction(example, predictions : List[dspy.Prediction], trace=None):
     #metta_handler = MeTTaHandler(f"optimizer.metta")
-    metta_handler = MettalogHandler(f"optimizer.metta")
+    metta_handler = MettalogHandler()
     spp = SimpleProofHandler(metta_handler)
     cnt = 0
     for prediction in predictions:

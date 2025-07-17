@@ -24,7 +24,7 @@ def configure_lm(model_name: str = 'openai/gpt-4o'):
     lm = dspy.LM(model_name)
     dspy.configure(lm=lm)
 
-def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, max_workers: int = 4):
+def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, max_workers: int = 4, recent_sample_count: int = 10):
     """
     Generate samples with increasing difficulty, collecting 3 medium-difficulty
     puzzles per sentence count.
@@ -33,6 +33,9 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
     worker creates puzzles and immediately feeds them to a queue that a thread
     pool pulls from to perform the expensive `process_puzzle` calls.
     """
+    import threading
+    from collections import deque
+
     puzzle_gen = SampleGenerator()
     nl2pln = SimpleNL2PLN(n=5)
     nl2pln.load("optimized.json")
@@ -48,10 +51,16 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
     # Result queue shared between workers and the main thread
     result_queue: queue.Queue[tuple] = queue.Queue(maxsize=max_workers * 2)
 
+    # Thread-safe recent samples
+    recent_samples = deque(maxlen=recent_sample_count)
+    recent_lock = threading.Lock()
+
     def worker(sentence_count: int):
         """Generate a puzzle and process it, then put the result on the queue."""
         try:
-            puzzle = puzzle_gen.generate_sample(numberOfSentences=sentence_count)
+            with recent_lock:
+                recent_list = list(recent_samples)
+            puzzle = puzzle_gen.generate_sample(numberOfSentences=sentence_count, recent_samples=recent_list)
             score = processor.process_puzzle(puzzle)
             result_queue.put((puzzle, score, sentence_count), block=True)
         except Exception as exc:
@@ -105,6 +114,10 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
                     path = storage_dir / filename
                     with open(path, "w") as f:
                         json.dump(puzzle.__dict__['_store'], f, indent=2)
+
+                    # Add to recent samples (thread-safe)
+                    with recent_lock:
+                        recent_samples.append(puzzle)
 
                     saved_for_this_level += 1
                     total_saved += 1
