@@ -11,6 +11,8 @@ class TimeoutError(RuntimeError):
     """Raised when a mettalog command exceeds the allotted time."""
     pass
 
+
+
 class MettalogHandler:                                                          
     def __init__(self, file: str = None, read_only: bool = False):
         self.file = file
@@ -290,7 +292,16 @@ if __name__ == '__main__':
 
     print("Testing:")
 
-    print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
-    print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
+    #print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+    #print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
-    print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+    #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
+
+    print(handler.add_atom("(: library_between (WithTV (Between Library Bank PostOffice) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: library_on_main (WithTV (OnStreet Library MainStreet) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: bank_on_main (WithTV (OnStreet Bank MainStreet) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: post_office_on_main (WithTV (OnStreet PostOffice MainStreet) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: bank_left_of_library (WithTV (LeftOf Bank Library North) (STV 1.0 1.0)))"))
+    print(handler.add_atom("(: same_side_relation (WithTV (SameSideOf Library Bank PostOffice MainStreet) (STV 1.0 1.0)))"))
+
+    print(handler.query("(: $query (WithTV (OrderFromLeftToRight $building1 $building2 $building3 North) $tv))"))

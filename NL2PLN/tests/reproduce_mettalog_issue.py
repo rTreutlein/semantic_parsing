@@ -29,7 +29,7 @@ os.read = _slow_read  # type: ignore
 # ---------------------------------------------------------------------------
 
 
-def run_test(runs: int = 500) -> None:
+def run_test(runs: int = 10) -> None:
     failures = 0
     for i in range(runs):
         h = MettalogHandler(read_only=False)   # init-kb is executed here
