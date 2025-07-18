@@ -79,6 +79,20 @@ class MettalogHandler:
         
         sel = selectors.DefaultSelector()
         sel.register(fd, selectors.EVENT_READ)
+
+        # -------------------------------------------------------------------
+        # Flush any bytes left over from the previous command so we start with
+        # an empty buffer.  This prevents stale prompts/output from confusing
+        # the current read loop and guarantees we always wait for the *new*
+        # prompt that will appear after the command we are about to send.
+        # -------------------------------------------------------------------
+        try:
+            while True:
+                leftover = os.read(fd, 8192)
+                if not leftover:
+                    break      # EOF
+        except BlockingIOError:
+            pass               # no data pending
         
         try:
             if command:
