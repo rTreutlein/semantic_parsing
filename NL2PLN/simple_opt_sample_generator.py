@@ -15,9 +15,9 @@ The script:
 3. Runs MIPRO-v2 teleprompting to optimise the SampleGenerator prompt.
 4. Saves the optimised generator back to ``sample_generator_optimized.json``.
 """
-from pathlib import Path
 from typing import List
 import argparse
+import random
 
 import dspy
 from dspy.teleprompt import MIPROv2
@@ -25,7 +25,6 @@ from dspy.teleprompt import MIPROv2
 from NL2PLN.simple_nl2pln import SimpleNL2PLN
 from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.utils.sample_generator import SampleGenerator
-from NL2PLN.simple_opt import load_medium_puzzles_dataset  # reuse helper
 
 
 # --------------------------------------------------------------------------- #
@@ -37,20 +36,16 @@ dspy.configure(lm=dspy.LM("openrouter/anthropic/claude-sonnet-4"))
 # --------------------------------------------------------------------------- #
 #  Helper to build the training dataset                                       #
 # --------------------------------------------------------------------------- #
-def build_training_dataset(medium_puzzles_dir: str, desired_length: int) -> List[dspy.Example]:
-    """Return a dataset where each example requests the desired sentence count."""
-    puzzles = load_medium_puzzles_dataset(medium_puzzles_dir)
+def build_training_dataset(min_len: int, max_len: int, num_samples: int) -> List[dspy.Example]:
+    """
+    Create ``num_samples`` examples with sentence lengths
+    uniformly sampled between ``min_len`` and ``max_len`` (inclusive).
+    """
     dataset: List[dspy.Example] = []
-
-    # Create one example per puzzle (or at least one) using the provided length
-    if puzzles:
-        for _ in puzzles:
-            dataset.append(
-                dspy.Example(numberOfSentences=desired_length).with_inputs("numberOfSentences")
-            )
-    else:
+    for _ in range(num_samples):
+        length = random.randint(min_len, max_len)
         dataset.append(
-            dspy.Example(numberOfSentences=desired_length).with_inputs("numberOfSentences")
+            dspy.Example(numberOfSentences=length).with_inputs("numberOfSentences")
         )
     return dataset
 
@@ -83,14 +78,18 @@ def difficulty_metric(example: dspy.Example, preds: List[dspy.Prediction], trace
 # --------------------------------------------------------------------------- #
 #  Optimisation                                                               #
 # --------------------------------------------------------------------------- #
-parser = argparse.ArgumentParser(description="Optimize SampleGenerator for desired sentence length")
-parser.add_argument("--length", type=int, default=3,
-                    help="Desired number of sentences in generated puzzles")
+parser = argparse.ArgumentParser(
+    description="Optimize SampleGenerator to produce medium-difficulty puzzles"
+)
+parser.add_argument("--min-length", type=int, default=3,
+                    help="Minimum number of sentences in generated puzzles")
+parser.add_argument("--max-length", type=int, default=5,
+                    help="Maximum number of sentences in generated puzzles")
+parser.add_argument("--num-samples", type=int, default=20,
+                    help="Number of training examples used during optimisation")
 args = parser.parse_args()
 
-desired_length = args.length
-
-trainset = build_training_dataset("puzzle", desired_length)
+trainset = build_training_dataset(args.min_length, args.max_length, args.num_samples)
 
 teleprompter = MIPROv2(metric=difficulty_metric, auto="light")
 
