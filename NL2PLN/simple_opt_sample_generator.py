@@ -53,26 +53,25 @@ def build_training_dataset(min_len: int, max_len: int, num_samples: int) -> List
 # --------------------------------------------------------------------------- #
 #  Difficulty metric                                                          #
 # --------------------------------------------------------------------------- #
-def difficulty_metric(example: dspy.Example, preds: List[dspy.Prediction], trace=None) -> float:
+def difficulty_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
     """
-    Score is the fraction of predictions whose puzzles are of medium difficulty
-    for the current NL2PLN → proof pipeline.
+    Return 1.0 if the generated puzzle has *medium* difficulty, else 0.0.
+
+    A puzzle is of medium difficulty when SimplePuzzleProcessor returns
+    a score that is neither 0 (too hard) nor 1 (too easy).
     """
-    # Load optimised NL2PLN once per metric call.
     nl2pln = SimpleNL2PLN()
     nl2pln.load("optimized.json")
 
     processor = SimplePuzzleProcessor(
-        output_base="metric", nl2pln=nl2pln, verify=False, n=5
+        output_base="metric",
+        nl2pln=nl2pln,
+        verify=False,
+        n=5
     )
 
-    medium_hits = 0
-    for prediction in preds:
-        score = processor.process_puzzle(prediction)
-        if score not in (0, 1):
-            medium_hits += 1
-
-    return medium_hits / len(preds) if preds else 0.0
+    score = processor.process_puzzle(prediction)
+    return 1.0 if score not in (0, 1) else 0.0
 
 
 # --------------------------------------------------------------------------- #
