@@ -17,6 +17,7 @@ The script:
 """
 from pathlib import Path
 from typing import List
+import argparse
 
 import dspy
 from dspy.teleprompt import MIPROv2
@@ -36,14 +37,20 @@ dspy.configure(lm=dspy.LM("openrouter/anthropic/claude-sonnet-4"))
 # --------------------------------------------------------------------------- #
 #  Helper to build the training dataset                                       #
 # --------------------------------------------------------------------------- #
-def build_training_dataset(medium_puzzles_dir: str) -> List[dspy.Example]:
-    """Return examples providing only the requested sentence count."""
+def build_training_dataset(medium_puzzles_dir: str, desired_length: int) -> List[dspy.Example]:
+    """Return a dataset where each example requests the desired sentence count."""
     puzzles = load_medium_puzzles_dataset(medium_puzzles_dir)
     dataset: List[dspy.Example] = []
-    for p in puzzles:
-        # `sentences` is guaranteed by `load_medium_puzzles_dataset`
+
+    # Create one example per puzzle (or at least one) using the provided length
+    if puzzles:
+        for _ in puzzles:
+            dataset.append(
+                dspy.Example(numberOfSentences=desired_length).with_inputs("numberOfSentences")
+            )
+    else:
         dataset.append(
-            dspy.Example(numberOfSentences=len(p.sentences)).with_inputs("numberOfSentences")
+            dspy.Example(numberOfSentences=desired_length).with_inputs("numberOfSentences")
         )
     return dataset
 
@@ -76,7 +83,14 @@ def difficulty_metric(example: dspy.Example, preds: List[dspy.Prediction], trace
 # --------------------------------------------------------------------------- #
 #  Optimisation                                                               #
 # --------------------------------------------------------------------------- #
-trainset = build_training_dataset("puzzle")
+parser = argparse.ArgumentParser(description="Optimize SampleGenerator for desired sentence length")
+parser.add_argument("--length", type=int, default=3,
+                    help="Desired number of sentences in generated puzzles")
+args = parser.parse_args()
+
+desired_length = args.length
+
+trainset = build_training_dataset("puzzle", desired_length)
 
 teleprompter = MIPROv2(metric=difficulty_metric, auto="light")
 
