@@ -30,8 +30,8 @@ from NL2PLN.utils.sample_generator import SampleGenerator
 # --------------------------------------------------------------------------- #
 #  LM configuration                                                           #
 # --------------------------------------------------------------------------- #
-dspy.configure(lm=dspy.LM("openrouter/anthropic/claude-sonnet-4"))
-
+#dspy.configure(lm=dspy.LM("openrouter/anthropic/claude-sonnet-4"))
+dspy.configure(lm=dspy.LM("openai/gpt-4o"))
 
 # --------------------------------------------------------------------------- #
 #  Helper to build the training dataset                                       #
