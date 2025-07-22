@@ -17,7 +17,7 @@ class MeTTaHandler:
         #self.metta.run(f"!(import! &self {os.path.join(script_dir, 'compiler')})")
         if (relative_path.startswith('.')):
             relative_path = relative_path[1:]
-        path = os.path.join(relative_path, 'compiler').replace('/', ':')
+        path = os.path.join(relative_path, 'chainer/compiler').replace('/', ':')
         print(path)
         self.metta.run(f"!(import! &self {path})")
         #self.metta.load_module_at_path(os.path.join(script_dir, 'compiler.metta'))

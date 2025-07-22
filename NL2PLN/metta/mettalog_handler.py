@@ -28,8 +28,8 @@ class MettalogHandler:
         
         # Initialize with compiler import and KB initialization
         if not self._read_only:
-            path = os.path.join(relative_path, 'compiler')
-            self._send_command(f"!(import! &self ./{path})")
+            path = os.path.join(relative_path, 'chainer/compiler')
+            self._send_command(f"!(import! &self {path})")
             self._init_fresh_kb()
 
     def _start_process(self):
@@ -56,7 +56,7 @@ class MettalogHandler:
         # Use the same timeout mechanism as _send_command
         self._send_command("\n", timeout=30.0)
 
-    def _send_command(self, command: str, log: bool = False, timeout: float = 180.0) -> str:
+    def _send_command(self, command: str, log: bool = True, timeout: float = 180.0) -> str:
         """Send a command to the mettalog process and return the output.
         
         Args:
