@@ -56,8 +56,9 @@ def load_medium_puzzles_dataset(medium_puzzles_dir: str) -> List[dspy.Prediction
     return dataset
 
 # Initialize the LM
-lm = dspy.LM('openrouter/anthropic/claude-sonnet-4')
-dspy.configure(lm=lm)
+#lm = dspy.LM('openrouter/anthropic/claude-sonnet-4')
+#dspy.configure(lm=lm)
+dspy.configure(lm=dspy.LM("openai/gpt-4o"))
 
 def metricfunction(example, predictions : List[dspy.Prediction], trace=None):
     #metta_handler = MeTTaHandler(f"optimizer.metta")
@@ -80,7 +81,7 @@ teleprompter = MIPROv2(
 # Replace 'path/to/medium/puzzles' with the actual directory path
 trainset = load_medium_puzzles_dataset('puzzle')
 
-program = SimpleNL2PLN(n=1)
+program = SimpleNL2PLN()
 
 program.load(f"optimized.json")
 

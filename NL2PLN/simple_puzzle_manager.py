@@ -12,17 +12,17 @@ from NL2PLN.utils.checker import human_verify_prediction
 from NL2PLN.dspy.type_similarity import TypeSimilarityHandler
 
 class SimpleProofHandler:
-    def __init__(self, metta_handler, log: bool = False):
+    def __init__(self, metta_handler, log: bool = True):
         self.metta_handler = metta_handler
         self.log = log
 
-    def try_to_proof(self, pln_data, idx, timeout: float = 300.0) -> bool:
+    def try_to_proof(self, pln_premises, pln_query, idx, timeout: float = 300.0) -> bool:
         """Attempt to prove conclusion using current KB"""
-        query = pln_data.questions[0]
-        premises = pln_data.statements
+        premises = pln_premises.statements
+        query = pln_query.questions[0]
 
-        if self.log:
-            logger.info("Trying to proof idx: %s\n%s", idx, pln_data)
+        #if self.log:
+            #logger.info("Trying to proof idx: %s\n%s", idx, pln_data)
         for stmt in premises:
             self.metta_handler.add_atom(stmt)
         if self.log:
@@ -42,10 +42,10 @@ class SimpleProofHandler:
         return proven
 
 class SimplePuzzleProcessor:
-    def __init__(self, output_base: str, nl2pln, verify: bool = False):
+    def __init__(self, output_base: str, nl2pln, verify: bool = False, n=1):
         self.output_base = output_base
         self.puzzle_counter = 0
-        self.n = nl2pln.n
+        self.n = n
         
         # Initialize components
         self.metta_handler = MettalogHandler()
@@ -59,13 +59,13 @@ class SimplePuzzleProcessor:
         else:
             self.nl2pln = nl2pln
 
-    def _run_single_proof(self, i: int, pln_data, puzzle_counter: int) -> bool:
+    def _run_single_proof(self, i: int, pln_premises, pln_queries, puzzle_counter: int) -> bool:
         """Run a single proof attempt - helper method for parallel execution."""
         metta_handler = MettalogHandler()
         proof_handler = SimpleProofHandler(metta_handler)
 
         try:
-            return proof_handler.try_to_proof(pln_data[i], i, timeout=120.0)
+            return proof_handler.try_to_proof(pln_premises, pln_queries[i], i, timeout=120.0)
         except TimeoutError:
             logger.warning("Proof %s timed out", i)
             return False
@@ -76,19 +76,23 @@ class SimplePuzzleProcessor:
         query = puzzle.question
         logger.info("Processing puzzle with %s premises", len(premises))
         
-        self.puzzle_counter += 1    
+        self.puzzle_counter += 1
         
         try:
-            combined_text = "\n".join(premises) + f"\n{query}"
+            pln_premises = self.nl2pln(premises)
+            context = f"Converted Sentences:\n{"\n".join(premises)}\nTo: TypeDefs:\n {pln_premises.typedefs} Statements:\n{pln_premises.statements}"
+            
+            # Convert query to pln_query multiple times in parallel
+            with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
+                # Run query conversion in parallel
+                conversion_futures = [executor.submit(self.nl2pln, query, previous_sentences=context) for i in range(self.n)]
+                pln_queries = [f.result() for f in conversion_futures]
 
-            # Process combined text
-            pln_data = self.nl2pln(combined_text)
-
-            # Run proofs in parallel
+            # Run proofs in parallel, using different query conversions
             res = 0
             reslist = []
             with ThreadPoolExecutor(max_workers=min(self.n, 8)) as executor:
-                futures = [executor.submit(self._run_single_proof, i, pln_data, self.puzzle_counter) for i in range(self.n)]
+                futures = [executor.submit(self._run_single_proof, i, pln_premises, pln_queries, self.puzzle_counter) for i in range(self.n)]
                 reslist = [f.result() for f in futures]
 
             for elem in reslist:
@@ -96,6 +100,7 @@ class SimplePuzzleProcessor:
                     res += 1
             
             logger.info("Proved %s/%s statements", res, self.n)
+            print(res)
             return res/self.n
         except Exception as e:
             logger.error("Error processing puzzle: %s", e)

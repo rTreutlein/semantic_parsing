@@ -28,7 +28,9 @@ class SampleGenerator(dspy.Module):
     def generate_sample(self, numberOfSentences: int = 3, recent_samples: list = None) -> dspy.Prediction:
         """Generate a sample that differs from recent_samples."""
         recent_samples = recent_samples or []
-        return self.generate(
-            numberOfSentences=numberOfSentences,
-            recent_samples=[str(s) for s in recent_samples]
-        )
+        #with dspy.context(lm=dspy.LM('openrouter/anthropic/claude-sonnet-4', temperature=1, cache=False)):
+        with dspy.context(lm=dspy.LM('openai/gpt-4o', temperature=1, cache=False)):
+            return self.generate(
+                numberOfSentences=numberOfSentences,
+                recent_samples=[str(s) for s in recent_samples]
+            )

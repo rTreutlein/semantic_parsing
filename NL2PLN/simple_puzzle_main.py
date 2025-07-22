@@ -37,16 +37,16 @@ def generate_samples(num_puzzles: int, output_dir: str, verify: bool = False, ma
     from collections import deque
 
     puzzle_gen = SampleGenerator()
-    nl2pln = SimpleNL2PLN(n=5)
+    nl2pln = SimpleNL2PLN()
     nl2pln.load("optimized.json")
-    processor = SimplePuzzleProcessor("sample", nl2pln=nl2pln, verify=verify)
+    processor = SimplePuzzleProcessor("sample", nl2pln=nl2pln, verify=verify, n=5)
 
     storage_dir = Path(output_dir)
     storage_dir.mkdir(parents=True, exist_ok=True)
 
     total_saved = 0
     num_sentences = 1
-    max_attempts = 100  # per difficulty level
+    max_attempts = PUZZLES_PER_LEVEL * 3 # per difficulty level
 
     # Result queue shared between workers and the main thread
     result_queue: queue.Queue[tuple] = queue.Queue(maxsize=max_workers * 2)
@@ -157,7 +157,8 @@ def main():
 
     # Configure LM
     #configure_lm('deepseek/deepseek-reasoner')
-    configure_lm('openrouter/anthropic/claude-sonnet-4')
+    #configure_lm('openrouter/anthropic/claude-sonnet-4')
+    configure_lm('openai/gpt-4o')
 
     # Check if we should generate samples
     if args.generate_samples:
@@ -166,7 +167,8 @@ def main():
 
     # Initialize puzzle generator and processor
     puzzle_gen = SampleGenerator()
-    nl2pln = SimpleNL2PLN(n=5)
+    puzzle_gen.load("sample_generator_optimized.json")
+    nl2pln = SimpleNL2PLN()
     nl2pln.load("optimized.json")
     processor = SimplePuzzleProcessor(args.output, nl2pln=nl2pln, verify=args.verify)
     

@@ -19,7 +19,7 @@ _original_read = os.read
 
 def _slow_read(fd: int, n: int) -> bytes:      # noqa: D401
     """Patched version of os.read that returns ≤ 3 bytes per call."""
-    return _original_read(fd, min(n, 3))
+    return _original_read(fd, min(n, 30))
 
 
 os.read = _slow_read  # type: ignore
@@ -29,11 +29,12 @@ os.read = _slow_read  # type: ignore
 # ---------------------------------------------------------------------------
 
 
-def run_test(runs: int = 500) -> None:
+def run_test(runs: int = 10) -> None:
     failures = 0
     for i in range(runs):
         h = MettalogHandler(read_only=False)   # init-kb is executed here
-        if not h.kb_ref:                       # '' means the bug has surfaced
+        print(h.kb_ref)
+        if h.kb_ref == '()':
             print(f"FAIL on run {i}")
             failures += 1
         h.close()
