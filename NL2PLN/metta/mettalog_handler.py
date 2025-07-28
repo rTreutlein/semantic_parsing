@@ -11,26 +11,21 @@ class TimeoutError(RuntimeError):
     """Raised when a mettalog command exceeds the allotted time."""
     pass
 
-
-
 class MettalogHandler:                                                          
-    def __init__(self, file: str = None, read_only: bool = False):
-        self.file = file
-        self._read_only = read_only
+    def __init__(self):
         self.process = None
         self.kb_ref = None
         
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        relative_path = os.path.relpath(script_dir, start=os.getcwd())
         
         # Start the mettalog process
         self._start_process()
         
         # Initialize with compiler import and KB initialization
-        if not self._read_only:
-            path = os.path.join(relative_path, 'chainer/compiler')
-            self._send_command(f"!(import! &self {path})")
-            self._init_fresh_kb()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        relative_path = os.path.relpath(script_dir, start=os.getcwd())
+        path = os.path.join(relative_path, 'chainer/compiler')
+        self._send_command(f"!(import! &self {path})")
+        self.init_fresh_kb()
 
     def _start_process(self):
         """Start the mettalog process with stdin/stdout pipes"""
@@ -56,7 +51,7 @@ class MettalogHandler:
         # Use the same timeout mechanism as _send_command
         self._send_command("\n", timeout=30.0)
 
-    def _send_command(self, command: str, log: bool = True, timeout: float = 180.0) -> str:
+    def _send_command(self, command: str, log: bool = False, timeout: float = 180.0) -> str:
         """Send a command to the mettalog process and return the output.
         
         Args:
@@ -138,62 +133,25 @@ class MettalogHandler:
             sel.close()
             os.set_blocking(fd, True)  # restore blocking mode
     
-    def _restart_process(self):
-        """Restart the mettalog process if it becomes unresponsive"""
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
-        self._start_process()
-    
-    def _init_fresh_kb(self):
+    def init_fresh_kb(self):
         """Initialize a fresh KB and store its reference"""
-        kb_output = self._send_command("!(init-kb)")
-
-        if not kb_output or not kb_output.strip():
-            raise RuntimeError("Failed to initialize KB: no output from !(init-kb)")
-        
-        kb_output = kb_output.strip()
-        if len(kb_output) < 2:
-            raise RuntimeError(f"Failed to initialize KB: output too short: {kb_output}")
-        
-        # Remove first and last characters
-        self.kb_ref = kb_output[1:-1]
-    
-    def create_fresh_environment(self):
-        """Create a fresh KB environment without reloading dependencies"""
-        if not self._read_only:
-            self._init_fresh_kb()
+        self.kb_ref = self._send_command("!(init-kb)")[1:-1]
     
     def close(self):
         """Close the process and clean up resources"""
-        if self.process:
+        if self.process is not None:
             self.process.terminate()
             self.process.wait()
         self.process = None
     
     def __del__(self):
         """Clean up the process when the handler is destroyed"""
-        if self.process:
+        if self.process is not None:
             self.process.terminate()
             self.process.wait()
 
-    @staticmethod
-    def clean_variable_names(expr: str) -> str:
-        """Remove #numbers from variable names like $var#1234"""
-        return re.sub(r'\$([a-zA-Z_][a-zA-Z0-9_]*?)#\d+', r'$\1', expr)
-
-    @property
-    def read_only(self) -> bool:
-        return self._read_only
-
     def add_atom(self, atom: str) -> str:
-        if not self._read_only:
-            res = self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
-            # Also append to file for persistence
-            if self.file:
-                with open(self.file, 'a') as f:
-                    f.write(f'!(compileAdd {self.kb_ref} {atom})\n')
-            return res
+        return self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
 
     def query(self, atom: str, log: bool = False, timeout: float = 300.0) -> Tuple[List[str], bool]:
         """Query the knowledge base and return results
@@ -207,102 +165,12 @@ class MettalogHandler:
             Tuple of (results_list, proven_boolean)
         """
         output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})', log=log, timeout=timeout)
-        
-        results = self._parse_query_output(output)
-        proven = len(results) > 0
-        return results, proven
-
-    def add_to_context(self, atom: str) -> str | None:
-        """Add atom to context if no conflict exists.
-        
-        Returns:
-            None if atom was added successfully
-            The conflicting atom string if a conflict was found
-        """
-        return None
-        
-    def run(self, atom: str, timeout: float = 300.0):
-        """Run a command and return the output
-        
-        Args:
-            atom: The command to run
-            timeout: Maximum time in seconds to wait for completion
-            
-        Returns:
-            The output string
-        """
-        return self._send_command(atom, timeout=timeout)
-
-    def run_clean(self, atom: str, timeout: float = 300.0) -> List[str]:
-        res = self.run(atom, timeout=timeout)
-        return [self.clean_variable_names(str(elem)) for elem in res[0]]
-                                                                             
-    def store_kb_to_file(self):
-        if self.read_only:
-            print("Warning: Cannot store KB in read-only mode")
-            return
-
-        if not self.file:
-            print("Warning: No file specified to store KB to")
-            return
-        
-        # Send command to match and output KB content
-        self._send_command(f'!(match {self.kb_ref} $a $a)')
-        # Also append to file for persistence
-        with open(self.file, 'a') as f:
-            f.write(f'!(match {self.kb_ref} $a $a)\n')
-
-    def load_kb_from_file(self):
-        if not self.file:
-            print("Warning: No file specified to load KB from")
-            return
-
-        if os.path.exists(self.file):
-            # Load existing file content into the running process
-            with open(self.file, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        self._send_command(line)
-        else:
-            print(f"Warning: File {self.file} does not exist. No KB loaded.")
-
-    def append_to_file(self, elem: str):
-        if not self.file:
-            print("Warning: No file specified to append to")
-            return
-        if self.read_only:
-            print("Warning: Cannot append to file in read-only mode")
-            return
-        with open(self.file, 'a') as f:
-            f.write(elem)
-
-    def _parse_query_output(self, output: str) -> List[str]:
-        """Parse the query output from mettalog format"""
-        if not output or output.strip() == "[]":
-            return []
-        
-        results = []
-        try:
-            # The output format appears to be: [(((: $var expr tv)) |- ((: rule conclusion tv)))]
-            # We want to extract the entire elements from the list
-            
-            # Remove outer brackets and extract the content
-            if output.startswith('[') and output.endswith(']'):
-                content = output[1:-1].strip()
-                
-                # If there's content, add the entire element as a single result
-                if content:
-                    results.append(content)
-            
-        except Exception as e:
-            print(f"Error parsing query output: {e}")
-            print(f"Raw output: {output}")
-        
-        return results
+        print(output)
+        print(output[1:-1].split(','))
+        return [item.strip() for item in output[1:-1].split(',')]
 
 if __name__ == '__main__':
-    handler = MettalogHandler('kb_backup.metta', read_only=False)
+    handler = MettalogHandler()
 
     print("Testing:")
 
@@ -311,11 +179,16 @@ if __name__ == '__main__':
 
     #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
 
-    print(handler.add_atom("(: library_between (WithTV (Between Library Bank PostOffice) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: library_on_main (WithTV (OnStreet Library MainStreet) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: bank_on_main (WithTV (OnStreet Bank MainStreet) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: post_office_on_main (WithTV (OnStreet PostOffice MainStreet) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: bank_left_of_library (WithTV (LeftOf Bank Library North) (STV 1.0 1.0)))"))
-    print(handler.add_atom("(: same_side_relation (WithTV (SameSideOf Library Bank PostOffice MainStreet) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: library_between (WithTV (Between Library Bank PostOffice) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: library_on_main (WithTV (OnStreet Library MainStreet) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: bank_on_main (WithTV (OnStreet Bank MainStreet) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: post_office_on_main (WithTV (OnStreet PostOffice MainStreet) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: bank_left_of_library (WithTV (LeftOf Bank Library North) (STV 1.0 1.0)))"))
+    #print(handler.add_atom("(: same_side_relation (WithTV (SameSideOf Library Bank PostOffice MainStreet) (STV 1.0 1.0)))"))
 
-    print(handler.query("(: $query (WithTV (OrderFromLeftToRight $building1 $building2 $building3 North) $tv))"))
+    #print(handler.query("(: $query (WithTV (OrderFromLeftToRight $building1 $building2 $building3 North) $tv))"))
+
+    print(handler.add_atom("(: fact1 (A a1) ntv)"))
+    print(handler.add_atom("(: fact2 (A a2) ntv)"))
+
+    print(handler.query("(: $query (A $a) ntv)"))
