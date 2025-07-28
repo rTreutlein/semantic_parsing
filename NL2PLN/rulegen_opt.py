@@ -12,38 +12,14 @@ from typing import List
 import dspy
 from dspy.teleprompt import MIPROv2
 
+from NL2PLN.metta.mettalog_handler import MettalogHandler
+
 
 # --------------------------------------------------------------------------- #
 #  LM configuration                                                           #
 # --------------------------------------------------------------------------- #
 MODEL_NAME = "openai/gpt-4.1"
 dspy.configure(lm=dspy.LM(MODEL_NAME, temperature=1.0, max_tokens=20000))
-
-
-# --------------------------------------------------------------------------- #
-#  Rule-generation wrapper                                                    #
-# --------------------------------------------------------------------------- #
-class RuleGenModule(dspy.Module):
-    """
-    Thin wrapper around the ChainOfThought prompt that generates the logical
-    rules needed to prove a query from a set of input statements.
-    """
-    def __init__(self, model: str = MODEL_NAME):
-        super().__init__()
-        # Signature must match the one used in SimpleModule
-        self.rulegen = dspy.ChainOfThought(
-            "input_statements, target_query -> required_rules : List[str]"
-        )
-
-    def forward(self, input_statements: List[str], target_query: str) -> dspy.Prediction:
-        """
-        Simply delegate to the underlying ChainOfThought prompt.
-        """
-        return self.rulegen(
-            input_statements=input_statements,
-            target_query=target_query,
-        )
-
 
 # --------------------------------------------------------------------------- #
 #  Helper to build the (tiny) training dataset                                #
@@ -54,12 +30,11 @@ def build_training_dataset() -> List[dspy.Example]:
     """
     example = dspy.Example(
         input_statements=[
-            "(Human Socrates)",
-            "(-> (Human ?x) (Mortal ?x))"
+            "(: human_socrates (Human Socrates) no_tv)",
         ],
-        target_query="(Mortal Socrates)",
+        target_query="(: $prf (Mortal Socrates) $tv)",
         required_rules=[
-            "(-> (Human ?x) (Mortal ?x))"
+            "(: human_implies_mortal (Implication (Human $x) (Mortal $x)) (STV 1.0 1.0))"
         ],
     ).with_inputs("input_statements", "target_query")
     return [example]
@@ -75,7 +50,13 @@ def pass_through_metric(example: dspy.Example,
     A placeholder metric that always returns 1.0 – replace with a real metric
     once a validation mechanism is in place.
     """
-    return 1.0
+    ml = MettalogHandler()
+    for statement in example.input_statements:
+        ml.add_atom(statement)
+    for rule in prediction.required_rules:
+        ml.add_atom(rule)
+    proofs = ml.query(example.target_query)
+    return len(proofs) > 0
 
 
 # --------------------------------------------------------------------------- #
@@ -94,9 +75,9 @@ def main() -> None:
     teleprompter = MIPROv2(metric=pass_through_metric, auto="light")
 
     print("Optimising rule generator prompt …")
-    rulegen_module = RuleGenModule()
+    rulegen = dspy.ChainOfThought("input_statements, target_query -> required_rules : List[str]")
     rulegen_optimised = teleprompter.compile(
-        rulegen_module,
+        rulegen,
         trainset=trainset,
         requires_permission_to_run=False,
     )
