@@ -26,18 +26,50 @@ dspy.configure(lm=dspy.LM(MODEL_NAME, temperature=1.0, max_tokens=20000))
 # --------------------------------------------------------------------------- #
 def build_training_dataset() -> List[dspy.Example]:
     """
-    Return a single illustrative example for prompt tuning.
+    Return a small set of illustrative examples for prompt tuning.
     """
-    example = dspy.Example(
-        input_statements=[
-            "(: human_socrates (Human Socrates) no_tv)",
-        ],
-        target_query="(: $prf (Mortal Socrates) $tv)",
-        required_rules=[
-            "(: human_implies_mortal (Implication (Human $x) (Mortal $x)) (STV 1.0 1.0))"
-        ],
-    ).with_inputs("input_statements", "target_query")
-    return [example]
+    examples: List[dspy.Example] = []
+
+    # Example 1 ─ Socrates is mortal
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: human_socrates (Human Socrates) no_tv)",
+            ],
+            target_query="(: $prf (Mortal Socrates) $tv)",
+            required_rules=[
+                "(: human_implies_mortal (Implication (Human $x) (Mortal $x)) (STV 1.0 1.0))"
+            ],
+        ).with_inputs("input_statements", "target_query")
+    )
+
+    # Example 2 ─ Tweety can fly
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: bird_tweety (Bird Tweety) no_tv)",
+            ],
+            target_query="(: $prf (CanFly Tweety) $tv)",
+            required_rules=[
+                "(: birds_can_fly (Implication (Bird $x) (CanFly $x)) (STV 1.0 1.0))"
+            ],
+        ).with_inputs("input_statements", "target_query")
+    )
+
+    # Example 3 ─ Mammals are animals, so Tom is an animal
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: mammal_tom (Mammal Tom) no_tv)",
+            ],
+            target_query="(: $prf (Animal Tom) $tv)",
+            required_rules=[
+                "(: mammals_are_animals (Implication (Mammal $x) (Animal $x)) (STV 1.0 1.0))"
+            ],
+        ).with_inputs("input_statements", "target_query")
+    )
+
+    return examples
 
 
 # --------------------------------------------------------------------------- #
