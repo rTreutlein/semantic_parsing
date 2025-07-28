@@ -143,12 +143,39 @@ class MettalogHandler:
             self.process.terminate()
             self.process.wait()
         self.process = None
+
+    # ------------------------------------------------------------------
+    # Support pickling / deepcopy (e.g. by DSPy) by excluding the
+    # non-picklable subprocess handle and recreating it on demand.
+    # ------------------------------------------------------------------
+    def __getstate__(self):
+        """Return a picklable representation for deepcopy/pickling."""
+        state = self.__dict__.copy()
+        # The subprocess.Popen object cannot be pickled.
+        state["process"] = None
+        return state
+
+    def __setstate__(self, state):
+        """Restore state; restart the mettalog process lazily."""
+        self.__dict__.update(state)
+        if self.process is None:
+            try:
+                self._start_process()
+            except Exception:
+                # If restart fails we leave the object usable so other
+                # attributes can still be inspected; commands will raise.
+                self.process = None
     
     def __del__(self):
         """Clean up the process when the handler is destroyed"""
-        if self.process is not None:
-            self.process.terminate()
-            self.process.wait()
+        proc = getattr(self, "process", None)
+        if proc is not None:
+            try:
+                proc.terminate()
+                proc.wait()
+            except Exception:
+                # Ignore any errors raised during interpreter shutdown
+                pass
 
     def add_atom(self, atom: str) -> str:
         return self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
