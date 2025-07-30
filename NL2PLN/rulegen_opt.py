@@ -134,16 +134,21 @@ def main() -> None:
     print(f"Optimised rule generator saved to {args.out}")
 
 def test():
+    """Run the rule generator on every example in the training set and
+    print whether a proof was found for each."""
     rulegen = dspy.ChainOfThought(RulegenSignature)
-
     trainset = build_training_dataset()
 
-    pred = rulegen(input_statements = trainset[0].input_statements, target_query = trainset[0].target_query)
+    for idx, example in enumerate(trainset, start=1):
+        pred = rulegen(
+            input_statements=example.input_statements,
+            target_query=example.target_query,
+        )
+        print(f"\nExample {idx} prediction:")
+        print(pred)
 
-    print(pred)
-
-    res = pass_through_metric(trainset[0], pred)
-    print(res)
+        success = pass_through_metric(example, pred)
+        print(f"Proof found: {success}")
 
 if __name__ == "__main__":
     main()
