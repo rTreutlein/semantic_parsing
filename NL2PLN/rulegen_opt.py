@@ -89,7 +89,7 @@ def pass_through_metric(example: dspy.Example,
         ml.add_atom(statement)
     for rule in prediction.required_rules:
         ml.add_atom(rule)
-    proofs = ml.query(example.target_query,log=True)
+    proofs = ml.query(example.target_query)
     return len(proofs) > 0
 
 class RulegenSignature(dspy.Signature):
@@ -137,6 +137,7 @@ def test():
     """Run the rule generator on every example in the training set and
     print whether a proof was found for each."""
     rulegen = dspy.ChainOfThought(RulegenSignature)
+    rulegen.load("rulegen_optimized.json")
     trainset = build_training_dataset()
 
     for idx, example in enumerate(trainset, start=1):
@@ -151,6 +152,8 @@ def test():
         print(f"Proof found: {success}")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    test()
+
 
     
