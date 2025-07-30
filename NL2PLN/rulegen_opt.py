@@ -70,7 +70,35 @@ def build_training_dataset() -> List[dspy.Example]:
         ).with_inputs("input_statements", "target_query")
     )
 
+    # Example 5 ─ John is Anna's grandparent via transitive ancestry
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: parent_john_mary (Parent John Mary) (STV 1.0 1.0))",
+                "(: parent_mary_anna (Parent Mary Anna) (STV 1.0 1.0))",
+            ],
+            target_query="(: $prf (Grandparent John Anna) $tv)",
+            required_rules=[
+                "(: parent_implies_ancestor (Implication (Parent $x $y) (Ancestor $x $y)) (STV 1.0 1.0))",
+                "(: ancestor_transitive (Implication (And (Ancestor $x $y) (Ancestor $y $z)) (Ancestor $x $z)) (STV 1.0 1.0))",
+                "(: ancestor_implies_grandparent (Implication (Ancestor $x $y) (Grandparent $x $y)) (STV 1.0 1.0))",
+            ],
+        ).with_inputs("input_statements", "target_query")
+    )
 
+    # Example 6 ─ Squares are polygons
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: square_a (Square A) (STV 1.0 1.0))",
+            ],
+            target_query="(: $prf (Polygon A) $tv)",
+            required_rules=[
+                "(: square_to_rectangle (Implication (Square $x) (Rectangle $x)) (STV 1.0 1.0))",
+                "(: rectangle_to_polygon (Implication (Rectangle $x) (Polygon $x)) (STV 1.0 1.0))",
+            ],
+        ).with_inputs("input_statements", "target_query")
+    )
 
     return examples
 
