@@ -10,7 +10,7 @@ import argparse
 from typing import List
 
 import dspy
-from dspy.teleprompt import MIPROv2
+from dspy.teleprompt import MIPROv2,SIMBA
 
 from NL2PLN.metta.mettalog_handler import MettalogHandler
 
@@ -34,7 +34,7 @@ def build_training_dataset() -> List[dspy.Example]:
     examples.append(
         dspy.Example(
             input_statements=[
-                "(: human_socrates (Human Socrates) no_tv)",
+                "(: human_socrates (Human Socrates) (STV 1.0 1.0))",
             ],
             target_query="(: $prf (Mortal Socrates) $tv)",
             required_rules=[
@@ -47,7 +47,7 @@ def build_training_dataset() -> List[dspy.Example]:
     examples.append(
         dspy.Example(
             input_statements=[
-                "(: bird_tweety (Bird Tweety) no_tv)",
+                "(: bird_tweety (Bird Tweety) (STV 1.0 1.0))",
             ],
             target_query="(: $prf (CanFly Tweety) $tv)",
             required_rules=[
@@ -56,28 +56,30 @@ def build_training_dataset() -> List[dspy.Example]:
         ).with_inputs("input_statements", "target_query")
     )
 
-    # Example 3 ─ Mammals are animals, so Tom is an animal
     examples.append(
         dspy.Example(
-            input_statements=[
-                "(: mammal_tom (Mammal Tom) no_tv)",
-            ],
-            target_query="(: $prf (Animal Tom) $tv)",
-            required_rules=[
-                "(: mammals_are_animals (Implication (Mammal $x) (Animal $x)) (STV 1.0 1.0))"
-            ],
+            input_statements=['(: maria_finished_hw (WithTV (Finished Maria Homework MariaFinishesHomework) (STV 1.0 1.0)))', '(: sam_started_project (WithTV (Started Sam Project SamStartsProject) (STV 1.0 1.0)))', '(: temporal_relation (WithTV (Before MariaFinishesHomework SamStartsProject) (STV 1.0 1.0)))'],
+            target_query="(: $query (WithTV (And (BeginsWork (WorkingOn Maria Assignment) $tMaria) (BeginsWork (WorkingOn Sam Assignment) $tSam) (LessThan $tMaria $tSam) (Equivalence $who Maria)) $tv))"
         ).with_inputs("input_statements", "target_query")
     )
 
-    return examples
+    examples.append(
+        dspy.Example(
+            input_statements=['(: samantha_before_tom (WithTV (FinishedBefore Samantha Tom) (STV 1.0 1.0)))', '(: alex_before_samantha (WithTV (FinishedBefore Alex Samantha) (STV 1.0 1.0)))'],
+            target_query='(: $query (WithTV (FinishedLast $person) $tv))'
+        ).with_inputs("input_statements", "target_query")
+    )
 
+
+
+    return examples
 
 # --------------------------------------------------------------------------- #
 #  Metric                                                                     #
 # --------------------------------------------------------------------------- #
 def pass_through_metric(example: dspy.Example,
                         prediction: dspy.Prediction,
-                        trace=None) -> float:
+                        trace=None) -> bool:
     """
     A placeholder metric that always returns 1.0 – replace with a real metric
     once a validation mechanism is in place.
@@ -87,8 +89,21 @@ def pass_through_metric(example: dspy.Example,
         ml.add_atom(statement)
     for rule in prediction.required_rules:
         ml.add_atom(rule)
-    proofs = ml.query(example.target_query)
+    proofs = ml.query(example.target_query,log=True)
     return len(proofs) > 0
+
+class RulegenSignature(dspy.Signature):
+    """
+    You task is to generate a list of rules that are required to answer the target query given the input statements.
+    Rules have the form:
+    (: rule_name (Implication (Predicate1 $x) (Predicate2 $x)) (STV 1.0 1.0))
+    or with conjunctions/disjunctions:
+    (: rule_name (Implication (And (Predicate1 $x) (Predicate2 $x)) (Or (Predicate3 $x) (Predicate4 $x))) (STV 1.0 1.0))
+    """
+    input_statements : List[str] = dspy.InputField(desc="The input statements to be converted to PLN")
+    target_query : str = dspy.InputField(desc="The target query to be answered")
+
+    required_rules : List[str] = dspy.OutputField(desc="The required rules to answer the target query")
 
 
 # --------------------------------------------------------------------------- #
@@ -104,19 +119,33 @@ def main() -> None:
 
     trainset = build_training_dataset()
 
-    teleprompter = MIPROv2(metric=pass_through_metric, auto="light")
+    #teleprompter = MIPROv2(metric=pass_through_metric, auto="light")
+    teleprompter = SIMBA(metric=pass_through_metric, bsize=4)
 
     print("Optimising rule generator prompt …")
-    rulegen = dspy.ChainOfThought("input_statements, target_query -> required_rules : List[str]")
+    rulegen = dspy.ChainOfThought(RulegenSignature)
     rulegen_optimised = teleprompter.compile(
         rulegen,
         trainset=trainset,
-        requires_permission_to_run=False,
+        #requires_permission_to_run=False,
     )
 
     rulegen_optimised.save(args.out)
     print(f"Optimised rule generator saved to {args.out}")
 
+def test():
+    rulegen = dspy.ChainOfThought(RulegenSignature)
+
+    trainset = build_training_dataset()
+
+    pred = rulegen(input_statements = trainset[0].input_statements, target_query = trainset[0].target_query)
+
+    print(pred)
+
+    res = pass_through_metric(trainset[0], pred)
+    print(res)
 
 if __name__ == "__main__":
     main()
+
+    
