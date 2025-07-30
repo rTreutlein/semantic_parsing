@@ -100,6 +100,52 @@ def build_training_dataset() -> List[dspy.Example]:
         ).with_inputs("input_statements", "target_query")
     )
 
+    # Example 7 ─ Voting eligibility from age and citizenship
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: age_alice_18 (Age Alice 18) (STV 1.0 1.0))",
+                "(: citizen_alice (Citizen Alice) (STV 1.0 1.0))",
+                "(: geq_18 (GreaterOrEqual 18 18) (STV 1.0 1.0))",
+            ],
+            target_query="(: $prf (EligibleToVote Alice) $tv)",
+            required_rules=[
+                "(: adult_def (Implication (And (Age $x $age) (GreaterOrEqual $age 18)) (Adult $x)) (STV 1.0 1.0))",
+                "(: voting_rule (Implication (And (Adult $x) (Citizen $x)) (EligibleToVote $x)) (STV 1.0 1.0))",
+            ],
+        ).with_inputs(\"input_statements\", \"target_query\")
+    )
+
+    # Example 8 ─ Traffic-light reasoning for car movement
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: light1_green (TrafficLightState Light1 Green) (STV 1.0 1.0))",
+                "(: car1_at_light1 (CarAt Car1 Light1) (STV 1.0 1.0))",
+            ],
+            target_query="(: $prf (CanGo Car1) $tv)",
+            required_rules=[
+                "(: green_means_go (Implication (And (TrafficLightState $l Green) (CarAt $c $l)) (CanGo $c)) (STV 1.0 1.0))",
+            ],
+        ).with_inputs(\"input_statements\", \"target_query\")
+    )
+
+    # Example 9 ─ Nested subset & membership inference
+    examples.append(
+        dspy.Example(
+            input_statements=[
+                "(: cats_subset_mammals (Subset Cats Mammals) (STV 1.0 1.0))",
+                "(: mammals_subset_animals (Subset Mammals Animals) (STV 1.0 1.0))",
+                "(: felix_cat (Member Felix Cats) (STV 1.0 1.0))",
+            ],
+            target_query="(: $prf (Member Felix Animals) $tv)",
+            required_rules=[
+                "(: subset_trans (Implication (And (Subset $A $B) (Subset $B $C)) (Subset $A $C)) (STV 1.0 1.0))",
+                "(: member_subset (Implication (And (Member $x $A) (Subset $A $B)) (Member $x $B)) (STV 1.0 1.0))",
+            ],
+        ).with_inputs(\"input_statements\", \"target_query\")
+    )
+
     return examples
 
 # --------------------------------------------------------------------------- #
