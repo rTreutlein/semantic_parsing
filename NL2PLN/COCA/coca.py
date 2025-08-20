@@ -37,6 +37,11 @@ def iter_candidate_lines(directory: Path, max_words: int) -> Iterator[str]:
 def reservoir_sample(iterable: Iterator[str], k: int, rng: random.Random) -> List[str]:
     """
     Uniformly sample k items from an iterator of unknown/large size using reservoir sampling.
+
+    Note:
+        This does not "take the first k items." It fills the reservoir with the first k
+        items, then for each subsequent item i, replaces a random element with probability k/(i+1),
+        which yields an unbiased uniform sample without reading all items into memory.
     """
     reservoir: List[str] = []
     for i, item in enumerate(iterable):
@@ -84,7 +89,7 @@ def main() -> None:
 
     folder = Path(__file__).parent
     lines = sample_random_lines_from_folder(
-        folder=folder, count=args.count, max_words=args["max_words"] if isinstance(args, dict) else args.max_words, seed=args.seed
+        folder=folder, count=args.count, max_words=args.max_words, seed=args.seed
     )
     for line in lines:
         print(line)
