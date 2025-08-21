@@ -85,14 +85,27 @@ def main() -> None:
     parser.add_argument(
         "--seed", type=int, default=None, help="Optional RNG seed for reproducibility"
     )
+    parser.add_argument(
+        "--output", type=Path, default=None, help="Optional output file to write samples"
+    )
     args = parser.parse_args()
 
     folder = Path(__file__).parent
     lines = sample_random_lines_from_folder(
         folder=folder, count=args.count, max_words=args.max_words, seed=args.seed
     )
-    for line in lines:
-        print(line)
+    if args.output:
+        try:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("w", encoding="utf-8") as out:
+                for line in lines:
+                    out.write(line + "\n")
+        except Exception as e:
+            print(f"Error: failed to write to {args.output}: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        for line in lines:
+            print(line)
 
 
 if __name__ == "__main__":
