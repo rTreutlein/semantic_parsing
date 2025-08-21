@@ -21,20 +21,24 @@ model = "openrouter/google/gemini-2.5-flash-lite"
 dspy.configure(lm=dspy.LM(model,temperature=1.0, max_tokens=20000))
 
 # --------------------------------------------------------------------------- #
-#  Helper to build the training dataset                                       #
+#  Helper to load datasets from COCA                                          #
 # --------------------------------------------------------------------------- #
-def build_training_dataset(min_len: int, max_len: int, num_samples: int) -> List[dspy.Example]:
+def build_examples_from_file(filepath: str) -> List[dspy.Example]:
     """
-    Create ``num_samples`` examples with sentence lengths
-    uniformly sampled between ``min_len`` and ``max_len`` (inclusive).
+    Read a text file with one sentence per line and convert each line into a
+    dspy.Example that provides 'sentences' as the input (a list[str]).
+    Empty lines are skipped.
     """
-    dataset: List[dspy.Example] = []
-    for _ in range(num_samples):
-        length = random.randint(min_len, max_len)
-        dataset.append(
-            dspy.Example(num_sentences=length).with_inputs("num_sentences")
-        )
-    return dataset
+    examples: List[dspy.Example] = []
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            sentence = line.strip()
+            if not sentence:
+                continue
+            examples.append(
+                dspy.Example(sentences=[sentence]).with_inputs("sentences")
+            )
+    return examples
 
 
 # --------------------------------------------------------------------------- #
@@ -86,17 +90,16 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None):
 #  Optimisation                                                               #
 # --------------------------------------------------------------------------- #
 parser = argparse.ArgumentParser(
-    description="Optimize SampleGenerator to produce medium-difficulty puzzles"
+    description="Optimize SampleGenerator using COCA train/val datasets"
 )
-parser.add_argument("--min-length", type=int, default=3,
-                    help="Minimum number of sentences in generated puzzles")
-parser.add_argument("--max-length", type=int, default=10,
-                    help="Maximum number of sentences in generated puzzles")
-parser.add_argument("--num-samples", type=int, default=2,
-                    help="Number of training examples used during optimisation")
+parser.add_argument("--train-file", type=str, default="NL2PLN/COCA/train.txt",
+                    help="Path to training text file (one sentence per line)")
+parser.add_argument("--val-file", type=str, default="NL2PLN/COCA/val.txt",
+                    help="Path to validation text file (one sentence per line)")
 args = parser.parse_args()
 
-trainset = build_training_dataset(args.min_length, args.max_length, args.num_samples)
+trainset = build_examples_from_file(args.train_file)
+valset = build_examples_from_file(args.val_file)
 
 teleprompter = GEPA(metric=difficulty_metric
                    ,reflection_lm=dspy.LM(model="openai/gpt-5", temperature=1.0, max_tokens=32000)
