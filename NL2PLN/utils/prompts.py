@@ -41,7 +41,7 @@ class PLN2NL_Signature(dspy.Signature):
   Input:
   (: Dog (-> Object Type))
   (: max Object)
-  (: isdog (Dog max))
+  (: isdog (Dog max) (STV 1.0 1.0))
   ```Max is a dog```
 
   2. Relationship with Properties:
@@ -51,19 +51,19 @@ class PLN2NL_Signature(dspy.Signature):
   (: Cat (-> Object Type))
   (: dog Object)
   (: cat Object)
-  (: isDog (Dog dog))
-  (: isCat (Cat cat))
-  (: chase (Chase dog cat))
+  (: isDog (Dog dog) (STV 1.0 1.0))
+  (: isCat (Cat cat) (STV 1.0 1.0))
+  (: chase (Chase dog cat) (STV 1.0 1.0))
   ```The dog is chasing the cat```
 
   3. Universal Quantification:
   Input:
-  (: dogIsMammal (-> (: $prfdog (Dog $x)) (Mammal $x)))
+  (: dogIsMammal (-> (: $prfdog (Dog $x)) (Mammal $x)) (STV 1.0 1.0))
   ```All dogs are mammals```
 
   4. Existential Quantification:
   Input:
-  (: happyDogExists (Σ (: $x Object) (* (Dog $x) (Happy $x))))
+  (: happyDogExists (Σ (: $x Object) (* (Dog $x) (Happy $x))) (STV 1.0 1.0))
   ```There exists a dog that is happy```
 
   5. Complex Relationships:
@@ -72,14 +72,14 @@ class PLN2NL_Signature(dspy.Signature):
   (: t1 Object)
   (: t2 Object)
   (: GoTo (-> Object Object Type))
-  (: t1BeforeT2 (Before t1 t2))
-  (: goingprf (GoTo john home))
-  (: goingatt1 (TrueAtTime going t1))
+  (: t1BeforeT2 (Before t1 t2) (STV 1.0 1.0))
+  (: goingprf (GoTo john home) (STV 1.0 1.0))
+  (: goingatt1 (TrueAtTime going t1) (STV 1.0 1.0))
   ```John went home before something else happened```
 
   6. Proof Trace:
   Input:
-  (: ((parent_of_parent_is_grandparent (father_is_parent john_father_of_mary)) (mother_is_parent mary_mother_of_bob)) (Grandparent john bob))
+  (: ((parent_of_parent_is_grandparent (father_is_parent john_father_of_mary)) (mother_is_parent mary_mother_of_bob)) (Grandparent john bob) (STV 1.0 1.0))
   ```John is Bob's grandparent
   Because: John is Mary's father, and Mary is Bob's mother```
   """
@@ -103,7 +103,7 @@ class NL2PLN_Signature(dspy.Signature):
 
   Guidelines for the conversion:
   - Create Type declarations for all entities
-  - Modifiers apply to the proof "x is very happy" => (: x Object),(: happyprf (Happy x)),(: veryprf (Very happyprf))
+  - Modifiers apply to the proof "x is very happy" => (: x Object),(: happyprf (Happy x) (STV 1.0 1.0)),(: veryprf (Very happyprf) (STV 1.0 1.0))
   - Use the following type operators:
     * -> for functions and dependent products (Π types)
     * Σ for dependent sums (existential types) - use for existential quantification
@@ -140,7 +140,7 @@ class NL2PLN_Signature(dspy.Signature):
   - For named objects:
     * When objects have explicit names, add a Name relation
     * (: Name (-> Object String Type))
-    * e.g., for person named "John": (: name_john (Name john "John"))
+    * e.g., for person named "John": (: name_john (Name john "John") (STV 1.0 1.0))
   - For anaphora resolution:
     * Check previous sentences for referenced entities
     * Reuse entity identifiers from previous context
@@ -211,13 +211,13 @@ class NL2PLN_Signature(dspy.Signature):
 
   Statements:
   (: max Object)
-  (: maxGoldenRetriver (GoldenRetriver max))
-  (: maxCurious (Curious max))
+  (: maxGoldenRetriver (GoldenRetriver max) (STV 1.0 1.0))
+  (: maxCurious (Curious max) (STV 1.0 1.0))
   (: garden Object)
-  (: gardenIsGarden (Garden garden))
+  (: gardenIsGarden (Garden garden) (STV 1.0 1.0))
   (: bf Object)
-  (: bfButterfly (Butterfly bf))
-  (: max_spotted_bf (TrueAtPlace (Spotted max bf) garden))
+  (: bfButterfly (Butterfly bf) (STV 1.0 1.0))
+  (: max_spotted_bf (TrueAtPlace (Spotted max bf) garden) (STV 1.0 1.0))
   ```
 
   2. Anaphora Resolution:
@@ -248,7 +248,7 @@ class NL2PLN_Signature(dspy.Signature):
   Statements:
   (: dogsChaseAnyCat (-> (: $prfisdog (Dog $dog))
                             (Σ (: $cat Object) (* (Cat $cat)
-                                                  (Chase $dog $cat)))))
+                                                  (Chase $dog $cat)))) (STV 1.0 1.0))
   ```
 
   4. Temporal Relations:
@@ -268,12 +268,12 @@ class NL2PLN_Signature(dspy.Signature):
   (: t1 Object)
   (: t2 Object)
   (: home Object)
-  (: homeIsHome (Home home))
+  (: homeIsHome (Home home) (STV 1.0 1.0))
   (: work Object)
-  (: workIsWork (Work work))
-  (: t1BeforeT2 (Before t1 t2))
-  (: john_goes_home_at_t2 (TrueAtTime (GoTo john home) t2))
-  (: john_finishes_work_at_t1 (TrueAtTime (Finish john work) t1))
+  (: workIsWork (Work work) (STV 1.0 1.0))
+  (: t1BeforeT2 (Before t1 t2) (STV 1.0 1.0))
+  (: john_goes_home_at_t2 (TrueAtTime (GoTo john home) t2) (STV 1.0 1.0))
+  (: john_finishes_work_at_t1 (TrueAtTime (Finish john work) t1) (STV 1.0 1.0))
   ```
 
   5. Sum Types (|):
@@ -289,7 +289,7 @@ class NL2PLN_Signature(dspy.Signature):
   (: IsIn (-> (: $thing Object) (: $place Object) Type))
 
   Statements:
-  (: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (IsIn $x petShelter) (| (Cat $x) (Dog $x)))))
+  (: petIsCatOrDog (-> (: $prfisanimal (Animal $x)) (-> (IsIn $x petShelter) (| (Cat $x) (Dog $x)))) (STV 1.0 1.0))
   ```
 
   6. Negation:
@@ -301,8 +301,8 @@ class NL2PLN_Signature(dspy.Signature):
 
   Statements:
   (: john Object)
-  (: name_john (Name john "John"))
-  (: johnNotHappy (Not (Happy john)))
+  (: name_john (Name john "John") (STV 1.0 1.0))
+  (: johnNotHappy (Not (Happy john)) (STV 1.0 1.0))
   ```
 
   7. Location Questions:
@@ -329,7 +329,7 @@ class NL2PLN_Signature(dspy.Signature):
   ```
   From Context:
   (: car Object)
-  (: carIsCar (Car car))
+  (: carIsCar (Car car) (STV 1.0 1.0))
 
   Type Definitions:
   (: Color (-> (: $object Object) (: $color Object) Type))
@@ -367,9 +367,9 @@ class NL2PLN_Signature(dspy.Signature):
 
   Statements:
   (: car Object)
-  (: carIsCar (Car car))
-  (: john_buys_car (Buy john car))
-  (: car_is_red (Red car))
+  (: carIsCar (Car car) (STV 1.0 1.0))
+  (: john_buys_car (Buy john car) (STV 1.0 1.0))
+  (: car_is_red (Red car) (STV 1.0 1.0))
 
   Questions:
   (: $parked_car_prf (ParkedAt car $location))
@@ -402,10 +402,10 @@ class NL2PLN_Signature(dspy.Signature):
   Statements:
   (: john Object)
   (: umbrella Object)
-  (: umbrellaIsUmbrella (Umbrella umbrella))
+  (: umbrellaIsUmbrella (Umbrella umbrella) (STV 1.0 1.0))
   (: morning Object)
-  (: morningIsMorning (Morning morning))
-  (: johnLeavesUmbrella (TrueAtTime (LeaveSomething john umbrella) morning))
+  (: morningIsMorning (Morning morning) (STV 1.0 1.0))
+  (: johnLeavesUmbrella (TrueAtTime (LeaveSomething john umbrella) morning) (STV 1.0 1.0))
   ```
 
   14. Combining Negation and Time:
@@ -421,10 +421,10 @@ class NL2PLN_Signature(dspy.Signature):
   Statements:
   (: john Object)
   (: home Object)
-  (: homeIsHome (Home home))
+  (: homeIsHome (Home home) (STV 1.0 1.0))
   (: morning Object)
-  (: morningIsMorning (Morning morning))
-  (: johnDidntleave (TrueAtTime (Not (LeaveLocation john home)) morning))
+  (: morningIsMorning (Morning morning) (STV 1.0 1.0))
+  (: johnDidntleave (TrueAtTime (Not (LeaveLocation john home)) morning) (STV 1.0 1.0))
   ```
 
   For performatives and other expressions without logical meaning just output:
