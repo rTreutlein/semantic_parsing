@@ -77,7 +77,7 @@ def main() -> None:
         description="Sample random lines from .txt files in this folder (max word length constraint)."
     )
     parser.add_argument(
-        "--count", type=int, default=10, help="Number of lines to sample (default: 10)"
+        "--count", type=int, default=20, help="Number of lines to sample (default: 10)"
     )
     parser.add_argument(
         "--max-words", type=int, default=100, help="Maximum words per line (default: 100)"
