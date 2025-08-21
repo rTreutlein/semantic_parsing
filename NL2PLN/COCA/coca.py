@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import re
 import sys
 from pathlib import Path
 from typing import Iterator, List, Optional
@@ -18,6 +19,20 @@ def is_valid_line(line: str, max_words: int) -> bool:
     return len(stripped.split()) <= max_words
 
 
+def clean_line(text: str) -> str:
+    """
+    Remove leading @@<digits> ids and strip HTML tags like <p>, <h1>, etc.
+    Also normalizes whitespace to single spaces and trims.
+    """
+    # Remove leading @@<digits> id
+    cleaned = re.sub(r'^\s*@@\d+\s*', '', text)
+    # Remove HTML tags
+    cleaned = re.sub(r'<[^>]+>', ' ', cleaned)
+    # Normalize whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+
 def iter_candidate_lines(directory: Path, max_words: int) -> Iterator[str]:
     """
     Yields candidate lines from all .txt files in the given directory
@@ -27,7 +42,7 @@ def iter_candidate_lines(directory: Path, max_words: int) -> Iterator[str]:
         try:
             with txt_file.open("r", encoding="utf-8", errors="ignore") as f:
                 for raw_line in f:
-                    line = raw_line.strip()
+                    line = clean_line(raw_line)
                     if is_valid_line(line, max_words):
                         yield line
         except Exception as e:
