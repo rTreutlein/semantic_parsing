@@ -233,8 +233,8 @@ class NL2PLN_Signature(dspy.Signature):
 
   Statements:
   (: book Object)
-  (: bookIsBook (Book book))
-  (: john_bought_book (Bought john book))
+  (: bookIsBook (Book book) (STV 1.0 1.0))
+  (: john_bought_book (Bought john book) (STV 1.0 1.0))
   ```
 
   3. Quantifiers:
