@@ -5,7 +5,10 @@ import subprocess
 import time
 import selectors
 import re
+import time
 from typing import List, Tuple
+
+from pympler import tracker
 
 class TimeoutError(RuntimeError):
     """Raised when a mettalog command exceeds the allotted time."""
@@ -51,7 +54,7 @@ class MettalogHandler:
         # Use the same timeout mechanism as _send_command
         self._send_command("\n", timeout=30.0)
 
-    def _send_command(self, command: str, log: bool = False, timeout: float = 180.0) -> str:
+    def _send_command(self, command: str, log: bool = False, timeout: float = 240.0) -> str:
         """Send a command to the mettalog process and return the output.
         
         Args:
@@ -180,7 +183,7 @@ class MettalogHandler:
     def add_atom(self, atom: str) -> str:
         return self._send_command(f'!(compileAdd {self.kb_ref} {atom})')
 
-    def query(self, atom: str, log: bool = False, timeout: float = 300.0) -> Tuple[List[str], bool]:
+    def query(self, atom: str, log: bool = False, timeout: float = 300.0) -> List[str]:
         """Query the knowledge base and return results
         
         Args:
@@ -192,16 +195,24 @@ class MettalogHandler:
             Tuple of (results_list, proven_boolean)
         """
         output = self._send_command(f'!(query {self.kb_ref} (fromNumber 5) {atom})', log=log, timeout=timeout)
-        print(output)
-        print(output[1:-1].split(','))
-        return [item.strip() for item in output[1:-1].split(',')]
+        return [item.strip() for item in output[1:-1].split(',') if item.strip()]
 
 if __name__ == '__main__':
     handler = MettalogHandler()
 
     print("Testing:")
 
+    start = time.time()
     #print(handler.add_atom("(: rule2 (Implication (EnchantedBook $book) (And (Reader $reader) (UnderstandsMagicalLanguages $reader $book))) (STV 1.0 1.0))"))
+
+    #tr = tracker.SummaryTracker()
+    #tr.print_diff()
+    print(handler._send_command("(print hello)"))
+    #tr.print_diff()
+    print(handler._send_command("(print hello)"))
+    #tr.print_diff()
+    end = time.time()
+    print("It took", end - start)
     #print(handler.add_atom("(: rule3 (Implication (UnderstandsMagicalLanguages $reader $book) (CanFullyAccess $reader $book)) (STV 1.0 1.0))"))
 
     #print(handler.query("(: $query (Implication (And (EnchantedBook $book) (InWhisperingLibrary $book)) (CanFullyAccess $reader $book)) $tv)"))
@@ -215,7 +226,7 @@ if __name__ == '__main__':
 
     #print(handler.query("(: $query (WithTV (OrderFromLeftToRight $building1 $building2 $building3 North) $tv))"))
 
-    print(handler.add_atom("(: fact1 (A a1) ntv)"))
-    print(handler.add_atom("(: fact2 (A a2) ntv)"))
+    #print(handler.add_atom("(: fact1 (A a1) ntv)"))
+    #print(handler.add_atom("(: fact2 (A a2) ntv)"))
 
-    print(handler.query("(: $query (A $a) ntv)"))
+    #print(handler.query("(: $query (A $a) ntv)"))
