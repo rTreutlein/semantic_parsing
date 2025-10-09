@@ -18,16 +18,16 @@
           "(: ProjectDescription (-> (: $project Object) (: $description Object) Type))"
         ],
         "statements": [
-          "(: science_fair_2024 (WithTV (ScienceFair ScienceFair2024) (STV 1.0 1.0)))",
-          "(: fair_location (WithTV (Location ScienceFair2024 LincolnElementarySchool) (STV 1.0 1.0)))",
-          "(: fair_time (WithTV (AtTime ScienceFair2024 March15_2024) (STV 1.0 1.0)))",
-          "(: emma_grade (WithTV (GradeLevel EmmaRodriguez ThirdGrade) (STV 1.0 1.0)))",
-          "(: emma_won (WithTV (WonFirstPlace EmmaRodriguez ScienceFair2024) (STV 1.0 1.0)))",
-          "(: emma_project (WithTV (ProjectType EmmaRodriguez VolcanoExperiment) (STV 1.0 1.0)))",
-          "(: project_desc (WithTV (ProjectDescription VolcanoExperiment BakingSodaVinegarReaction) (STV 1.0 1.0)))"
+          "(: science_fair_2024 (ScienceFair ScienceFair2024) (STV 1.0 1.0))",
+          "(: fair_location (Location ScienceFair2024 LincolnElementarySchool) (STV 1.0 1.0))",
+          "(: fair_time (AtTime ScienceFair2024 March15_2024) (STV 1.0 1.0))",
+          "(: emma_grade (GradeLevel EmmaRodriguez ThirdGrade) (STV 1.0 1.0))",
+          "(: emma_won (WonFirstPlace EmmaRodriguez ScienceFair2024) (STV 1.0 1.0))",
+          "(: emma_project (ProjectType EmmaRodriguez VolcanoExperiment) (STV 1.0 1.0))",
+          "(: project_desc (ProjectDescription VolcanoExperiment BakingSodaVinegarReaction) (STV 1.0 1.0))"
         ],
         "questions": [
-          "(: $query (WithTV (GradeLevel EmmaRodriguez $grade) $tv))"
+          "(: $query (GradeLevel EmmaRodriguez $grade) $tv)"
         ]
       },
       {
@@ -40,7 +40,7 @@
       }
     ],
     "signature": {
-      "instructions": "You are an expert knowledge engineer specializing in formal logic and semantic representation systems. Your task is to convert natural language text into PLN (Probabilistic Logic Networks) format, which enables precise logical reasoning and knowledge base construction.\n\nConvert the given English sentences to PLN format following these guidelines:\n\n**For Statements**: Create PLN assertions that capture factual information and can be added to a knowledge base. Break down complex sentences into atomic logical components.\n\n**For Questions**: Construct PLN queries using variables (prefixed with $) that can retrieve specific information from the knowledge base.\n\n**Required Components**:\n1. **Reasoning**: Provide step-by-step analysis of how you decompose the natural language into logical components, identifying statements vs questions, and planning your conversion strategy.\n\n2. **Typedefs**: Define formal types for all predicates and relationships you use, ensuring proper typing for the logical system.\n\n3. **Statements**: Convert declarative sentences into PLN assertions wrapped in WithTV constructs with confidence values (typically STV 1.0 1.0 for factual statements).\n\n4. **Questions**: Transform interrogative sentences into PLN queries with variables that enable information retrieval.\n\n**Technical Requirements**:\n- All queries and statements must be wrapped in WithTV\n- Use AtTime for temporal relationships: (AtTime event time)\n- Use LocationOf for spatial relationships: (LocationOf object location)\n- Statement format: (: proofname (WithTV (Predicate object) (STV 1.0 1.0)))\n- Query format: (: $query (WithTV (Predicate object) $tv))\n- Variables in queries use $ prefix\n\n**Available Types**:\n- Implication, And, Or, Equivalence for logical operations\n- WithTV for truth value wrapping\n- STV for simple truth values with strength and confidence\n- AtTime for temporal information\n- LocationOf for spatial information\n\nFocus on creating precise, logically consistent representations that preserve the semantic content and enable effective reasoning over the knowledge base.",
+      "instructions": "You are an expert knowledge engineer specializing in formal logic and semantic representation systems. Your task is to convert natural language text into PLN (Probabilistic Logic Networks) format, which enables precise logical reasoning and knowledge base construction.\n\nConvert the given English sentences to PLN format following these guidelines:\n\n**For Statements**: Create PLN assertions that capture factual information and can be added to a knowledge base. Break down complex sentences into atomic logical components.\n\n**For Questions**: Construct PLN queries using variables (prefixed with $) that can retrieve specific information from the knowledge base.\n\n**Required Components**:\n1. **Reasoning**: Provide step-by-step analysis of how you decompose the natural language into logical components, identifying statements vs questions, and planning your conversion strategy.\n\n2. **Typedefs**: Define formal types for all predicates and relationships you use, ensuring proper typing for the logical system.\n\n3. **Statements**: Convert declarative sentences into PLN assertions directly followed by truth values (typically STV 1.0 1.0 for factual statements).\n\n4. **Questions**: Transform interrogative sentences into PLN queries with variables that enable information retrieval.\n\n**Technical Requirements**:\n- Do NOT use WithTV wrapper\n- Use AtTime for temporal relationships: (AtTime event time)\n- Use Location for spatial relationships: (Location object location)\n- Statement format: (: proofname (Predicate object) (STV 1.0 1.0))\n- Query format: (: $query (Predicate object) $tv)\n- Variables in queries use $ prefix\n\n**Available Types**:\n- Implication, And, Or, Equivalence for logical operations\n- STV for simple truth values with strength and confidence\n- AtTime for temporal information\n- Location for spatial information\n\nFocus on creating precise, logically consistent representations that preserve the semantic content and enable effective reasoning over the knowledge base.",
       "fields": [
         {
           "prefix": "Sentences:",
