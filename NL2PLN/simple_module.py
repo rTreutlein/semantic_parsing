@@ -176,7 +176,7 @@ if __name__ == '__main__':
     with open("tmp.pzl", "r") as f:
         puzzle_data = json.load(f)
     sentences = puzzle_data["sentences"]
-    questions = [{"question": puzzle_data["question"], "expected_answer": puzzle_data["expected_answer"]}]  # For now, single question; extend for multiple if needed
+    questions = puzzle_data["queries"]
 
     res = module(sentences=sentences, questions=questions)
     print(res)
