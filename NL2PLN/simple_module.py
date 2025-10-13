@@ -1,5 +1,6 @@
 import datetime
 import dspy
+import json
 import logging
 from typing import List
 
@@ -74,23 +75,21 @@ class NL2PLNLSig(dspy.Signature):
 class SimpleModule(dspy.Module):
     def __init__(self, model: str = "openai/gpt-4o"):
         self.model : str = model
-        self.questiongen : dspy.Module = dspy.ChainOfThought("text -> question , expected_answer")
         self.nl2pln : dspy.Module = dspy.ChainOfThought(NL2PLNLSig)
         self.rulegen : dspy.Module = dspy.ChainOfThought(RulegenSignature)
 
-    def forward(self, sentences : List[str], queries):
-        #tmp = self.questiongen(text=sentences)
-        #question = tmp.question
-        #expected_answer = tmp.expected_answer
-
+    def forward(self, sentences : List[str], questions: List[dict]):
         stmts = self.nl2pln(english=sentences).plnl
 
-        qureies_pln
-        for query in queries:
-            pln_query = self.nl2pln(english=query.question).plnl
-            rules = self.rulegen(input_statements=stmts, target_query=pln_query)
+        queries_pln = []
+        rules_list = []
+        for q in questions:
+            pln_q = self.nl2pln(english=q['question']).plnl
+            queries_pln.extend(pln_q)
+            rules = self.rulegen(input_statements=stmts, target_query=pln_q[0] if pln_q else "")
+            rules_list.extend(rules.required_rules)
 
-        return dspy.Prediction(stmts=stmts, queries=queries, rules=rules.required_rules,question=question, expected_answer=expected_answer)
+        return dspy.Prediction(stmts=stmts, queries=queries_pln, rules=rules_list, questions=questions)
 
 def run_io_tasks_in_parallel(tasks):
     with ThreadPoolExecutor() as executor:
@@ -103,27 +102,29 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     compare : dspy.Module = dspy.ChainOfThought("question, expected_answer, found_proof -> proof_matches_expected_answer : bool")
 
     penalty = 0
-    peanlty_reason = ""
+    penalty_reason = ""
 
     for stmt in pred.stmts:
         stmt , score = balance_parentheses(stmt)
         if checkStmt(stmt) == 0.0:
             print(f"Statement {stmt} is not valid")
-            return dspy.Prediction(score=False, feedback="One of the pln statements did not follow the right syntax it should look like (: proof_name (Predicate x) (STV strength confidence))")
+            return dspy.Prediction(score=0.0, feedback="One of the pln statements did not follow the right syntax it should look like (: proof_name (Predicate x) (STV strength confidence))")
         metta_handler.add_atom(stmt)
 
     for rule in pred.rules:
         rule , score = balance_parentheses(rule)
         if checkImpl(rule) == 0.0:
             print(f"Rule {rule} is not valid")
-            return dspy.Prediction(score=False, feedback="One of the pln rules did not follow the right syntax it should look like (: proof_name (Implication (PredicateA x) (PredicateB x)) (STV strength confidence))")
+            return dspy.Prediction(score=0.0, feedback="One of the pln rules did not follow the right syntax it should look like (: proof_name (Implication (PredicateA x) (PredicateB x)) (STV strength confidence))")
         metta_handler.add_atom(rule)
 
-    for query in pred.queries:
+    correct_matches = 0
+    total_questions = len(pred.questions)
+    for i, query in enumerate(pred.queries):
         query , score = balance_parentheses(query)
         if checkQuery(query) == 0.0:
             print(f"Query {query} is not valid")
-            return dspy.Prediction(score=False, feedback="One of the pln queries did not follow the right syntax it should look like (: $prf (Predicate x) $tv)")
+            return dspy.Prediction(score=0.0, feedback="One of the pln queries did not follow the right syntax it should look like (: $prf (Predicate x) $tv)")
 
     proofs = []
     try:
@@ -137,11 +138,19 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
                 else:
                     proofs.append(res)
     except TimeoutError:
-        return dspy.Prediction(score=False, feedback="The proof timedout")
+        return dspy.Prediction(score=0.0, feedback="The proof timedout")
 
-    comparison = compare(question=pred.question, expected_answer=pred.expected_answer, found_proof=proofs)
+    # Compare each question's proof against its expected answer
+    for i, q in enumerate(pred.questions):
+        if i < len(proofs):
+            comparison = compare(question=q['question'], expected_answer=q['expected_answer'], found_proof=proofs[i])
+            if comparison.proof_matches_expected_answer:
+                correct_matches += 1
+        else:
+            print(f"No proof found for question {q['question']}")
 
-    return dspy.Prediction(score=comparison.proof_matches_expected_answer, feedback=comparison.reasoning)
+    score = correct_matches / total_questions if total_questions > 0 else 0.0
+    return dspy.Prediction(score=score, feedback=f"{correct_matches}/{total_questions} questions matched")
 
 
 
@@ -163,7 +172,13 @@ if __name__ == '__main__':
     module = SimpleModule(model=model)
     module.load("sample_module_optimzied.json")
 
-    res = module(sentences=["10.10.2025, Bob went swimming today"],question="11.10.2025, What was Bob doing yesterday?",expected_answer="Bob was swimming")
+    # Load and parse tmp.pzl
+    with open("tmp.pzl", "r") as f:
+        puzzle_data = json.load(f)
+    sentences = puzzle_data["sentences"]
+    questions = [{"question": puzzle_data["question"], "expected_answer": puzzle_data["expected_answer"]}]  # For now, single question; extend for multiple if needed
+
+    res = module(sentences=sentences, questions=questions)
     print(res)
     metric = difficulty_metric("empty", res)
     print(metric)
