@@ -122,6 +122,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
 
     correct_matches = 0
     total_questions = len(pred.questions)
+    feedback_details = []
     for i, query in enumerate(pred.queries):
         query , score = balance_parentheses(query)
         if checkQuery(query) == 0.0:
@@ -152,11 +153,15 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
             print(comparison.reasoning)
             if comparison.proof_matches_expected_answer:
                 correct_matches += 1
+                feedback_details.append(f"Positive: Question '{q['question']}' matched expected answer. Reasoning: {comparison.reasoning}")
+            else:
+                feedback_details.append(f"Negative: Question '{q['question']}' did not match expected answer. Reasoning: {comparison.reasoning}")
         else:
-            print(f"No proof found for question {q['question']}")
+            feedback_details.append(f"Negative: No proof found for question '{q['question']}'.")
 
     score = correct_matches / total_questions if total_questions > 0 else 0.0
-    return dspy.Prediction(score=score, feedback=f"{correct_matches}/{total_questions} questions matched")
+    detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched.\n" + "\n".join(feedback_details)
+    return dspy.Prediction(score=score, feedback=detailed_feedback)
 
 
 
