@@ -1,0 +1,117 @@
+[
+  {
+    "sentences": [
+      "Bob always played tennis."
+    ],
+    "queries": [
+      {
+       "question": "What is the probability that Bob is playing tennis now?",
+       "expected_answer": "The probablity should be around 10-20%"
+      }
+    ]
+  },
+  {
+    "sentences": [
+      "10.10.2025, Bob went swimming today."
+    ],
+    "queries": [
+      {
+        "question": "11.10.2025, What was Bob doing yesterday?",
+        "expected_answer": "Bob was swimming"
+      },
+      {
+        "question": "11.10.2025, When was Bob simming?",
+        "expected_answer": "Yesterday"
+      }
+    ]
+  },
+  {
+    "reasoning": "This puzzle involves identifying attributes of objects based on preferences.",
+    "sentences": [
+      "Bob likes hot chocolate."
+    ],
+    "question": "What attribute does the chocolate have that Bob likes?",
+    "expected_answer": "It's hot."
+  },
+  {
+    "reasoning": "This puzzle involves spatial reasoning about Bob's location.",
+    "sentences": [
+      "Bob is behind the door."
+    ],
+    "question": "Where is Bob?",
+    "expected_answer": "Behind the door."
+  },
+  {
+    "reasoning": "This puzzle involves conditional relationships between activities and days.",
+    "sentences": [
+      "I only eat vegetables on days when I exercise."
+    ],
+    "question": "On which days do you only eat vegetables?",
+    "expected_answer": "On days when I exercise."
+  },
+  {
+    "reasoning": "This puzzle involves identifying groups of people with shared interests.",
+    "sentences": [
+      "Bob and Anna like hiking.",
+      "They often go together."
+    ],
+    "question": "What is the name of the people that like hiking? Who goes hiking?",
+    "expected_answer": "Bob and Anna. Bob and Anna."
+  },
+  {
+    "reasoning": "This puzzle involves identifying objects based on their properties.",
+    "sentences": [
+      "There is a bright red ball and a bright light."
+    ],
+    "question": "What bright objects do we have?",
+    "expected_answer": "A light"
+  },
+  {
+    "reasoning": "This puzzle involves comparative properties of objects in different contexts.",
+    "sentences": [
+      "The Knife is long and sharp as a kitchen knife but short and blunt as a sashimi knife."
+    ],
+    "question": "",
+    "expected_answer": ""
+  },
+  {
+    "reasoning": "This puzzle involves conditional events and universal quantification.",
+    "sentences": [
+      "The meeting won't happen unless everyone agrees."
+    ],
+    "question": "",
+    "expected_answer": ""
+  },
+  {
+    "reasoning": "This puzzle involves modal logic and existential quantification.",
+    "sentences": [
+      "Some humans can fly."
+    ],
+    "question": "How many humans are flying?",
+    "expected_answer": ""
+  },
+  {
+    "reasoning": "This puzzle involves temporal information about events.",
+    "sentences": [
+      "Bob went away in december."
+    ],
+    "question": "",
+    "expected_answer": ""
+  },
+  {
+    "reasoning": "This puzzle involves reciprocal relationships between individuals.",
+    "sentences": [
+      "Mark, Bob and Anna are helping each other with homework."
+    ],
+    "question": "Does Mark help Anna with homework?",
+    "expected_answer": ""
+  },
+  {
+    "reasoning": "This puzzle involves property inheritance and transitivity.",
+    "sentences": [
+      "The Dog has magical fur."
+    ],
+    "question": "Is the dog magical?",
+    "expected_answer": ""
+  }
+]
