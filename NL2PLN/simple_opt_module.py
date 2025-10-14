@@ -1,5 +1,6 @@
 from typing import List
 import argparse
+import json
 import random
 import litellm
 
@@ -27,19 +28,16 @@ dspy.configure(lm=dspy.LM(model,temperature=1.0, max_tokens=20000))
 # --------------------------------------------------------------------------- #
 def build_examples_from_file(filepath: str) -> List[dspy.Example]:
     """
-    Read a text file with one sentence per line and convert each line into a
-    dspy.Example that provides 'sentences' as the input (a list[str]).
-    Empty lines are skipped.
+    Load a JSON file containing a list of puzzle data and convert each item into a
+    dspy.Example that provides 'sentences' (list[str]) and 'questions' (list[dict]) as inputs.
     """
     examples: List[dspy.Example] = []
     with open(filepath, "r", encoding="utf-8") as f:
-        for line in f:
-            sentence = line.strip()
-            if not sentence:
-                continue
-            examples.append(
-                dspy.Example(sentences=[sentence]).with_inputs("sentences")
-            )
+        puzzle_data = json.load(f)
+    for item in puzzle_data:
+        examples.append(
+            dspy.Example(sentences=item["sentences"], questions=item["queries"]).with_inputs("sentences", "questions")
+        )
     return examples
 
 
