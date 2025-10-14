@@ -109,6 +109,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
         if checkStmt(stmt) == 0.0:
             print(f"Statement {stmt} is not valid")
             return dspy.Prediction(score=0.0, feedback="One of the pln statements did not follow the right syntax it should look like (: proof_name (Predicate x) (STV strength confidence))")
+        print("Adding statement: " + stmt)
         metta_handler.add_atom(stmt)
 
     for rule in pred.rules:
@@ -116,6 +117,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
         if checkImpl(rule) == 0.0:
             print(f"Rule {rule} is not valid")
             return dspy.Prediction(score=0.0, feedback="One of the pln rules did not follow the right syntax it should look like (: proof_name (Implication (PredicateA x) (PredicateB x)) (STV strength confidence))")
+        print("Adding rule: " + rule)
         metta_handler.add_atom(rule)
 
     correct_matches = 0
@@ -130,7 +132,10 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     try:
         for query in pred.queries:
             query , score = balance_parentheses(query)
+            print("Running query:" + query)
             query_res = metta_handler.query(query)
+            print("Query results:")
+            print(query_res)
             for res in query_res:
                 if res.startswith("(query"):
                     print(f"Query not executed")
@@ -144,6 +149,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     for i, q in enumerate(pred.questions):
         if i < len(proofs):
             comparison = compare(question=q['question'], expected_answer=q['expected_answer'], found_proof=proofs[i])
+            print(comparison.reasoning)
             if comparison.proof_matches_expected_answer:
                 correct_matches += 1
         else:
@@ -173,10 +179,10 @@ if __name__ == '__main__':
     module.load("sample_module_optimzied.json")
 
     # Load and parse tmp.pzl
-    with open("tmp.pzl", "r") as f:
+    with open("sentences.json", "r") as f:
         puzzle_data = json.load(f)
-    sentences = puzzle_data["sentences"]
-    questions = puzzle_data["queries"]
+    sentences = puzzle_data[2]["sentences"]
+    questions = puzzle_data[2]["queries"]
 
     res = module(sentences=sentences, questions=questions)
     print(res)
