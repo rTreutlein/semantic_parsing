@@ -8,7 +8,9 @@ litellm.drop_params = True
 import dspy
 from dspy.teleprompt import GEPA
 
-from NL2PLN.simple_module import SimpleModule
+from NL2PLN.simple_module import SimpleModule , difficulty_metric
+from NL2PLN.metta.mettalog_handler import MettalogHandler
+from NL2PLN.utils.cleanPLN import checkStmt, checkImpl, checkQuery
 
 # --------------------------------------------------------------------------- #
 #  LM configuration                                                           #
@@ -42,76 +44,32 @@ def build_examples_from_file(filepath: str) -> List[dspy.Example]:
 
 
 # --------------------------------------------------------------------------- #
-#  Difficulty metric                                                          #
-# --------------------------------------------------------------------------- #
-def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None):
-    metta_handler = MettalogHandler()
-    compare : dspy.Module = dspy.ChainOfThought("question, expected_answer, found_proof -> proof_matches_expected_answer : bool")
-
-    for stmt in prediction.stmts:
-        if checkStmt(stmt) == 0.0:
-            print(f"Statement {stmt} is not valid")
-            metta_handler.close()
-            return dspy.Prediction(score=False, feedback="One of the pln statements did not follow the right syntax it should look like (: proof_name (Predicate x) (STV strength confidence))")
-        metta_handler.add_atom(stmt)
-
-    for rule in rules.required_rules:
-        if checkStmt(rule) == 0.0:
-            print(f"Rule {rule} is not valid")
-            metta_handler.close()
-            return dspy.Prediction(score=False, feedback="One of the pln rules did not follow the right syntax it should look like (: proof_name (Implication (PredicateA x) (PredicateB x)) (STV strength confidence))")
-        metta_handler.add_atom(rule)
-
-    for query in prediction.queries:
-        if checkQuery(query) == 0.0:
-            print(f"Query {query} is not valid")
-            metta_handler.close()
-            return dspy.Prediction(score=False, feedback="One of the pln queries did not follow the right syntax it should look like (: $prf (Predicate x) $tv)")
-
-    proofs = []
-    for query in pln_query.questions:
-        query_res = metta_handler.query(query)
-        for res in query_res:
-            if res.startswith("(query"):
-                print(f"Query not executed")
-                continue
-            else:
-                proofs.append(res)
-
-    comparison = compare(question=pred.question, expected_answer=pred.expected_answer, found_proof=proofs)
-
-    metta_handler.close()
-
-    return dspy.Prediction(score=comparison.proof_matches_expected_answer, feedback=comparison.reasoning)
-
-
-
-# --------------------------------------------------------------------------- #
 #  Optimisation                                                               #
 # --------------------------------------------------------------------------- #
-parser = argparse.ArgumentParser(
-    description="Optimize SampleGenerator using COCA train/val datasets"
-)
-parser.add_argument("--train-file", type=str, default="NL2PLN/COCA/train.txt",
-                    help="Path to training text file (one sentence per line)")
-parser.add_argument("--val-file", type=str, default="NL2PLN/COCA/val.txt",
-                    help="Path to validation text file (one sentence per line)")
-args = parser.parse_args()
+#parser = argparse.ArgumentParser(
+#    description="Optimize SampleGenerator using COCA train/val datasets"
+#)
+#parser.add_argument("--train-file", type=str, default="NL2PLN/COCA/train.txt",
+#                    help="Path to training text file (one sentence per line)")
+#parser.add_argument("--val-file", type=str, default="NL2PLN/COCA/val.txt",
+#                    help="Path to validation text file (one sentence per line)")
+#args = parser.parse_args()
 
-trainset = build_examples_from_file(args.train_file)
-valset = build_examples_from_file(args.val_file)
+trainset = build_examples_from_file("sentences.json")
+#valset = build_examples_from_file(args.val_file)
 
 teleprompter = GEPA(metric=difficulty_metric
                    ,reflection_lm=dspy.LM(model="openai/gpt-5", temperature=1.0, max_tokens=32000)
-                   ,num_threads=8
+                   ,num_threads=4
                    ,log_dir="gepa_log"
-                   ,auto="light")
+                   ,max_full_evals=3)
 
 module = SimpleModule(model=model)
 
 generator_optimised = teleprompter.compile(
     module,
     trainset=trainset,
+    valset=valset,
 )
 
 generator_optimised.save("sample_module_optimzied.json")
