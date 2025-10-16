@@ -1,6 +1,3 @@
-[submodule "NL2PLN/metta/NL2PLN/metta/chainer"]
-	path = NL2PLN/metta/NL2PLN/metta/chainer
-	url = git@github.com:rTreutlein/ArgSetChainer.git
 [submodule "NL2PLN/metta/chainer"]
 	path = NL2PLN/metta/chainer
 	url = git@github.com:rTreutlein/ArgSetChainer.git

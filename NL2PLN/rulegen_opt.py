@@ -14,6 +14,8 @@ from dspy.teleprompt import MIPROv2,SIMBA
 
 from NL2PLN.metta.mettalog_handler import MettalogHandler
 
+from NL2PLN.simple_module import RulegenSignature
+
 
 # --------------------------------------------------------------------------- #
 #  LM configuration                                                           #
@@ -113,7 +115,7 @@ def build_training_dataset() -> List[dspy.Example]:
                 "(: adult_def (Implication (And (Age $x $age) (GreaterOrEqual $age 18)) (Adult $x)) (STV 1.0 1.0))",
                 "(: voting_rule (Implication (And (Adult $x) (Citizen $x)) (EligibleToVote $x)) (STV 1.0 1.0))",
             ],
-        ).with_inputs(\"input_statements\", \"target_query\")
+        ).with_inputs("input_statements", "target_query")
     )
 
     # Example 8 ─ Traffic-light reasoning for car movement
@@ -127,7 +129,7 @@ def build_training_dataset() -> List[dspy.Example]:
             required_rules=[
                 "(: green_means_go (Implication (And (TrafficLightState $l Green) (CarAt $c $l)) (CanGo $c)) (STV 1.0 1.0))",
             ],
-        ).with_inputs(\"input_statements\", \"target_query\")
+        ).with_inputs("input_statements", "target_query")
     )
 
     # Example 9 ─ Nested subset & membership inference
@@ -143,7 +145,7 @@ def build_training_dataset() -> List[dspy.Example]:
                 "(: subset_trans (Implication (And (Subset $A $B) (Subset $B $C)) (Subset $A $C)) (STV 1.0 1.0))",
                 "(: member_subset (Implication (And (Member $x $A) (Subset $A $B)) (Member $x $B)) (STV 1.0 1.0))",
             ],
-        ).with_inputs(\"input_statements\", \"target_query\")
+        ).with_inputs("input_statements", "target_query")
     )
 
     return examples
@@ -165,20 +167,6 @@ def pass_through_metric(example: dspy.Example,
         ml.add_atom(rule)
     proofs = ml.query(example.target_query)
     return len(proofs) > 0
-
-class RulegenSignature(dspy.Signature):
-    """
-    You task is to generate a list of rules that are required to answer the target query given the input statements.
-    Rules have the form:
-    (: rule_name (Implication (Predicate1 $x) (Predicate2 $x)) (STV 1.0 1.0))
-    or with conjunctions/disjunctions:
-    (: rule_name (Implication (And (Predicate1 $x) (Predicate2 $x)) (Or (Predicate3 $x) (Predicate4 $x))) (STV 1.0 1.0))
-    """
-    input_statements : List[str] = dspy.InputField(desc="The input statements to be converted to PLN")
-    target_query : str = dspy.InputField(desc="The target query to be answered")
-
-    required_rules : List[str] = dspy.OutputField(desc="The required rules to answer the target query")
-
 
 # --------------------------------------------------------------------------- #
 #  Main optimisation routine                                                  #

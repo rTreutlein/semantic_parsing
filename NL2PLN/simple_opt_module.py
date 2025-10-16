@@ -10,8 +10,6 @@ import dspy
 from dspy.teleprompt import GEPA
 
 from NL2PLN.simple_module import SimpleModule , difficulty_metric
-from NL2PLN.metta.mettalog_handler import MettalogHandler
-from NL2PLN.utils.cleanPLN import checkStmt, checkImpl, checkQuery
 
 # --------------------------------------------------------------------------- #
 #  LM configuration                                                           #
@@ -19,7 +17,7 @@ from NL2PLN.utils.cleanPLN import checkStmt, checkImpl, checkQuery
 #dspy.configure(lm=dspy.LM("openrouter/anthropic/claude-sonnet-4"))
 #model = "openai/gpt-5"
 #model = "openrouter/z-ai/glm-4.5"
-model = "openrouter/google/gemini-2.5-flash-lite"
+model = "openrouter/openai/gpt-oss-120b"
 
 dspy.configure(lm=dspy.LM(model,temperature=1.0, max_tokens=20000))
 
@@ -67,7 +65,7 @@ module = SimpleModule(model=model)
 generator_optimised = teleprompter.compile(
     module,
     trainset=trainset,
-    valset=valset,
+    #valset=valset,
 )
 
 generator_optimised.save("sample_module_optimzied.json")

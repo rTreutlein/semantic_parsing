@@ -4,8 +4,9 @@ from .utils.prompts import NL2PLN_Signature
 from .utils.cleanPLN import cleanPLN
 
 class SimpleNL2PLN(dspy.Module):
-    def __init__(self):
+    def __init__(self, model: str = "openai/gpt-4o"):
         self.convert = dspy.ChainOfThought(NL2PLN_Signature)
+        self.model = model
 
     def forward(self, sentences, previous_sentences=None):
         # Handle single sentence case
@@ -26,7 +27,7 @@ class SimpleNL2PLN(dspy.Module):
         #print("----------------------------------------------")
 
         #with dspy.context(lm=dspy.LM('openrouter/anthropic/claude-sonnet-4', temperature=1, cache=False)):
-        with dspy.context(lm=dspy.LM('openai/gpt-4o', temperature=1, cache=False)):
+        with dspy.context(lm=dspy.LM(self.model, temperature=1, max_tokens=8000, cache=False)):
 
             res = self.convert(
                 sentences=joined_sentences,
@@ -35,4 +36,5 @@ class SimpleNL2PLN(dspy.Module):
             )
             res.statements = [cleanPLN(x) for x in res.statements]
             res.questions = [cleanPLN(x) for x in res.questions]
+            print(res)
             return res

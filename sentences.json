@@ -87,8 +87,12 @@
     ],
     "queries": [
       {
-        "question": "",
-        "expected_answer": ""
+        "question": "Is the Knife long as compared to a different knife?",
+        "expected_answer": "Yes compared to a kitchen knife it is long."
+      },
+      {
+        "question": "Are kitchen knifes shorter then sashimi knives?",
+        "expected_answer": "Yes, kitchen knifes are shorter then sashimi knives."
       }
     ]
   },
@@ -98,30 +102,34 @@
     ],
     "queries": [
       {
-        "question": "",
-        "expected_answer": ""
+        "question": "Who has to agree for the meeting to happen?",
+        "expected_answer": "Everyone that is somewhat related to it."
       }
     ]
   },
   {
     "sentences": [
-      "Some humans can fly."
+      "There are 10 humans that can fly."
     ],
     "queries": [
       {
         "question": "How many humans are flying?",
-        "expected_answer": ""
+        "expected_answer": "Somewhere between 0 and 10."
       }
     ]
   },
   {
     "sentences": [
-      "Bob went away in december."
+      "10.10.2025, Bob went away in february."
     ],
     "queries": [
       {
-        "question": "",
-        "expected_answer": ""
+        "question": "10.10.2025, How many months ago was it that bob went away?",
+        "expected_answer": "8"
+      },
+      {
+        "question": "10.10.2025, What year was it when bob went away?",
+        "expected_answer": "2025"
       }
     ]
   },
@@ -132,18 +140,26 @@
     "queries": [
       {
         "question": "Does Mark help Anna with homework?",
-        "expected_answer": ""
+        "expected_answer": "Yes"
+      },
+      {
+        "question": "Who is providing help with homework?",
+        "expected_answer": "Mark, Bob and Anna."
       }
     ]
   },
   {
     "sentences": [
-      "The Dog has magical fur."
+      "The Dog has magical fur and a white tail."
     ],
     "queries": [
       {
         "question": "Is the dog magical?",
-        "expected_answer": ""
+        "expected_answer": "Yes"
+      },
+      {
+        "question": "Is the dog white?",
+        "expected_answer": "Unclear. Part of it is so a maybe something along the lines of (STV 0.2 0.5) there is a low probabilty but we aren't sure."
       }
     ]
   }

@@ -103,38 +103,33 @@ class NL2PLN_Signature(dspy.Signature):
 
   Guidelines for the conversion:
   - Create Type declarations for all entities
-  - Modifiers apply to the proof "x is very happy" => (: x Object),(: happyprf (Happy x) (STV 1.0 1.0)),(: veryprf (Very happyprf) (STV 1.0 1.0))
+  - Modifiers apply to the proof "x is very happy" => (: happyprf (Happy x) (STV 1.0 1.0)),(: veryprf (Very happyprf) (STV 1.0 1.0))
   - Use the following type operators:
     * -> for functions and dependent products (Π types)
     * Σ for dependent sums (existential types) - use for existential quantification
     * | for sum types (disjoint unions)
     * * for product types (pairs/tuples)
     * Not for negation (from Type to Type)
-  - Never introduce unnecessary Object declarations in dependent products
-    * INCORRECT: (-> (: $x Object) (-> (: $x_is_pred (Pred $x)) (Result)))
-    * CORRECT: (-> (: $x_is_pred (Pred $x)) (Result))
-    * (Prex $x) already implies (: $x Object) so you don't need to add it.
   - For questions use a Variable $var (always start with a $)
-    * Where is X => (: $prf (Location X $loc))
-    * How is X related to Y => (: $prf ($rel X Y))
-    * Don't introduce (: $var Object) as this would match all things that are objects
+    * Where is X => (: $prf (Location X $loc) $truthvalue)
+    * How is X related to Y => (: $prf ($rel X Y) $truthvalue)
     * For multiple questions like "How big and old is the Lion", create separate questions:
       Questions:
-      (: $prf1 (Age Lion $age))
-      (: $prf2 (Size Lion $size))
+      (: $prf1 (Age Lion $age) $truthvalue)
+      (: $prf2 (Size Lion $size) $truthvalue)
     * For questions with multiple variables like "Who saw what?":
       Questions:
-      (: $prf (Saw $who $what))
+      (: $prf (Saw $who $what) $truthvalue)
     * For yes/no questions like "Did John go home?", use the statement as question with variable proof:
       Questions:
-      (: $prf (GoTo john home))
+      (: $prf (GoTo john home) $truthvalue)
     * The same $var always refers to the same object throughout the question/statement
     * Use different variable names ($var1, $var2, etc) when referring to different objects
   - For quantifiers:
     * Universal ("all", "every", "always"): Use dependent product (->)
       - "Always" indicates a universal temporal quantification
       - e.g., "John always takes his umbrella when it rains" =>
-        (: if_raining_john_takes_umbrella (-> (: $raining (Rain $rain)) (Takes john umbrella)))
+        (: if_raining_john_takes_umbrella (Implication (Rain $rain) (Takes john umbrella)))
     * Existential ("some", "a"): If then number of objects is clear just define them all explicitly
                                  If not, use dependent sum (Σ)
   - For named objects:
@@ -300,7 +295,6 @@ class NL2PLN_Signature(dspy.Signature):
   (: Name (-> (: $named Object) (: $name String) Type))
 
   Statements:
-  (: john Object)
   (: name_john (Name john "John") (STV 1.0 1.0))
   (: johnNotHappy (Not (Happy john)) (STV 1.0 1.0))
   ```
@@ -311,14 +305,14 @@ class NL2PLN_Signature(dspy.Signature):
   Type Definitions:
 
   Questions:
-  (: $john_location_prf (IsIn john $loc))
+  (: $john_location_prf (IsIn john $loc) $truthvalue)
   ```
 
   8. Relationship Questions:
   "How is Mary related to John?"
   ```
   Questions:
-  (: $mary_john_relation_prf ($relation mary john))
+  (: $mary_john_relation_prf ($relation mary john) $truthvalue)
   ```
   Note if asked how things are related or what they are to each other, don't
   introduce a RelatedTo or similar relationship. Instead ask directly for the
@@ -328,7 +322,6 @@ class NL2PLN_Signature(dspy.Signature):
   "What color is this car?"
   ```
   From Context:
-  (: car Object)
   (: carIsCar (Car car) (STV 1.0 1.0))
 
   Type Definitions:
@@ -366,7 +359,6 @@ class NL2PLN_Signature(dspy.Signature):
   (: ParkedAt (-> (: $vehicle Object) (: $location Object) Type))
 
   Statements:
-  (: car Object)
   (: carIsCar (Car car) (STV 1.0 1.0))
   (: john_buys_car (Buy john car) (STV 1.0 1.0))
   (: car_is_red (Red car) (STV 1.0 1.0))
@@ -400,10 +392,7 @@ class NL2PLN_Signature(dspy.Signature):
   (: Morning (-> (: $morning Object) Type))
 
   Statements:
-  (: john Object)
-  (: umbrella Object)
   (: umbrellaIsUmbrella (Umbrella umbrella) (STV 1.0 1.0))
-  (: morning Object)
   (: morningIsMorning (Morning morning) (STV 1.0 1.0))
   (: johnLeavesUmbrella (TrueAtTime (LeaveSomething john umbrella) morning) (STV 1.0 1.0))
   ```
@@ -419,10 +408,7 @@ class NL2PLN_Signature(dspy.Signature):
   (: Money (-> (: $money Object) Type))
 
   Statements:
-  (: john Object)
-  (: home Object)
   (: homeIsHome (Home home) (STV 1.0 1.0))
-  (: morning Object)
   (: morningIsMorning (Morning morning) (STV 1.0 1.0))
   (: johnDidntleave (TrueAtTime (Not (LeaveLocation john home)) morning) (STV 1.0 1.0))
   ```
@@ -431,12 +417,6 @@ class NL2PLN_Signature(dspy.Signature):
   ```
   Performative
   ```
-
-  In the context we always have the following objects:
-  (: authorSpeaker Object) # The speaker or author of the statement
-  (: readerLister Object) # The listener or reader of the statement
-  (: placeTime Object) # The place or time of the statement
-
 
   Very Important:
   - Never introduce unnecessary Object declarations in dependent products

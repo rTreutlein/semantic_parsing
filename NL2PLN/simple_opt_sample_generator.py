@@ -93,6 +93,7 @@ trainset = build_training_dataset(args.min_length, args.max_length, args.num_sam
 teleprompter = MIPROv2(metric=difficulty_metric, auto="light")
 
 generator = SampleGenerator()
+generator.load("sample_generator_optimized.json")
 print("Optimising SampleGenerator prompt …")
 generator_optimised = teleprompter.compile(
     generator,

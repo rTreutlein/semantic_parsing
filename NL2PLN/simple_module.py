@@ -130,21 +130,10 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
             return dspy.Prediction(score=0.0, feedback="One of the pln queries did not follow the right syntax it should look like (: $prf (Predicate x) $tv)")
 
     proofs = []
-    try:
-        for query in pred.queries:
-            query , score = balance_parentheses(query)
-            print("Running query:" + query)
-            query_res = metta_handler.query(query)
-            print("Query results:")
-            print(query_res)
-            for res in query_res:
-                if res.startswith("(query"):
-                    print(f"Query not executed")
-                    continue
-                else:
-                    proofs.append(res)
-    except TimeoutError:
-        return dspy.Prediction(score=0.0, feedback="The proof timedout")
+    for query in pred.queries:
+        query , _ = balance_parentheses(query)
+        query_res = metta_handler.query(query)
+        proofs.append(query_res)
 
     # Compare each question's proof against its expected answer
     for i, q in enumerate(pred.questions):
@@ -162,8 +151,6 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     score = correct_matches / total_questions if total_questions > 0 else 0.0
     detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched.\n" + "\n".join(feedback_details)
     return dspy.Prediction(score=score, feedback=detailed_feedback)
-
-
 
 if __name__ == '__main__':
     #model = "openrouter/google/gemini-2.5-flash-lite"

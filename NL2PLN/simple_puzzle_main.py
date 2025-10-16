@@ -2,6 +2,7 @@ import argparse
 import dspy
 import json
 import datetime
+import time
 from pathlib import Path
 from NL2PLN.simple_puzzle_manager import SimplePuzzleProcessor
 from NL2PLN.utils.sample_generator import SampleGenerator
@@ -155,10 +156,12 @@ def main():
     parser.add_argument("--generate-samples", help="Directory to generate and store sample puzzles with medium difficulty")
     args = parser.parse_args()
 
+    #model = "deepseek/deepseek-chat"
+    model = "openrouter/openai/gpt-oss-120b"
     # Configure LM
-    #configure_lm('deepseek/deepseek-reasoner')
+    configure_lm(model)
     #configure_lm('openrouter/anthropic/claude-sonnet-4')
-    configure_lm('openai/gpt-4o')
+    #configure_lm('openai/gpt-4o')
 
     # Check if we should generate samples
     if args.generate_samples:
@@ -166,9 +169,9 @@ def main():
         return
 
     # Initialize puzzle generator and processor
-    puzzle_gen = SampleGenerator()
+    puzzle_gen = SampleGenerator(model=model)
     puzzle_gen.load("sample_generator_optimized.json")
-    nl2pln = SimpleNL2PLN()
+    nl2pln = SimpleNL2PLN(model=model)
     nl2pln.load("optimized.json")
     processor = SimplePuzzleProcessor(args.output, nl2pln=nl2pln, verify=args.verify)
     
@@ -194,7 +197,10 @@ def main():
         
         logger.info("Processed puzzle:")
         print(puzzle)
+        start = time.time()
         score = processor.process_puzzle(puzzle)
+        end = time.time()
+        print(f"Total time: {end - start} seconds")
 
 if __name__ == "__main__":
     main()

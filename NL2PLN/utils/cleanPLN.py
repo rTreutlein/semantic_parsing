@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from NL2PLN.metta.metta_handler import MeTTaHandler
+from hyperon import MeTTa
 
 def balance_parentheses(expr: str) -> Tuple[str,float]:
     score = 1.0
@@ -36,10 +36,29 @@ def balance_parentheses(expr: str) -> Tuple[str,float]:
     return expr , score
 
 def checkStmt(expr: str) -> float:
-    metta = MeTTaHandler('tmp.json',read_only=True)
+    metta = MeTTa()
     try:
-        res = metta.run_clean(f"!(unify {expr} (: $123prf (WithTV $123stmt (STV $123s $123c))) 1.0 0.1)")
-        return float(res[0])
+        res1 = metta.run(f"!(unify {expr} (: $123prf (WithTV $123stmt (STV $123s $123c))) (if (== (get-metatype $123prf) Variable) 0.0 1.0) 0.0)")[0][0].get_object().value
+        res2 = metta.run(f"!(unify {expr} (: $123prf $123stmt (STV $123s $123c)) (if (== (get-metatype $123prf) Variable) 0.0 1.0) 0.0)")[0][0].get_object().value
+        return max(float(res1),float(res2)) 
+    except:
+     return 0.0
+
+def checkImpl(expr: str) -> float:
+    metta = MeTTa()
+    try:
+        res1 = metta.run(f"!(unify {expr} (: $123prf (WithTV (Implication $a $b) (STV $123s $123c))) (if (== (get-metatype $123prf) Variable) 0.0 1.0) 0.0)")[0][0].get_object().value
+        res2 = metta.run(f"!(unify {expr} (: $123prf (Implication $a $b) (STV $123s $123c)) (if (== (get-metatype $123prf) Variable) 0.0 1.0) 0.0)")[0][0].get_object().value
+        return max(float(res1),float(res2)) 
+    except:
+     return 0.0
+
+def checkQuery(expr: str) -> float:
+    metta = MeTTa()
+    try:
+        res1 = metta.run(f"!(unify {expr} (: $123prf (WithTV $123stmt $123tv)) (== (get-metatype $123prf) Variable) 0.0)")[0][0].get_object().value
+        res2 = metta.run(f"!(unify {expr} (: $123prf $123stmt $123tv) (if (== (get-metatype $123prf) Variable) 1.0 0.0) 0.0)")[0][0].get_object().value
+        return max(float(res1),float(res2))
     except:
      return 0.0
 

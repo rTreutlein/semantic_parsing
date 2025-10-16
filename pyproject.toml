@@ -7,11 +7,29 @@ requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.40.0",
     "dspy-ai>=2.5.43",
-    "dspy==2.6.27",
+    "dspy>=3.0.3",
     "hyperon==0.2.5",
     "ollama>=0.4.4",
     "pytest>=8.3.4",
     "qdrant-client>=1.12.1",
     "requests>=2.32.3",
     "tabulate>=0.9.0",
+    "pympler>=1.1",
+    "litellm>=1.75.2",
+    "fastapi>=0.116.1",
+    "orjson>=3.11.1",
+    "apscheduler>=3.11.0",
+    "cryptography>=45.0.6",
+    "python-multipart>=0.0.20",
+    "pydantic>=2.10.3",
+    "websockets>=15.0.1",
+    "email-validator>=2.2.0",
+    "fastapi-sso>=0.18.0",
+    "filprofiler>=2024.11.2",
+    "datatrove>=0.6.0",
+    "pyarrow>=21.0.0",
+    "petta",
 ]
+
+[tool.uv.sources]
+petta = { path = "../../OpenCog/PeTTa", editable = true }
