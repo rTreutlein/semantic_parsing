@@ -158,7 +158,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     total_rules = len(pred.rules)
     used_count = len(used_rules)
     unused_count = total_rules - used_count
-    penalty = unused_count * 0.1  # Penalty of 0.1 per unused rule
+    penalty = unused_count * 0.01  # Penalty of 0.01 per unused rule
     score = max(0.0, score - penalty)  # Cap score at 0
 
     # Compare each question's proof against its expected answer
@@ -174,9 +174,10 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
         else:
             feedback_details.append(f"Negative: No proof found for question '{q['question']}'.")
 
+    unused_rules = [rule for rule in pred.rules if extract_rule_name(rule) not in used_rules]
     score = correct_matches / total_questions if total_questions > 0 else 0.0
     score = max(0.0, score - penalty)  # Apply penalty again if needed (though already applied above)
-    rule_feedback = f"Rules used: {used_count}/{total_rules}. Penalty applied: {penalty}."
+    rule_feedback = f"Rules used: {used_count}/{total_rules}. Unused rules: {unused_rules}. Penalty applied: {penalty}."
     detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched. {rule_feedback}\n" + "\n".join(feedback_details)
     return dspy.Prediction(score=score, feedback=detailed_feedback)
 
