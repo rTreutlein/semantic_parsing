@@ -100,6 +100,7 @@ def run_io_tasks_in_parallel(tasks):
 def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pred_name=None, pred_trace=None):
     metta_handler = MorkHandler()
     compare : dspy.Module = dspy.ChainOfThought("question, expected_answer, found_proof -> proof_matches_expected_answer : bool")
+    validate_rule : dspy.Module = dspy.ChainOfThought("statement, rule -> is_valid : bool")
 
     penalty = 0
     penalty_reason = ""
@@ -117,6 +118,9 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
         if checkImpl(rule) == 0.0:
             print(f"Rule {rule} is not valid")
             return dspy.Prediction(score=0.0, feedback="One of the pln rules did not follow the right syntax it should look like (: proof_name (Implication (PredicateA x) (PredicateB x)) (STV strength confidence))")
+        if not validate_rule(statement=stmt, rule=rule).is_valid:
+            print(f"Rule {rule} is not valid")
+            return dspy.Prediction(score=0.0, feedback=f"This rule is not logicaly sound: {rule}")
         print("Adding rule: " + rule)
         metta_handler.add_atom(rule)
 
