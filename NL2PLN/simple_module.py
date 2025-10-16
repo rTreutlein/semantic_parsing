@@ -97,6 +97,13 @@ def run_io_tasks_in_parallel(tasks):
         for running_task in running_tasks:
             running_task.result()
 
+def extract_rule_name(rule: str) -> str:
+    """Extract the rule name from a PLN rule string, e.g., 'extract_any_from_and' from '(: extract_any_from_and ...'."""
+    parts = rule.strip().split()
+    if len(parts) >= 2 and parts[0] == '(:':
+        return parts[1]
+    return ""
+
 def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pred_name=None, pred_trace=None):
     metta_handler = MorkHandler()
     compare : dspy.Module = dspy.ChainOfThought("question, expected_answer, found_proof -> proof_matches_expected_answer : bool")
@@ -139,6 +146,21 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
         query_res = metta_handler.query(query)
         proofs.append(query_res)
 
+    # Check if generated rules were used in the proofs
+    used_rules = set()
+    for proof in proofs:
+        proof_str = str(proof)  # Convert to string to handle lists or nested structures
+        for rule in pred.rules:
+            name = extract_rule_name(rule)
+            if name and name in proof_str:
+                used_rules.add(name)
+
+    total_rules = len(pred.rules)
+    used_count = len(used_rules)
+    unused_count = total_rules - used_count
+    penalty = unused_count * 0.1  # Penalty of 0.1 per unused rule
+    score = max(0.0, score - penalty)  # Cap score at 0
+
     # Compare each question's proof against its expected answer
     for i, q in enumerate(pred.questions):
         if i < len(proofs):
@@ -153,7 +175,9 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
             feedback_details.append(f"Negative: No proof found for question '{q['question']}'.")
 
     score = correct_matches / total_questions if total_questions > 0 else 0.0
-    detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched.\n" + "\n".join(feedback_details)
+    score = max(0.0, score - penalty)  # Apply penalty again if needed (though already applied above)
+    rule_feedback = f"Rules used: {used_count}/{total_rules}. Penalty applied: {penalty}."
+    detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched. {rule_feedback}\n" + "\n".join(feedback_details)
     return dspy.Prediction(score=score, feedback=detailed_feedback)
 
 if __name__ == '__main__':
