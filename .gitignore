@@ -13,3 +13,5 @@ rules_progress.json
 *.metta.html
 *.metta.pl
 puzzles
+gepa_log
+mlflow

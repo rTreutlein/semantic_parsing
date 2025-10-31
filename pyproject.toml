@@ -29,6 +29,7 @@ dependencies = [
     "datatrove>=0.6.0",
     "pyarrow>=21.0.0",
     "petta",
+    "mlflow>=3.4.0",
 ]
 
 [tool.uv.sources]
