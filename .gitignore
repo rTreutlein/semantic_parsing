@@ -1,11 +1,8 @@
 .aider*
 .env
 __pycache__
-data
 extracted_sentences
 physics_articles
-data2
-data3
 embeddings_cache
 pdfs
 progress.json
