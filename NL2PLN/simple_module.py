@@ -16,7 +16,7 @@ from NL2PLN.utils.sample_generator import SampleGenerator
 from NL2PLN.utils.cleanPLN import checkStmt, checkQuery, checkImpl, balance_parentheses
 
 import sys
-sys.path.append("../MM2Chainer/")
+sys.path.append("../../OpenCog/MM2Chainer/")
 
 from mork_handler import MorkHandler
 
@@ -104,6 +104,9 @@ class NL2PLNLSig(dspy.Signature):
     The dog can't literally always run all the time.
 
     Take care that for question the prf and the tv should be variables (starting with $)
+
+    The above examples are just that examples of a possible solution. Before you generate your answer. Pick a probabilty between 0 and 1.
+    That describing how likely your answer is.
     """
     english : str = dspy.InputField(desc="The input sentences to be converted to PLN Light")
 
@@ -121,8 +124,8 @@ class SimpleModule(dspy.Module):
         queries_pln = []
         for q in queries:
             pln_q = self.nl2pln(english=q['question']).plnl
-            if pln_q is None or len(pln_q) != 1:
-                raise Exception("NL2PLN returned more than one query: " + str(pln_q))
+            #if pln_q is None or len(pln_q) != 1:
+            #raise Exception("NL2PLN returned more than one query: " + str(pln_q))
             rules = self.rulegen(input_statements=stmts, target_query=pln_q[0]).required_rules
             queries_pln.append({'query': pln_q[0],'rules': rules})
 
@@ -166,6 +169,8 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     compare : dspy.Module = dspy.ChainOfThought(CompareResultSig)
     validate_rule : dspy.Module = dspy.ChainOfThought(ValidateRuleSig)
 
+    log = False
+
     penalty = 0
     penalty_reason = ""
 
@@ -178,7 +183,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
             return dspy.Prediction(score=0.0, feedback=
                 f"""The statement {stmt} did not follow the right syntax.
                     it should look like (: proof_name (Predicate x) (STV strength confidence))""")
-        metta_handler.add_atom(stmt)
+        metta_handler.add_atom(stmt,log=log)
     
     for qr in pred.queries:
         query = qr['query']
@@ -198,12 +203,12 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
             if not validation.is_logically_valid:
                 return dspy.Prediction(score=0.0, feedback=
                     f"This rule is not logicaly sound: {rule}\nReasoning: {validation.reasoning}")
-            metta_handler.add_atom(rule)
+            metta_handler.add_atom(rule,log=log)
 
     proofs = []
     for qr in pred.queries:
         clean_query , _ = balance_parentheses(qr['query'])
-        proofs.append(metta_handler.query(clean_query))
+        proofs.append(metta_handler.query(clean_query,log=log))
 
     correct_matches = 0
     feedback_details = []
@@ -250,6 +255,7 @@ def difficulty_metric(gold: dspy.Example, pred: dspy.Prediction, trace=None, pre
     detailed_feedback = f"Score: {correct_matches}/{total_questions} questions matched. \n" + "\n".join(feedback_details)
     return dspy.Prediction(score=score, feedback=detailed_feedback)
 
+
 def build_examples_from_file(filepath: str) -> List[dspy.Example]:
     """
     Load a JSON file containing a list of puzzle data and convert each item into a
@@ -274,11 +280,14 @@ if __name__ == '__main__':
     #model  = "openrouter/anthropic/claude-haiku-4.5"
     model = "openrouter/openai/gpt-oss-120b"
     #model = "openrouter/qwen/qwen3-235b-a22b-thinking-2507"
+    #model = "openrouter/meta-llama/llama-3.3-70b-instruct"
 
     dspy.configure(lm=dspy.LM(model,temperature=1.0, max_tokens=20000))
     dspy.settings.configure(track_usage=True)
 
-    module = SimpleModule(model=model)
+    base_module = SimpleModule(model=model)
+
+    module = dspy.BestOfN(module=base_module, N=20, reward_fn=difficulty_metric, threshold=0.7)
     #module.load("programs/sample_module_optimzied.json")
 
     puzzle_data = build_examples_from_file("data/sentences.json")
@@ -286,14 +295,14 @@ if __name__ == '__main__':
     puzzle_data = [puzzle_data[0]]
     metrics = []
     for puzzle in puzzle_data:
-        res = module(sentences=puzzle.sentences, queries=puzzle.queries)
+        res = module(gold=puzzle,sentences=puzzle.sentences, queries=puzzle.queries)
         print(res)
-        metric = difficulty_metric(puzzle, res)
-        metrics.append(metric)
-    score_sum = 0
-    for metric in metrics:
-        score_sum += metric.score
-        print(metric.score)
-        print(metric.feedback)
-    print(score_sum/len(metrics))
+        #metric = difficulty_metric(puzzle, res)
+        #metrics.append(metric)
+    #score_sum = 0
+    #for metric in metrics:
+    #    score_sum += metric.score
+    #    print(metric.score)
+    #    print(metric.feedback)
+    #print(score_sum/len(metrics))
 
