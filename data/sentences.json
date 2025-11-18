@@ -1,195 +1,10 @@
 [
-
   {
     "sentences": [
       "Bob always played tennis."
     ],
     "statements": [
       "(: bob_name (Name bob_obj Bob) (STV 1.0 1.0))",
-      "(: tennis (Name tennis_obj Tennis) (STV 1.0 1.0))",
-      "(: bob_play_tennis (Play bob_obj tennis_obj) (STV 0.1 0.6))"
-    ],
-    "queries": [
-      {
-       "question": "What is the probability that Bob is playing tennis now?",
-       "query": "(: $prf (And (Name $bob_obj Bob) (Name $tennis_obj Tennis) (Play bob_obj $tennis_obj)) $tv)",
-       "rules": [],
-       "expected_answer": "The probablity should be around 5-20% with confidence that is not to high"
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "10.10.2025, Bob went swimming today."
-    ],
-    "statments": [
-      "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
-      "(: date_day (DayOfDate date_obj 10))",
-      "(: date_month (MonthOfDate date_obj 10))",
-      "(: date_year (YearOfDate date_obj 2025))",
-      "(: bob_simming (AtTime (Swimming bob_obj) date_obj) (STV 1.0 1.0))"
-    ],
-    "queries": [
-      {
-        "question": "11.10.2025, What was Bob doing yesterday?",
-        "query": "(: $prf (And (DayOfDate date_obj 10) (MonthOfDate date_obj 10) (YearOfDate date_obj 2025) (Name bob_obj \"Bob\") (Name $what $what_name) (AtTime (Doing bob_obj $what) date_obj)) (STV 1.0 1.0))",
-        "rules": [ "(: swimming_to_doing (Implication (Swimming $x) (And (Name $swimming_ojb \"Swimming\") (Doing $x $swimming_obj))) (STV 1.0 1.0))" ],
-        "expected_answer": "Bob was swimming"
-      },
-      {
-        "question": "11.10.2025, When was Bob simming?",
-        "expected_answer": "Yesterday"
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "Bob likes hot chocolate." 
-    ],
-    "queries": [
-      {
-        "question": "What attribute does the thing have that Bob likes?",
-        "expected_answer": "It's hot."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "Bob and Anna like hiking.",
-      "They often go together."
-    ],
-    "queries": [
-      {
-        "question": "What is the name of the people that like hiking? Who goes hiking?",
-        "expected_answer": "Bob and Anna. Bob and Anna."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "There is a bright red ball and a bright light."
-    ],
-    "queries": [
-      {
-        "question": "What bright objects do we have?",
-        "expected_answer": "A light"
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "The Knife is long and sharp as a kitchen knife but short and blunt as a sashimi knife."
-    ],
-    "queries": [
-      {
-        "question": "Is the Knife long as compared to a different knife?",
-        "expected_answer": "Yes compared to a kitchen knife it is long."
-      },
-      {
-        "question": "Are kitchen knifes shorter then sashimi knives?",
-        "expected_answer": "Yes, kitchen knifes are shorter then sashimi knives."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "The meeting won't happen unless everyone agrees."
-    ],
-    "queries": [
-      {
-        "question": "Who has to agree for the meeting to happen?",
-        "expected_answer": "Everyone that is somewhat related to it."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "There are 10 humans that can fly."
-    ],
-    "queries": [
-      {
-        "question": "How many humans are flying?",
-        "expected_answer": "Somewhere between 0 and 10."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "10.10.2025, Bob went away in february."
-    ],
-    "queries": [
-      {
-        "question": "10.10.2025, How many months ago was it that bob went away?",
-        "expected_answer": "8"
-      },
-      {
-        "question": "10.10.2025, What year was it when bob went away?",
-        "expected_answer": "2025"
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "Mark, Bob and Anna are helping each other with homework."
-    ],
-    "queries": [
-      {
-        "question": "Does Mark help Anna with homework?",
-        "expected_answer": "Yes"
-      },
-      {
-        "question": "Who is providing help with homework?",
-        "expected_answer": "Mark, Bob and Anna."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "The Dog has magical fur and a white tail."
-    ],
-    "queries": [
-      {
-        "question": "Is the dog magical?",
-        "expected_answer": "Yes"
-      },
-      {
-        "question": "Is the dog white?",
-        "expected_answer": "Unclear. Part of it is so a maybe something along the lines of (STV 0.2 0.5) there is a low probabilty but we aren't sure."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "Bob is behind the door."
-    ],
-    "queries": [
-      {
-        "question": "Where is Bob?",
-        "expected_answer": "Behind the door."
-      }
-    ]
-  },
-  {
-    "sentences": [
-      "I only eat vegetables on days when I exercise."
-    ],
-    "queries": [
-      {
-        "question": "On which days do you only eat vegetables?",
-        "expected_answer": "On days when I exercise."
-      }
-    ]
-  }
-]
-
-
-[
-  {
-    "sentences": [
-      "Bob always played tennis."
-    ],
-    "statements": [
-      "(: bob_name (Name bob_obj Bob) (STV 1.0 1.0) (STV 1.0 1.0))",
       "(: tennis (Name tennis_obj Tennis) (STV 1.0 1.0))",
       "(: bob_play_tennis (Play bob_obj tennis_obj) (STV 0.1 0.6))"
     ],
@@ -211,18 +26,20 @@
       "(: date_day (DayOfDate date_obj 10))",
       "(: date_month (MonthOfDate date_obj 10))",
       "(: date_year (YearOfDate date_obj 2025))",
-      "(: bob_simming (AtTime (Swimming bob_obj) date_obj) (STV 1.0 1.0))"
+      "(: bob_swimming (AtTime (Swimming bob_obj) date_obj) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "11.10.2025, What was Bob doing yesterday?",
-        "query": "(: $prf (And (DayOfDate $date_obj 10) (MonthOfDate $date_obj 10) (YearOfDate $date_obj 2025) (Name $bob_obj \"Bob\") (Name $what $what_name) (AtTime (Doing $bob_obj $what) $date_obj)) (STV 1.0 1.0))",
-        "rules": [ "(: swimming_to_doing (Implication (Swimming $x) (And (Name $swimming_ojb \"Swimming\") (Doing $x $swimming_obj))) (STV 1.0 1.0))" ],
+        "query": "(: $prf (And (DayOfDate date_obj 10) (MonthOfDate date_obj 10) (YearOfDate date_obj 2025) (Name bob_obj \"Bob\") (Name $what $what_name) (AtTime (Doing bob_obj $what) date_obj)) (STV 1.0 1.0))",
+        "rules": [
+          "(: swimming_to_doing (Implication (Swimming $x) (And (Name $swimming_obj \"Swimming\") (Doing $x $swimming_obj))) (STV 1.0 1.0))"
+        ],
         "expected_answer": "Bob was swimming"
       },
       {
-        "question": "11.10.2025, When was Bob simming?",
-        "query": "(: $prf (And (Name $bob_obj \"Bob\") (AtTime (Swimming $bob_obj) $date_obj) (DayOfDate $date_obj $day) (MonthOfDate $date_obj $month) (YearOfDate $date_obj $year)) $tv)",
+        "question": "11.10.2025, When was Bob swimming?",
+        "query": "(: $prf (And (AtTime (Swimming bob_obj) date_obj) (DayOfDate date_obj $day) (MonthOfDate date_obj $month)) (STV 1.0 1.0))",
         "rules": [],
         "expected_answer": "Yesterday"
       }
@@ -233,15 +50,15 @@
       "Bob likes hot food."
     ],
     "statements": [
-      "(: bob_name (Name bob_obj Bob) (STV 1.0 1.0))",
-      "(: food (Food food_obj) (STV 1.0 1.0))",
-      "(: hot_food (Hot food_obj) (STV 1.0 1.0))",
-      "(: bob_likes_hot_food (Likes bob_obj food_obj) (STV 1.0 1.0))"
+      "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
+      "(: food (Food hot_food))",
+      "(: hot (Hot hot_food))",
+      "(: likes (Likes bob_obj hot_food))"
     ],
     "queries": [
       {
-        "question": "What kind of food does Bob like?",
-        "query": "(: $prf (And (Name $bob_obj Bob) (Likes $bob_obj $food) (Food $food) ($attribute $food) $tv)",
+        "question": "What attribute does food have that Bob likes?",
+        "query": "(: $prf (And (Name $bob \"Bob\") (Likes $bob $food) (Food $food) ($attrib $food)) $tv)",
         "rules": [],
         "expected_answer": "It's hot."
       }
@@ -255,17 +72,27 @@
     "statements": [
       "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
       "(: anna_name (Name anna_obj \"Anna\") (STV 1.0 1.0))",
-      "(: hiking (Name hiking_obj \"Hiking\") (STV 1.0 1.0))",
-      "(: bob_likes_hiking (Likes bob_obj hiking_obj) (STV 1.0 1.0))",
-      "(: anna_likes_hiking (Likes anna_obj hiking_obj) (STV 1.0 1.0))",
-      "(: bob_anna_hiking_together (Together bob_obj anna_obj hiking_obj) (STV 0.8 0.9))"
+      "(: hiking_activity (Hiking hiking_obj) (STV 1.0 1.0))",
+      "(: bob_likes_hiking (Likes bob_obj hiking_obj) (STV 0.9 0.9))",
+      "(: anna_likes_hiking (Likes anna_obj hiking_obj) (STV 0.9 0.9))",
+      "(: hiking_together (GoHikingTogether bob_obj anna_obj) (STV 0.6 0.8))",
+      "(: hiking_together_often (Often (GoHikingTogether bob_obj anna_obj)) (STV 0.8 0.8))"
     ],
     "queries": [
       {
-        "question": "What is the name of the people that like hiking? Who goes hiking?",
-        "query": "(: $prf (And (Name $person $name) (Likes $person hiking_obj) (Name hiking_obj \"Hiking\")) $tv)",
+        "question": "What is the name of the people that like hiking?",
+        "query": "(: $prf (And (Likes $person hiking_obj) (Name $person $name)) $tv)",
         "rules": [],
-        "expected_answer": "Bob and Anna. Bob and Anna."
+        "expected_answer": "Bob and Anna."
+      },
+      {
+        "question": "Who goes hiking?",
+        "query": "(: $prf (And (GoesHiking $person) (Name $person $name)) $tv)",
+        "rules": [
+          "(: likes_to_hiking (Implication (And (Hiking $hiking_obj) (Likes $person $hiking_obj)) (GoesHiking $person)) (STV 0.6 0.7))",
+          "(: together_implies_gohiking (Implication (GoHikingTogether $person $partner) (GoesHiking $person)) (STV 0.9 0.9))"
+        ],
+        "expected_answer": "Bob and Anna."
       }
     ]
   },
@@ -274,17 +101,17 @@
       "There is a bright red ball and a bright light."
     ],
     "statements": [
-      "(: red_ball (Name ball_obj \"RedBall\") (STV 1.0 1.0))",
-      "(: light (Name light_obj \"Light\") (STV 1.0 1.0))",
-      "(: ball_bright (HasAttribute ball_obj \"Bright\") (STV 1.0 1.0))",
-      "(: light_bright (HasAttribute light_obj \"Bright\") (STV 1.0 1.0))"
+      "(: ball_type (Ball ball_obj) (STV 1.0 1.0))",
+      "(: ball_color (BrightRed ball_obj) (STV 1.0 1.0))",
+      "(: light_type (Light light_obj) (STV 1.0 1.0))",
+      "(: light_bright (Bright light_obj) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "What bright objects do we have?",
-        "query": "(: $prf (And (Name $obj $name) (HasAttribute $obj \"Bright\")) $tv)",
-        "rules": [],
-        "expected_answer": "A light"
+        "query": "(: $prf (Bright $object) $tv)",
+        "rules": ["(: brightred_decompose (Implication (BrightRed $obj) (And (Color $c) (Red $c) (Bright $c) (HasColor $obj $c))) (STV 1.0 1.0))"],
+        "expected_answer": "A light and a red color"
       }
     ]
   },
@@ -293,26 +120,26 @@
       "The Knife is long and sharp as a kitchen knife but short and blunt as a sashimi knife."
     ],
     "statements": [
-      "(: knife (Name knife_obj \"Knife\") (STV 1.0 1.0))",
-      "(: kitchen_knife (Name kitchen_knife_obj \"KitchenKnife\") (STV 1.0 1.0))",
-      "(: sashimi_knife (Name sashimi_knife_obj \"SashimiKnife\") (STV 1.0 1.0))",
-      "(: knife_long_kitchen (Longer knife_obj kitchen_knife_obj) (STV 1.0 1.0))",
-      "(: knife_sharp_kitchen (Sharper knife_obj kitchen_knife_obj) (STV 1.0 1.0))",
-      "(: knife_short_sashimi (Shorter knife_obj sashimi_knife_obj) (STV 1.0 1.0))",
-      "(: knife_blunt_sashimi (Blunter knife_obj sashimi_knife_obj) (STV 1.0 1.0))"
+      "(: knife_type (Knife knife_obj) (STV 1.0 1.0))",
+      "(: kitchen_knife_type (KitchenKnife kitchen_knife_obj) (STV 1.0 1.0))",
+      "(: sashimi_knife_type (SashimiKnife sashimi_knife_obj) (STV 1.0 1.0))",
+      "(: knife_longer_kitchen (LongerThan knife_obj kitchen_knife_obj) (STV 0.9 0.8))",
+      "(: knife_sharper_kitchen (SharperThan knife_obj kitchen_knife_obj) (STV 0.9 0.8))",
+      "(: knife_shorter_sashimi (ShorterThan knife_obj sashimi_knife_obj) (STV 0.9 0.8))",
+      "(: knife_blunter_sashimi (BlunterThan knife_obj sashimi_knife_obj) (STV 0.9 0.8))"
     ],
     "queries": [
       {
         "question": "Is the Knife long as compared to a different knife?",
-        "query": "(: $prf (And (Name knife_obj \"Knife\") (Name $other_knife $other_name) (Longer knife_obj $other_knife)) $tv)",
-        "rules": [],
+        "query": "(: $prf (And (LongerThan knife_obj $other) (Knife $other)) $tv)",
+        "rules": ["(: kitchen_knife_decompose (Implication (KitchenKnife $kife) (And (Knife $kife) (Kitched $kitchen) (UsedIn $kife $kitchen))) (STV 1.0 1.0))"],
         "expected_answer": "Yes compared to a kitchen knife it is long."
       },
       {
         "question": "Are kitchen knifes shorter then sashimi knives?",
-        "query": "(: $prf (And (Name kitchen_knife_obj \"KitchenKnife\") (Name sashimi_knife_obj \"SashimiKnife\") (Shorter kitchen_knife_obj sashimi_knife_obj)) $tv)",
+        "query": "(: $prf (ShorterThan kitchen_knife_obj sashimi_knife_obj) $tv)",
         "rules": [
-          "(: knife_comparison (Implication (And (Longer knife_obj kitchen_knife_obj) (Shorter knife_obj sashimi_knife_obj)) (Shorter kitchen_knife_obj sashimi_knife_obj)) (STV 1.0 1.0))"
+          "(: shorter_transfers (Implication (And (LongerThan $a $b) (ShorterThan $a $c)) (ShorterThan $b $c)) (STV 0.9 0.9))"
         ],
         "expected_answer": "Yes, kitchen knifes are shorter then sashimi knives."
       }
@@ -323,13 +150,15 @@
       "The meeting won't happen unless everyone agrees."
     ],
     "statements": [
-      "(: meeting (Name meeting_obj \"Meeting\") (STV 1.0 1.0))",
-      "(: everyone_agrees (Condition (Happens meeting_obj) (Agrees everyone_obj)) (STV 1.0 1.0))"
+      "(: meeting_instance (Meeting meeting_obj) (STV 1.0 1.0))",
+      "(: everyone_group (Group everyone_group_obj) (STV 1.0 1.0))",
+      "(: meeting_requires_agreement (RequiresAgreement meeting_obj everyone_group_obj) (STV 1.0 1.0))",
+      "(: meeting_dependency (Implication (Happens meeting_obj) (Agrees everyone_group_obj meeting_obj)) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "Who has to agree for the meeting to happen?",
-        "query": "(: $prf (And (Name meeting_obj \"Meeting\") (Condition (Happens meeting_obj) (Agrees $who))) $tv)",
+        "query": "(: $prf (RequiresAgreement meeting_obj $group) $tv)",
         "rules": [],
         "expected_answer": "Everyone that is somewhat related to it."
       }
@@ -340,14 +169,16 @@
       "There are 10 humans that can fly."
     ],
     "statements": [
-      "(: humans_fly (Exists (Human $human) (CanFly $human) 10) (STV 1.0 1.0))"
+      "(: flying_humans_members (Implication (Member $person flying_humans_obj) (And (Human $person) (Flying $person))) (STV 0.6 0.7))",
+      "(: flying_humans_can (Implication (Member $person flying_humans_obj) (CanFly $person)) (STV 0.9 0.9))",
+      "(: flying_humans_count (Cardinality flying_humans_obj 10) (STV 0.9 0.8))"
     ],
     "queries": [
       {
         "question": "How many humans are flying?",
-        "query": "(: $prf (And (Human $human) (IsFlying $human) (Count $human $count)) $tv)",
+        "query": "(: $prf (CountRange (lambda ($person) (And (Human $person) (Flying $person))) 0 $max) $tv)",
         "rules": [
-          "(: canfly_to_flying (Implication (CanFly $human) (Possible (IsFlying $human))) (STV 1.0 0.5))"
+          "(: ability_range_rule (Implication (And (Cardinality $obj $n) (Implication (Member $x $obj) $condition)) (CountRange (lambda ($x) $condition) 0 $n)) (STV 0.4 0.5))"
         ],
         "expected_answer": "Somewhere between 0 and 10."
       }
@@ -358,21 +189,25 @@
       "10.10.2025, Bob went away in february."
     ],
     "statements": [
+      "(: reference_day (DayOfDate current_date_obj 10))",
+      "(: reference_month (MonthOfDate current_date_obj 10))",
+      "(: reference_year (YearOfDate current_date_obj 2025))",
       "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
-      "(: date_month (MonthOfDate date_obj 2))",
-      "(: date_year (YearOfDate date_obj 2025))",
-      "(: bob_went_away (AtTime (WentAway bob_obj) date_obj) (STV 1.0 1.0))"
+      "(: away_month (MonthOfDate away_date_obj 2))",
+      "(: away_year (YearOfDate away_date_obj 2025))",
+      "(: bob_went_away (AtTime (WentAway bob_obj) away_date_obj) (STV 1.0 1.0))",
+      "(: months_between (MonthsBetween away_date_obj current_date_obj 8))"
     ],
     "queries": [
       {
         "question": "10.10.2025, How many months ago was it that bob went away?",
-        "query": "(: $prf (And (Name bob_obj \"Bob\") (AtTime (WentAway bob_obj) date_obj) (MonthOfDate date_obj $month) (MonthOfDate current_date_obj 10) (YearOfDate current_date_obj 2025) (MonthDifference current_date_obj date_obj $diff)) $tv)",
+        "query": "(: $prf (MonthsBetween away_date_obj current_date_obj $months) $tv)",
         "rules": [],
         "expected_answer": "8"
       },
       {
         "question": "10.10.2025, What year was it when bob went away?",
-        "query": "(: $prf (And (Name bob_obj \"Bob\") (AtTime (WentAway bob_obj) date_obj) (YearOfDate date_obj $year)) $tv)",
+        "query": "(: $prf (YearOfDate away_date_obj $year) $tv)",
         "rules": [],
         "expected_answer": "2025"
       }
@@ -386,25 +221,27 @@
       "(: mark_name (Name mark_obj \"Mark\") (STV 1.0 1.0))",
       "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
       "(: anna_name (Name anna_obj \"Anna\") (STV 1.0 1.0))",
-      "(: homework (Name homework_obj \"Homework\") (STV 1.0 1.0))",
-      "(: mark_helps_bob (Helps mark_obj bob_obj homework_obj) (STV 1.0 1.0))",
-      "(: mark_helps_anna (Helps mark_obj anna_obj homework_obj) (STV 1.0 1.0))",
-      "(: bob_helps_mark (Helps bob_obj mark_obj homework_obj) (STV 1.0 1.0))",
-      "(: bob_helps_anna (Helps bob_obj anna_obj homework_obj) (STV 1.0 1.0))",
-      "(: anna_helps_mark (Helps anna_obj mark_obj homework_obj) (STV 1.0 1.0))",
-      "(: anna_helps_bob (Helps anna_obj bob_obj homework_obj) (STV 1.0 1.0))"
+      "(: homework_task (Task homework_obj Homework) (STV 1.0 1.0))",
+      "(: mark_help_bob (HelpsWithHomework mark_obj bob_obj) (STV 0.9 0.9))",
+      "(: mark_help_anna (HelpsWithHomework mark_obj anna_obj) (STV 0.8 0.8))",
+      "(: bob_help_mark (HelpsWithHomework bob_obj mark_obj) (STV 0.8 0.8))",
+      "(: bob_help_anna (HelpsWithHomework bob_obj anna_obj) (STV 0.9 0.9))",
+      "(: anna_help_mark (HelpsWithHomework anna_obj mark_obj) (STV 0.9 0.9))",
+      "(: anna_help_bob (HelpsWithHomework anna_obj bob_obj) (STV 0.8 0.8))"
     ],
     "queries": [
       {
         "question": "Does Mark help Anna with homework?",
-        "query": "(: $prf (And (Name mark_obj \"Mark\") (Name anna_obj \"Anna\") (Name homework_obj \"Homework\") (Helps mark_obj anna_obj homework_obj)) $tv)",
+        "query": "(: $prf (HelpsWithHomework mark_obj anna_obj) $tv)",
         "rules": [],
         "expected_answer": "Yes"
       },
       {
         "question": "Who is providing help with homework?",
-        "query": "(: $prf (And (Name $person $name) (Name homework_obj \"Homework\") (Helps $person $other homework_obj)) $tv)",
-        "rules": [],
+        "query": "(: $prf (And (ProvidesHelp $helper homework_obj) (Name $helper $name)) $tv)",
+        "rules": [
+          "(: helps_means_provides (Implication (HelpsWithHomework $helper $recipient) (ProvidesHelp $helper homework_obj)) (STV 0.9 0.9))"
+        ],
         "expected_answer": "Mark, Bob and Anna."
       }
     ]
@@ -414,24 +251,26 @@
       "The Dog has magical fur and a white tail."
     ],
     "statements": [
-      "(: dog (Name dog_obj \"Dog\") (STV 1.0 1.0))",
-      "(: magical_fur (HasAttribute dog_obj \"MagicalFur\") (STV 1.0 1.0))",
-      "(: white_tail (HasAttribute dog_obj \"WhiteTail\") (STV 1.0 1.0))"
+      "(: dog_type (Dog dog_obj) (STV 1.0 1.0))",
+      "(: dog_fur (FurOf dog_obj fur_obj) (STV 1.0 1.0))",
+      "(: dog_tail (TailOf dog_obj tail_obj) (STV 1.0 1.0))",
+      "(: fur_magical (Magical fur_obj) (STV 1.0 1.0))",
+      "(: tail_white (Color tail_obj white_color) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "Is the dog magical?",
-        "query": "(: $prf (And (Name dog_obj \"Dog\") (HasAttribute dog_obj \"MagicalFur\")) $tv)",
+        "query": "(: $prf (Magical dog_obj) $tv)",
         "rules": [
-          "(: magical_fur_to_magical (Implication (HasAttribute $obj \"MagicalFur\") (IsMagical $obj)) (STV 1.0 1.0))"
+          "(: magical_fur_rule (Implication (And (FurOf dog_obj $fur) (Magical $fur)) (Magical dog_obj)) (STV 0.9 0.8))"
         ],
         "expected_answer": "Yes"
       },
       {
         "question": "Is the dog white?",
-        "query": "(: $prf (And (Name dog_obj \"Dog\") (HasAttribute dog_obj \"White\")) $tv)",
+        "query": "(: $prf (Color dog_obj white_color) $tv)",
         "rules": [
-          "(: white_tail_to_white (Implication (HasAttribute $obj \"WhiteTail\") (Possible (HasAttribute $obj \"White\"))) (STV 0.2 0.5))"
+          "(: tail_white_rule (Implication (Color (TailOf dog_obj) white_color) (Color dog_obj white_color)) (STV 0.2 0.5))"
         ],
         "expected_answer": "Unclear. Part of it is so a maybe something along the lines of (STV 0.2 0.5) there is a low probabilty but we aren't sure."
       }
@@ -443,13 +282,13 @@
     ],
     "statements": [
       "(: bob_name (Name bob_obj \"Bob\") (STV 1.0 1.0))",
-      "(: door (Name door_obj \"Door\") (STV 1.0 1.0))",
+      "(: door_object (Door door_obj) (STV 1.0 1.0))",
       "(: bob_behind_door (Behind bob_obj door_obj) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "Where is Bob?",
-        "query": "(: $prf (And (Name bob_obj \"Bob\") (Behind bob_obj $location)) $tv)",
+        "query": "(: $prf (Behind bob_obj $location) $tv)",
         "rules": [],
         "expected_answer": "Behind the door."
       }
@@ -460,15 +299,17 @@
       "I only eat vegetables on days when I exercise."
     ],
     "statements": [
-      "(: vegetables (Name vegetables_obj \"Vegetables\") (STV 1.0 1.0))",
-      "(: exercise (Name exercise_obj \"Exercise\") (STV 1.0 1.0))",
-      "(: eat_vegetables_on_exercise (Implication (AtTime (Exercise $person) $day) (AtTime (Eats $person vegetables_obj) $day)) (STV 1.0 1.0))"
+      "(: self_agent (Person self_obj) (STV 1.0 1.0))",
+      "(: vegetables_food (Vegetable vegetables_obj) (STV 1.0 1.0))",
+      "(: only_when_exercise (Implication (EatsVegetables self_obj $day) (Exercises self_obj $day)) (STV 1.0 1.0))"
     ],
     "queries": [
       {
         "question": "On which days do you only eat vegetables?",
-        "query": "(: $prf (And (AtTime (Eats $person vegetables_obj) $day) (AtTime (Exercise $person) $day)) $tv",
-        "rules": [],
+        "query": "(: $prf (OnlyWhen (EatsVegetables self_obj $day) $condition) $tv)",
+        "rules": [
+          "(: only_when_rule (Implication (Implication (EatsVegetables self_obj $day) (Exercises self_obj $day)) (OnlyWhen (EatsVegetables self_obj $day) (Exercises self_obj $day))) (STV 1.0 1.0))"
+        ],
         "expected_answer": "On days when I exercise."
       }
     ]
